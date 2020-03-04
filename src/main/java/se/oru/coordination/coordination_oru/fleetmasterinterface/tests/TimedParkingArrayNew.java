@@ -16,6 +16,7 @@ import se.oru.coordination.coordination_oru.ConstantAccelerationForwardModel;
 import se.oru.coordination.coordination_oru.Mission;
 import se.oru.coordination.coordination_oru.NetworkConfiguration;
 import se.oru.coordination.coordination_oru.demo.DemoDescription;
+import se.oru.coordination.coordination_oru.fleetmasterinterface.AbstractFleetMasterInterface;
 import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
 import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
 import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
@@ -47,6 +48,7 @@ public class TimedParkingArrayNew {
         }
         catch (Exception e) { e.printStackTrace(); }
 	}
+	
 	
 	private static void initStat(String fileName, String stat) {
         try {

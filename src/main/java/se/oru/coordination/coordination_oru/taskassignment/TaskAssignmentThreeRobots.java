@@ -157,6 +157,6 @@ public class TaskAssignmentThreeRobots {
 			} 
 		}
 		
-	    TaskAssignment.Task_Assignment(prova3, rsp, startPose, goalPose, tec);	
+	    //TaskAssignment.Task_Assignment(prova3, rsp, startPose, goalPose, tec);	
 	}
 }

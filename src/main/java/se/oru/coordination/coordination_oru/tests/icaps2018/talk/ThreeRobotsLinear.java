@@ -114,6 +114,7 @@ public class ThreeRobotsLinear {
 		Mission m3 = new Mission(3,pss3);
 		tec.addMissions(m1,m2,m3);
 		
+		
 	}
 	
 }

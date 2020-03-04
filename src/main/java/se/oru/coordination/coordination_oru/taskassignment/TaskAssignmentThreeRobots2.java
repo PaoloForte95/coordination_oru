@@ -98,7 +98,7 @@ public class TaskAssignmentThreeRobots2 {
 		//JTSDrawingPanelVisualization viz = new JTSDrawingPanelVisualization();
 		//viz.setSize(1024, 768);
 		BrowserVisualization viz = new BrowserVisualization();
-		viz.setInitialTransform(54, 0, 0);
+		viz.setInitialTransform(20, 0, 0);
 		tec.setVisualization(viz);
 		
 		tec.setUseInternalCriticalPoints(false);
@@ -122,9 +122,13 @@ public class TaskAssignmentThreeRobots2 {
 		Pose goalPoseRobot3 = new Pose(21.0,3.0,-Math.PI/2);
 		
 		
-		Pose startPoseRobot4 = new Pose(12.0,5.0,Math.PI/2);
-		Pose startPoseRobot5 = new Pose(20.0,2.0,Math.PI/2);
+		Pose startPoseRobot4 = new Pose(16.0,30.0,-Math.PI/2);
+		Pose startPoseRobot5 = new Pose(-5.0,-5.0,Math.PI/2);
 		
+		
+		
+		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
+		Pose startPoseGoal3 = new Pose(4.0,8.0,0.0);
 		
 
 		//Place robots in their initial locations (looked up in the data file that was loaded above)
@@ -135,33 +139,42 @@ public class TaskAssignmentThreeRobots2 {
 		tec.placeRobot(2, startPoseRobot2);
 		tec.placeRobot(3, startPoseRobot3);
 		
+	
+		//tec.setForwardModel(4, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		//tec.setForwardModel(5, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
 		
+		//tec.placeRobot(4, startPoseRobot4);
+		//tec.placeRobot(5, startPoseRobot5);
 		
-		Task task1 = new Task(startPoseRobot1,goalPoseRobot1);
+		Task task1 = new Task(startPoseGoal1,goalPoseRobot1);
 		Task task2 = new Task(startPoseRobot2,goalPoseRobot2);
-		Task task3 = new Task(startPoseRobot2,goalPoseRobot3);
+		Task task3 = new Task(startPoseGoal3,goalPoseRobot3);
+		
+		
+		
+		Task task4 = new Task(startPoseRobot4,startPoseGoal1);
+		Task task5 = new Task(startPoseRobot5,startPoseGoal3);
 		
 		
 		Task [] Tasks = {task1,task2,task3};
 		
 		int num_robot = 3;
-		int num_task = 3;
+		int num_task = 5;
 		double alpha = 1;
-		Pose [] startPose = {startPoseRobot1,startPoseRobot2,startPoseRobot3};
-		Pose [] goalPose = {goalPoseRobot1,goalPoseRobot2,goalPoseRobot3};
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-
-		MPSolver solver = TaskAssignment.optimization_problem_complete(num_robot, rsp, Tasks,false);
-		double [][] prova3 = TaskAssignment.solve_optimization_problem(rsp, startPose, goalPose,solver,tec,alpha);	
+		TaskAssignment ll = new TaskAssignment();
+		ll.instantiateFleetMaster(0.1, false);
+		MPSolver solver = ll.optimization_problem_complete(num_robot, rsp, Tasks,false,tec);
+		double [][] prova3 = ll.solve_optimization_problem(rsp, Tasks,solver,tec,alpha);	
 		//double [][] prova3 = TaskAssignment.solve_optimization_problem_exact(num_robot, num_task, rsp, startPose, goalPose,solver,tec,alpha);
 
-		for (int i = 0; i < num_robot; i++) {
-			for (int j = 0; j < num_task; j++) {
+		for (int i = 0; i < prova3.length; i++) {
+			for (int j = 0; j < prova3[0].length; j++) {
 					//System.out.println("aaaaaaaaaa>> "+ prova5[i][j]+"i>> "+i+" j>> "+j);
 					System.out.println("cccccccccc>> "+prova3[i][j]+" i>> "+i+" j>> "+j);			
 			} 
 		}
-	    TaskAssignment.Task_Assignment(prova3, rsp, startPose, goalPose, tec);	
+	    TaskAssignment.Task_Assignment(prova3, rsp, Tasks, tec);	
 	}
 }

@@ -36,6 +36,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.util.AffineTransformation;
 import aima.core.util.datastructure.Pair;
 import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
+import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.util.FleetVisualization;
 import se.oru.coordination.coordination_oru.util.StringUtils;
 
@@ -131,6 +132,26 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	
 	//State knowledge
 	protected HashMap<Integer,Boolean> isDriving = new HashMap<Integer, Boolean>();
+	
+	
+	/**
+	 * * Return a vector of Free Robots 
+	 * @param numRobots -> Number of Robots 
+	 * @return
+	 */
+	
+	public Integer[] getIdleRobots(int numRobots) {
+		ArrayList<Integer> IdleRobots = new ArrayList<Integer>();
+		for(int i = 0; i < numRobots ; i++) {
+			if(!isDriving(i+1)) {
+				IdleRobots.add(i);
+			}
+		}
+		return IdleRobots.toArray(new Integer[IdleRobots.size()]);
+	}
+	
+	
+	
 	
 
 	/**
@@ -956,8 +977,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 						if (drivingEnvelopes.get(i).getRobotID() != envelopesToTrack.get(j).getRobotID()) {
 							int minStart1 = currentReports.containsKey(drivingEnvelopes.get(i).getRobotID()) ? currentReports.get(drivingEnvelopes.get(i).getRobotID()).getPathIndex() : -1;
 							int minStart2 = currentReports.containsKey(envelopesToTrack.get(j).getRobotID()) ? currentReports.get(envelopesToTrack.get(j).getRobotID()).getPathIndex() : -1;
-							double maxDimensionOfSmallestRobot = Math.min(getMaxFootprintDimension(drivingEnvelopes.get(i).getRobotID()), getMaxFootprintDimension(envelopesToTrack.get(j).getRobotID()));
-							for (CriticalSection cs : getCriticalSections(null, null, drivingEnvelopes.get(i), minStart1, envelopesToTrack.get(j), minStart2, this.checkEscapePoses, maxDimensionOfSmallestRobot)) {
+							for (CriticalSection cs : getCriticalSections(drivingEnvelopes.get(i), minStart1, envelopesToTrack.get(j), minStart2)) {
 									this.allCriticalSections.add(cs);
 									//metaCSPLogger.info("computeCriticalSections(): add (1) " + cs); 								
 							}
@@ -971,8 +991,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 						if (envelopesToTrack.get(i).getRobotID() != envelopesToTrack.get(j).getRobotID()) {
 							int minStart1 = currentReports.containsKey(envelopesToTrack.get(i).getRobotID()) ? currentReports.get(envelopesToTrack.get(i).getRobotID()).getPathIndex() : -1;
 							int minStart2 = currentReports.containsKey(envelopesToTrack.get(j).getRobotID()) ? currentReports.get(envelopesToTrack.get(j).getRobotID()).getPathIndex() : -1;
-							double maxDimensionOfSmallestRobot = Math.min(getMaxFootprintDimension(envelopesToTrack.get(i).getRobotID()), getMaxFootprintDimension(envelopesToTrack.get(j).getRobotID()));
-							for (CriticalSection cs : getCriticalSections(null, null, envelopesToTrack.get(i), minStart1, envelopesToTrack.get(j), minStart2, this.checkEscapePoses, maxDimensionOfSmallestRobot)) {
+							for (CriticalSection cs : getCriticalSections(envelopesToTrack.get(i), minStart1, envelopesToTrack.get(j), minStart2)) {
 									this.allCriticalSections.add(cs);
 									//metaCSPLogger.info("computeCriticalSections(): add (2) " + cs);
 							}
@@ -982,26 +1001,25 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	
 				//Compute critical sections between driving envelopes and current parking envelopes	
 				for (int i = 0; i < drivingEnvelopes.size(); i++) {
-					for (int j = 0; j < currentParkingEnvelopes.size(); j++) {
-						if (drivingEnvelopes.get(i).getRobotID() != currentParkingEnvelopes.get(j).getRobotID()) {
+					for (Integer robotID : currentParkingEnvelopes.keySet()) {
+						if (drivingEnvelopes.get(i).getRobotID() != robotID) {
 							int minStart1 = currentReports.containsKey(drivingEnvelopes.get(i).getRobotID()) ? currentReports.get(drivingEnvelopes.get(i).getRobotID()).getPathIndex() : -1;
-							int minStart2 = currentReports.containsKey(currentParkingEnvelopes.get(j).getRobotID()) ? currentReports.get(currentParkingEnvelopes.get(j).getRobotID()).getPathIndex() : -1;
-							double maxDimensionOfSmallestRobot = Math.min(getMaxFootprintDimension(drivingEnvelopes.get(i).getRobotID()), getMaxFootprintDimension(currentParkingEnvelopes.get(j).getRobotID()));
-							for (CriticalSection cs : getCriticalSections(null, null, drivingEnvelopes.get(i), minStart1, currentParkingEnvelopes.get(j), minStart2, this.checkEscapePoses, maxDimensionOfSmallestRobot)) {
-									this.allCriticalSections.add(cs);	
+							int minStart2 = currentReports.containsKey(robotID) ? currentReports.get(robotID).getPathIndex() : -1;
+							for (CriticalSection cs : getCriticalSections(drivingEnvelopes.get(i), minStart1, currentParkingEnvelopes.get(robotID), minStart2)) {
+									this.allCriticalSections.add(cs);
 									//metaCSPLogger.info("computeCriticalSections(): add (3) " + cs);
 							}
 						}
 					}
 				}
+	
 				//Compute critical sections between NEW driving envelopes and current parking envelopes	
 				for (int i = 0; i < envelopesToTrack.size(); i++) {
-					for (int j = 0; j < currentParkingEnvelopes.size(); j++) {
-						if (envelopesToTrack.get(i).getRobotID() != currentParkingEnvelopes.get(j).getRobotID()) {
+					for (Integer robotID : currentParkingEnvelopes.keySet()) {
+						if (envelopesToTrack.get(i).getRobotID() != robotID) {
 							int minStart1 = currentReports.containsKey(envelopesToTrack.get(i).getRobotID()) ? currentReports.get(envelopesToTrack.get(i).getRobotID()).getPathIndex() : -1;
-							int minStart2 = currentReports.containsKey(currentParkingEnvelopes.get(j).getRobotID()) ? currentReports.get(currentParkingEnvelopes.get(j).getRobotID()).getPathIndex() : -1;
-							double maxDimensionOfSmallestRobot = Math.min(getMaxFootprintDimension(envelopesToTrack.get(i).getRobotID()), getMaxFootprintDimension(currentParkingEnvelopes.get(j).getRobotID()));
-							for (CriticalSection cs : getCriticalSections(null, null, envelopesToTrack.get(i), minStart1, currentParkingEnvelopes.get(j), minStart2, this.checkEscapePoses, maxDimensionOfSmallestRobot)) {
+							int minStart2 = currentReports.containsKey(robotID) ? currentReports.get(robotID).getPathIndex() : -1;
+							for (CriticalSection cs : getCriticalSections(envelopesToTrack.get(i), minStart1, currentParkingEnvelopes.get(robotID), minStart2)) {
 									this.allCriticalSections.add(cs);
 									//metaCSPLogger.info("computeCriticalSections(): add (4) " + cs);
 							}
@@ -1139,7 +1157,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 
 	}
 		
-	public static CriticalSection[] getCriticalSections(SpatialEnvelope se1, SpatialEnvelope se2, TrajectoryEnvelope te1, int minStart1, TrajectoryEnvelope te2, int minStart2, boolean checkEscapePoses, double maxDimensionOfSmallestRobot) {
+	protected static CriticalSection[] getCriticalSections(SpatialEnvelope se1, SpatialEnvelope se2, TrajectoryEnvelope te1, int minStart1, TrajectoryEnvelope te2, int minStart2, boolean checkEscapePoses, double maxDimensionOfSmallestRobot) {
 
 		ArrayList<CriticalSection> css = new ArrayList<CriticalSection>();
 			
@@ -1316,17 +1334,18 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	}
 
 
-	protected CriticalSection[] getCriticalSections(TrajectoryEnvelope te1, TrajectoryEnvelope te2) {
-		double maxDimensionOfSmallestRobot = Math.min(getMaxFootprintDimension(te1.getRobotID()), getMaxFootprintDimension(te2.getRobotID()));
-		return getCriticalSections(null, null, te1, -1, te2, -1, this.checkEscapePoses, maxDimensionOfSmallestRobot);
+	
+	protected CriticalSection[] getCriticalSections(TrajectoryEnvelope te1, int minStart1, TrajectoryEnvelope te2, int minStart2) {
+		double maxDimensionOfSmallestRobot= Math.min(this.getMaxFootprintDimension(te1.getRobotID()), this.getMaxFootprintDimension(te2.getRobotID()));
+		return getCriticalSections(te1.getSpatialEnvelope(), te2.getSpatialEnvelope(), te1, minStart1, te2, minStart2, this.checkEscapePoses, maxDimensionOfSmallestRobot);
+	}
+
+	public static CriticalSection[] getCriticalSections(TrajectoryEnvelope te1, TrajectoryEnvelope te2, boolean checkEscapePoses, double maxDimensionOfSmallestRobot) {
+		return getCriticalSections(te1.getSpatialEnvelope(), te2.getSpatialEnvelope(), te1, -1, te2, -1, checkEscapePoses, maxDimensionOfSmallestRobot);
 	}
 	
 	public static CriticalSection[] getCriticalSections(SpatialEnvelope se1, SpatialEnvelope se2, boolean checkEscapePoses, double maxDimensionOfSmallestRobot) {
 		return getCriticalSections(se1, se2, null, -1, null, -1, checkEscapePoses, maxDimensionOfSmallestRobot);
-	}
-	
-	public static CriticalSection[] getCriticalSections(SpatialEnvelope se1, SpatialEnvelope se2, double maxDimensionOfSmallestRobot) {
-		return getCriticalSections(se1, se2, null, -1, null, -1, true, maxDimensionOfSmallestRobot);
 	}
 
 	protected void cleanUp(TrajectoryEnvelope te) {
