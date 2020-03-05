@@ -199,21 +199,6 @@ public class TaskAssignment_MorePath {
 	}
 	
 	
-	protected Pair<Double,Double> estimateTimeToCompletionDelays(int path1ID,PoseSteering[] pss1, TreeSet<IndexedDelay> delaysRobot1, int path2ID,PoseSteering[] pss2, TreeSet<IndexedDelay> delaysRobot2, CriticalSection cs) {
-		if (this.fleetMasterInterface != null && fleetMasterInterface.checkPathHasBeenAdded(path1ID)&& fleetMasterInterface.checkPathHasBeenAdded(path2ID)) {
-			CumulatedIndexedDelaysList te1TCDelays = toIndexedDelaysList(delaysRobot1, pss1.length);
-			metaCSPLogger.info("[estimateTimeToCompletionDelays] te1TCDelays: " + te1TCDelays.toString());
-			CumulatedIndexedDelaysList te2TCDelays = toIndexedDelaysList(delaysRobot2, pss2.length);
-			metaCSPLogger.info("[estimateTimeToCompletionDelays] te2TCDelays: " + te2TCDelays.toString());
-			return fleetMasterInterface.queryTimeDelay(cs, te1TCDelays, te2TCDelays);
-		}
-		return new Pair<Double, Double> (Double.NaN, Double.NaN);
-	}
-	
-	
-	
-	
-	
 	/**
 	 * Transform a 1D array of MPVariable into a 3D MATRIX  
 	 * @param num_robot -> Number of robots

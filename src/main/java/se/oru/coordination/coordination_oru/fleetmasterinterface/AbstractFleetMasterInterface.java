@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
+import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope.SpatialEnvelope;
 import org.metacsp.utility.logging.MetaCSPLogging;
 
 import com.sun.jna.Native;
@@ -190,7 +191,7 @@ public abstract class AbstractFleetMasterInterface {
 			metaCSPLogger.severe("Robots' footprint cannot have null area!");
 			throw new Error("Robots' footprint cannot have null area!");
 		}
-			
+		
 		//already added
 		if (paths.containsKey(pathID) && paths.get(pathID) != new Long(0)) {
 			metaCSPLogger.warning("Path already stored.");
@@ -217,8 +218,13 @@ public abstract class AbstractFleetMasterInterface {
 			steering[i] = pathToAdd[i].getSteering();
 		}
 		
-		Coordinate[] bbx = (boundingBox == null) ? null : boundingBox.getCoordinates();
-				
+		Coordinate[] bbx = null;
+		if (boundingBox != null) bbx = boundingBox.getCoordinates();
+		else if (gridParams.dynamic_size) {
+			SpatialEnvelope se = TrajectoryEnvelope.createSpatialEnvelope(pathToAdd, coordinates);
+			boundingBox = se.getPolygon();
+		}
+			
 		//Call the method. -1 is used as special value to indicate that the path was not correctly added.
 		Long pathCode = new Long(0);
 		TrajParams trjp = trajParams.containsKey(robotID) ? trajParams.get(robotID) : DEFAULT_TRAJ_PARAMS;
@@ -226,9 +232,10 @@ public abstract class AbstractFleetMasterInterface {
 		double bottom_left_y = (bbx == null) ? Double.MAX_VALUE : bbx[0].y;
 		double top_right_x = (bbx == null) ? Double.MAX_VALUE : bbx[2].x;
 		double top_right_y = (bbx == null) ? Double.MAX_VALUE : bbx[2].y;
+		System.out.print("stamp7");	
 		pathCode = new Long(INSTANCE.addPath(p, path, steering, pathToAdd.length, trjp, coordinates_x, coordinates_y, coordinates.length, bottom_left_x, bottom_left_y, top_right_x, top_right_y));
 		paths.put(pathID, pathCode);
-
+		
 		metaCSPLogger.info("Adding path RobotID: " + robotID + ", pathID: " + pathID + ", fleetmaster pathID: " + pathCode + ".");
 		
 		return !pathCode.equals(new Long(0));
@@ -299,6 +306,32 @@ public abstract class AbstractFleetMasterInterface {
 				DoubleByReference delayTe2 = new DoubleByReference();
 				INSTANCE.queryTimeDelay(p, paths.get(teID1), paths.get(teID2), Math.max(0, cs.getTe1Start()-1), Math.min(cs.getTe1().getPathLength()-1, cs.getTe1End()+1), 
 						Math.max(0, cs.getTe2Start()-1), Math.min(cs.getTe2().getPathLength()-1, cs.getTe2End()+1), te1TCDelays.indices, te1TCDelays.values, te1TCDelays.size, te2TCDelays.indices, te2TCDelays.values, te2TCDelays.size, delayTe1, delayTe2);
+				ret = new Pair<Double, Double>(delayTe1.getValue(), delayTe2.getValue());
+			}
+		}
+		metaCSPLogger.info("queryTimeDelay at cs: " + cs + " return: " + ret + ".");
+		return ret;
+	}
+	
+	/**
+	 * Returning the increment of the time of completion of both the robots when giving precedence to the other at a given @{CriticalSection}. Specifically,
+	 * the first value is the increment of the time of completion of the first robot due to the queried critical section when giving precedence to the second one, viceversa the second value.
+	 * Negative delays will be returned to indicate how much a robot may be delayed before the nominal temporal profile of the two robots may conflict while assuming the critical point of both to be set to -1.
+	 * @param cs The critical section to be queried.
+	 * @param te1TCDelays Additional delays to the single-robot time of completion of te1 due to future critical sections along te1 (to be used for propagation).
+	 * @param te2TCDelays Additional delays to the single-robot time of completion of te2 due to future critical sections along te2 (to be used for propagation).
+	 * @return The time of completion increments.
+	 */	
+	public Pair<Double,Double> queryTimeDelay(CriticalSection cs, CumulatedIndexedDelaysList te1TCDelays, CumulatedIndexedDelaysList te2TCDelays,PoseSteering[] pss1, PoseSteering[] pss2 ) {
+		Pair<Double, Double> ret = new Pair<Double, Double>(Double.NaN, Double.NaN);
+		if (cs != null) {
+			int teID1 = pss1.hashCode();
+			int teID2 = pss2.hashCode();
+			if (paths.containsKey(teID1) && (paths.containsKey(teID2))) {
+				DoubleByReference delayTe1 = new DoubleByReference();
+				DoubleByReference delayTe2 = new DoubleByReference();
+				INSTANCE.queryTimeDelay(p, paths.get(teID1), paths.get(teID2), Math.max(0, cs.getTe1Start()-1), Math.min(pss1.length-1, cs.getTe1End()+1), 
+						Math.max(0, cs.getTe2Start()-1), Math.min(pss2.length-1, cs.getTe2End()+1), te1TCDelays.indices, te1TCDelays.values, te1TCDelays.size, te2TCDelays.indices, te2TCDelays.values, te2TCDelays.size, delayTe1, delayTe2);
 				ret = new Pair<Double, Double>(delayTe1.getValue(), delayTe2.getValue());
 			}
 		}
