@@ -3,6 +3,7 @@ package se.oru.coordination.coordination_oru.taskassignment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -34,33 +35,42 @@ public class Task {
 	
 	protected Pose StartPoint;
 	protected Pose GoalPoint;
-	protected double TaskType;
+	protected int taskType;
 	
 	
 	/**
-	 * Constructor.
+	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
+	 * robot can perform this task
 	 * @param StartPose -> Starting Pose for Task;
 	 * @param GoalPose -> Ending Pose for Task
+	 * @param taskType -> The type of the Task expressed as int
 	 */
-	public Task (Pose StartPose,Pose GoalPose) {
+	public Task (Pose StartPose,Pose GoalPose,int taskType) {
 		this.StartPoint = StartPose;
 		this.GoalPoint = GoalPose;
+		this.taskType = taskType;
 		
 		
 	}
 
 	public Pose getStartPose() {
-		return StartPoint;
+		return this.StartPoint;
 		
 	}
 	public Pose getGoalPose() {
-		return GoalPoint;
+		return this.GoalPoint;
 		
 	}
 	
-	public void getInfo() {
-		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint);
+	public int getTaskType() {
+		return this.taskType;
 	}
 	
+	public void getInfo() {
+		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint + "\n Task Type ->"+ this.taskType);
+	}
 
+	
+	
+	
 }

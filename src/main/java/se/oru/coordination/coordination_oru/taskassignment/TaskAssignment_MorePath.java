@@ -3,21 +3,33 @@ package se.oru.coordination.coordination_oru.taskassignment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.TreeSet;
+import java.util.logging.Logger;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
+import org.metacsp.utility.logging.MetaCSPLogging;
 import org.sat4j.sat.SolverController;
 import org.sat4j.sat.visu.SolverVisualisation;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 
 import aima.core.agent.Model;
+import aima.core.util.datastructure.Pair;
 import se.oru.coordination.coordination_oru.ConstantAccelerationForwardModel;
 import se.oru.coordination.coordination_oru.CriticalSection;
+import se.oru.coordination.coordination_oru.IndexedDelay;
 import se.oru.coordination.coordination_oru.Mission;
 import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
 import se.oru.coordination.coordination_oru.RobotReport;
+import se.oru.coordination.coordination_oru.TrajectoryEnvelopeCoordinator;
 import se.oru.coordination.coordination_oru.demo.DemoDescription;
+import se.oru.coordination.coordination_oru.fleetmasterinterface.AbstractFleetMasterInterface;
+import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInterface;
+import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInterfaceLib.CumulatedIndexedDelaysList;
 import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.util.Missions;
@@ -42,6 +54,164 @@ public class TaskAssignment_MorePath {
 	public static boolean Approximation_Flag;
 	protected static int Dummy_Robot;
 	protected static int Dummy_Task;
+	protected static int numRobotAug;
+	protected static int numTaskAug;
+	protected static Task [] TasksMissions;
+	protected static Integer[] IdleRobots;
+	//FleetMaster Interface Parameters
+	
+	
+	protected AbstractFleetMasterInterface fleetMasterInterface = null;
+	protected boolean propagateDelays = false;
+	protected static Logger metaCSPLogger = MetaCSPLogging.getLogger(TrajectoryEnvelopeCoordinator.class);
+	
+	
+	
+	/**
+	 * The default footprint used for robots if none is specified.
+	 * NOTE: coordinates in footprints must be given in in CCW or CW order. 
+	 */
+	public static Coordinate[] DEFAULT_FOOTPRINT = new Coordinate[] {
+			new Coordinate(-1.7, 0.7),	//back left
+			new Coordinate(-1.7, -0.7),	//back right
+			new Coordinate(2.7, -0.7),	//front right
+			new Coordinate(2.7, 0.7)	//front left
+	};
+
+	
+	/**
+	 * Enable and initialize the fleetmaster library to estimate precedences to minimize the overall completion time.
+	 * Note: this function should be called before placing the first robot.
+	 * ATTENTION: If dynamic_size is <code>false</code>, then the user should check that all the paths will lay in the given area.
+	 * @param origin_x The x coordinate (in meters and in global inertial frame) of the lower-left pixel of fleetmaster GridMap.
+	 * @param origin_y The y coordinate (in meters and in global inertial frame) of the lower-left pixel of fleetmaster GridMap.
+	 * @param origin_theta The theta coordinate (in rads) of the lower-left pixel map (counterclockwise rotation). Many parts of the system currently ignore it.
+	 * @param resolution The resolution of the map (in meters/cell), 0.01 <= resolution <= 1. It is assumed this parameter to be global among the fleet.
+	 * 					 The highest the value, the less accurate the estimation, the lowest the more the computational effort.
+	 * @param width Number of columns of the map (>= 1) if dynamic sizing is not enabled.
+	 * @param height Number of rows of the map (>= 1) if dynamic sizing is not enabled.
+	 * @param dynamic_size If <code>true</code>, it allows to store only the bounding box containing each path.
+	 * @param propagateDelays If <code>true</code>, it enables the delay propagation.
+	 * @param debug If <code>true</code>, it enables writing to screen debugging info.
+	 */
+	public void instantiateFleetMaster(double origin_x, double origin_y, double origin_theta, double resolution, long width, long height, boolean dynamic_size, boolean propagateDelays, boolean debug) {
+		this.fleetMasterInterface = new FleetMasterInterface(origin_x, origin_y, origin_theta, resolution, width, height, dynamic_size, debug);
+		this.fleetMasterInterface.setDefaultFootprint(DEFAULT_FOOTPRINT);
+		this.propagateDelays = propagateDelays;
+	}
+	
+	/**
+	 * Enable and initialize the fleetmaster library to estimate precedences to minimize the overall completion time
+	 * while minimizing the computational requirements (bounding box are used to set the size of each path-image).
+	 * Note: this function should be called before placing the first robot.
+	 * @param resolution The resolution of the map (in meters/cell), 0.01 <= resolution <= 1. It is assumed this parameter to be global among the fleet.
+	 * 					 The highest the value, the less accurate the estimation, the lowest the more the computational effort.
+	 * @param propagateDelays If <code>true</code>, it enables the delay propagation.
+	 */
+	public void instantiateFleetMaster(double resolution, boolean propagateDelays) {
+		this.fleetMasterInterface = new FleetMasterInterface(0., 0., 0., resolution, 100, 100, true, false);
+		this.fleetMasterInterface.setDefaultFootprint(DEFAULT_FOOTPRINT);
+		this.propagateDelays = propagateDelays;
+	}
+	
+	
+	/**
+	 * Add a path to the fleetmaster interface
+	 * @param robotID -> The ID of the robot
+	 * @param pathID -> the ID of the path
+	 * @param pss -> the path expressed as a PoseSteering vector
+	 * @param boundingBox 
+	 * @param coordinates -> footprint of the robot 
+	 */
+	protected void addPathProva(int robotID, int pathID, PoseSteering[] pss, Geometry boundingBox, Coordinate... coordinates) {
+		if (!fleetMasterInterface.addPath(robotID, pathID, pss, boundingBox, coordinates)) 
+			metaCSPLogger.severe("Unable to add the path to the fleetmaster gridmap. Check if the map contains the given path.");
+	}
+	
+	
+	
+	/**
+	 * Delete the path from the fleetmaster interface
+	 * @param pathID -> The ID of the path to remove 
+	 */
+	protected void removePath(int pathID){
+		if (!fleetMasterInterface.clearPath(pathID)) 
+			metaCSPLogger.severe("Unable to remove the path to the fleetmaster gridmap. Check if the map contains the given path.");
+	}
+	
+	
+	protected CumulatedIndexedDelaysList toIndexedDelaysList(TreeSet<IndexedDelay> delays, int max_depth) {
+		//Handle exceptions
+		if (delays == null) {
+			metaCSPLogger.severe("Invalid input in function toPropagationTCDelays!!");
+			throw new Error("Invalid input in function toPropagationTCDelays!!");
+		}
+		if (delays.isEmpty() || max_depth < 1) return new CumulatedIndexedDelaysList();
+			
+		//Cast the type
+		ArrayList<Long> indices = new ArrayList<Long>();
+		ArrayList<Double> values = new ArrayList<Double>();
+		Iterator<IndexedDelay> it = delays.descendingIterator();
+		IndexedDelay prev = delays.last();
+		while (it.hasNext()) {
+			IndexedDelay current = it.next();
+			//Check unfeasible values
+			if (current.getValue() == Double.NaN) {
+				metaCSPLogger.severe("NaN input in function toPropagationTCDelays!!");
+				throw new Error("NaN input in function toPropagationTCDelays!!");
+			}
+			if (current.getValue() == Double.NEGATIVE_INFINITY) {
+				metaCSPLogger.severe("-Inf input in function toPropagationTCDelays!!");
+				throw new Error("-Inf input in function toPropagationTCDelays!!");
+			}
+			if (prev.getIndex() < current.getIndex()) {
+				metaCSPLogger.severe("Invalid IndexedDelays TreeSet!!");
+				throw new Error("Invalid IndexedDelays TreeSet!!");
+			}
+			
+			//Update the value only if positive and only if the index is lower than the max depth
+			if (current.getValue() > 0 && current.getValue() < Double.MAX_VALUE && current.getIndex() < max_depth) {
+				if (values.size() == 0) {
+					//Add the index the first time its value is positive
+					indices.add(new Long(current.getIndex()));
+					values.add(current.getValue());
+				}
+				else if (prev.getIndex() == current.getIndex())				
+					//Handle multiple delays in the same critical point
+					values.set(values.size()-1, values.get(values.size()-1) + current.getValue());
+				else {
+					//Add the cumulative value if it is not the first.
+					indices.add(new Long(current.getIndex()));
+					values.add(values.get(values.size()-1) + current.getValue());
+				}
+			}
+			prev = current;
+		}
+		CumulatedIndexedDelaysList propTCDelays = new CumulatedIndexedDelaysList();
+		if (indices.size() > 0) {
+			propTCDelays.size = indices.size();
+			propTCDelays.indices = ArrayUtils.toPrimitive((Long[]) indices.toArray(new Long[indices.size()]));
+			ArrayUtils.reverse(propTCDelays.indices);
+			propTCDelays.values = ArrayUtils.toPrimitive((Double[]) values.toArray(new Double[values.size()]));
+			ArrayUtils.reverse(propTCDelays.values);
+		}
+		return propTCDelays;
+	}
+	
+	
+	protected Pair<Double,Double> estimateTimeToCompletionDelays(int path1ID,PoseSteering[] pss1, TreeSet<IndexedDelay> delaysRobot1, int path2ID,PoseSteering[] pss2, TreeSet<IndexedDelay> delaysRobot2, CriticalSection cs) {
+		if (this.fleetMasterInterface != null && fleetMasterInterface.checkPathHasBeenAdded(path1ID)&& fleetMasterInterface.checkPathHasBeenAdded(path2ID)) {
+			CumulatedIndexedDelaysList te1TCDelays = toIndexedDelaysList(delaysRobot1, pss1.length);
+			metaCSPLogger.info("[estimateTimeToCompletionDelays] te1TCDelays: " + te1TCDelays.toString());
+			CumulatedIndexedDelaysList te2TCDelays = toIndexedDelaysList(delaysRobot2, pss2.length);
+			metaCSPLogger.info("[estimateTimeToCompletionDelays] te2TCDelays: " + te2TCDelays.toString());
+			return fleetMasterInterface.queryTimeDelay(cs, te1TCDelays, te2TCDelays);
+		}
+		return new Pair<Double, Double> (Double.NaN, Double.NaN);
+	}
+	
+	
+	
 	
 	
 	/**

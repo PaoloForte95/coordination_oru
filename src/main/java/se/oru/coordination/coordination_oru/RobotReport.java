@@ -35,6 +35,7 @@ public class RobotReport {
 		this.pathIndex = pathIndex;
 		this.distanceTraveled = distanceTraveled;
 		this.criticalPoint = criticalPoint;
+		
 	}
 	
 	/**

@@ -130,8 +130,30 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	protected double maxFaultsProbability = NetworkConfiguration.PROBABILITY_OF_PACKET_LOSS;
 	protected int numberOfReplicas = 1;
 	
+	protected HashMap<Integer,Integer> robotType = new HashMap<Integer, Integer>();
+	
 	//State knowledge
 	protected HashMap<Integer,Boolean> isDriving = new HashMap<Integer, Boolean>();
+	
+	
+	/**
+	 * Add a robot with type and ForwardModel
+	 * @param robotID -> the ID of the robot
+	 * @param robotType -> Type of robot expressed as int
+	 * @param ForwardModel -> Forward Model of the Robot 
+	 */
+	
+	public void addRobot(int robotID,int robotType,ForwardModel fm) {
+		setForwardModel(robotID,fm);
+		this.robotType.put(robotID, robotType); 
+	}
+	
+	public Integer getRobotType(int robotID) {
+		if (robotType.containsKey(robotID)) {
+			return robotType.get(robotID);
+		}else return -1;
+	
+	}
 	
 	
 	/**

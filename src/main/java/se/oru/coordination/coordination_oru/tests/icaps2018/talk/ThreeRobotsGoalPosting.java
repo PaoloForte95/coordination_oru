@@ -81,7 +81,7 @@ public class ThreeRobotsGoalPosting {
 		tec.placeRobot(1, path1[0].getPose());
 		tec.placeRobot(2, path2[0].getPose());
 		tec.placeRobot(3, path3[0].getPose());
-
+	
 		Mission m1 = new Mission(1,path1);
 		Mission m2 = new Mission(2,path2);
 		Mission m3 = new Mission(3,path3);

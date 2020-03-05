@@ -83,9 +83,14 @@ public class TaskAssignmentThreeRobots2 {
 
 		//You probably also want to provide a non-trivial forward model
 		//(the default assumes that robots can always stop)
-		tec.setForwardModel(1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		tec.setForwardModel(2, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		tec.setForwardModel(3, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		
+		tec.addRobot(1, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		tec.addRobot(2, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		tec.addRobot(3, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		
+		//tec.setForwardModel(1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		//tec.setForwardModel(2, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		//tec.setForwardModel(3, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
 		
 		Coordinate footprint1 = new Coordinate(-1.0,0.5);
 		Coordinate footprint2 = new Coordinate(1.0,0.5);
@@ -140,33 +145,36 @@ public class TaskAssignmentThreeRobots2 {
 		tec.placeRobot(3, startPoseRobot3);
 		
 	
-		//tec.setForwardModel(4, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		//tec.setForwardModel(4, new ConstantAccelefationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
 		//tec.setForwardModel(5, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		
 		//tec.placeRobot(4, startPoseRobot4);
 		//tec.placeRobot(5, startPoseRobot5);
 		
-		Task task1 = new Task(startPoseGoal1,goalPoseRobot1);
-		Task task2 = new Task(startPoseRobot2,goalPoseRobot2);
-		Task task3 = new Task(startPoseGoal3,goalPoseRobot3);
+		
+		ArrayList <Task> Tasks2 = new ArrayList <Task>();
+		
+		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
+		Task task2 = new Task(startPoseRobot2,goalPoseRobot2,1);
+		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
+		Tasks2.add(task1);
+		Tasks2.add(task2);
+		Tasks2.add(task3);
 		
 		
-		
-		Task task4 = new Task(startPoseRobot4,startPoseGoal1);
-		Task task5 = new Task(startPoseRobot5,startPoseGoal3);
-		
-		
-		Task [] Tasks = {task1,task2,task3};
-		
+		//Task task4 = new Task(startPoseRobot4,startPoseGoal1,1);
+		//Task task5 = new Task(startPoseRobot5,startPoseGoal3,1);
+		//Tasks2.add(task4);
+		//Tasks2.add(task5);
+
 		int num_robot = 3;
-		int num_task = 5;
+		int num_task = 3;
 		double alpha = 1;
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
 		TaskAssignment ll = new TaskAssignment();
-		ll.instantiateFleetMaster(0.1, false);
-		MPSolver solver = ll.optimization_problem_complete(num_robot, rsp, Tasks,false,tec);
-		double [][] prova3 = ll.solve_optimization_problem(rsp, Tasks,solver,tec,alpha);	
+		//ll.instantiateFleetMaster(0.1, false);
+		MPSolver solver = ll.optimization_problem_complete(num_robot, rsp, Tasks2,false,tec);
+		double [][] prova3 = ll.solve_optimization_problem(rsp, Tasks2,solver,tec,alpha);	
 		//double [][] prova3 = TaskAssignment.solve_optimization_problem_exact(num_robot, num_task, rsp, startPose, goalPose,solver,tec,alpha);
 
 		for (int i = 0; i < prova3.length; i++) {
@@ -175,6 +183,6 @@ public class TaskAssignmentThreeRobots2 {
 					System.out.println("cccccccccc>> "+prova3[i][j]+" i>> "+i+" j>> "+j);			
 			} 
 		}
-	    TaskAssignment.Task_Assignment(prova3, rsp, Tasks, tec);	
+	    TaskAssignment.Task_Assignment(prova3, rsp, Tasks2, tec);	
 	}
 }
