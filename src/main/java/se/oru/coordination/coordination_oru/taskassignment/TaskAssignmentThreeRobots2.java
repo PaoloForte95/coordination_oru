@@ -157,11 +157,10 @@ public class TaskAssignmentThreeRobots2 {
 		tec.placeRobot(2, startPoseRobot2);
 		tec.placeRobot(3, startPoseRobot3);
 		
-		tec.addRobot(4, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		tec.addRobot(5, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		
-		tec.placeRobot(4, startPoseRobot4);
-		tec.placeRobot(5, startPoseRobot5);
+		//tec.addRobot(4, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		//tec.addRobot(5, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		//tec.placeRobot(4, startPoseRobot4);
+		//tec.placeRobot(5, startPoseRobot5);
 		
 		
 		ArrayList <Task> Tasks2 = new ArrayList <Task>();
@@ -174,12 +173,12 @@ public class TaskAssignmentThreeRobots2 {
 		Tasks2.add(task3);
 		
 		
-		//Task task4 = new Task(startPoseRobot4,startPoseGoal1,1);
-		//Task task5 = new Task(startPoseRobot5,startPoseGoal3,1);
-		//Tasks2.add(task4);
-		//Tasks2.add(task5);
+		Task task4 = new Task(startPoseRobot4,startPoseGoal1,1);
+		Task task5 = new Task(startPoseRobot5,startPoseGoal3,1);
+		Tasks2.add(task4);
+		Tasks2.add(task5);
 
-		int num_robot = 5;
+		int num_robot = 3;
 		double alpha = 1;
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
@@ -196,6 +195,6 @@ public class TaskAssignmentThreeRobots2 {
 			} 
 		}
 		
-	    TaskAssignment.Task_Assignment(prova3, rsp, Tasks2, tec);	
+	    ll.Task_Assignment(prova3, rsp, Tasks2, tec);	
 	}
 }

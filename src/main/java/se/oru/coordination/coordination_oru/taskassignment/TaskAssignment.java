@@ -72,7 +72,7 @@ public class TaskAssignment{
 	protected static Task [] TasksMissions;
 	protected static Integer[] IdleRobots;
 	//FleetMaster Interface Parameters
-	HashMap <PoseSteering,Integer> pathsAssignment = new HashMap <PoseSteering,Integer>();
+	ArrayList <PoseSteering[]> pathsToTargetGoal = new ArrayList <PoseSteering[]>();
 	
 	protected AbstractFleetMasterInterface fleetMasterInterface = null;
 	protected boolean propagateDelays = false;
@@ -375,20 +375,26 @@ public class TaskAssignment{
 			}
 			//Take the Pose Steering representing the path
 			PoseSteering[] pss = rsp.getPath();
-			
-			
+			//Add the path to the FleetMaster Interface 
+			addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
+			//Save the path to Task 
+			pathsToTargetGoal.add(pss);
 			//Take the Path Length
 			pathLength = Missions.getPathLength(pss);
 		} else { // N != M
 			if (numRobot > numTask){ //dummy task -> The Robot receive the task to stay in starting position
+				//Create the task to stay in robot starting position
 				PoseSteering[] dummyTask = new PoseSteering[1];
-				dummyTask[1] = new PoseSteering(rr.getPose(),0);
-				//addPath(robot, dummyTask.hashCode(), dummyTask, null, tec.getFootprint(robot));
-				pathLength = 10;
+				dummyTask[0] = new PoseSteering(rr.getPose(),0);
+				//Add the path to the FleetMaster Interface 
+				addPath(robot, dummyTask.hashCode(), dummyTask, null, tec.getFootprint(robot));
+				//Save the path to Dummy Task 
+				pathsToTargetGoal.add(dummyTask);
+				pathLength = 1;
 				return pathLength;
 			}
 			else { //dummy robot -> Consider a only virtual Robot 
-				pathLength = 10;
+				pathLength = 1;
 				return pathLength;
 			}	
 		}	
@@ -420,6 +426,7 @@ public class TaskAssignment{
 					metaCSPLogger.severe("RobotReport not found for Robot" + robot + ".");
 					throw new Error("RobotReport not found for Robot" + robot + ".");
 				}
+				
 				// N = M -> Number of Robot = Number of Tasks
 				if (robot <= numTask && task < numRobot) {
 					//Evaluate the path from the Robot Starting Pose to Task End Pose
@@ -433,6 +440,8 @@ public class TaskAssignment{
 					PoseSteering[] pss = rsp.getPath();
 					//Add the path to the FleetMaster Interface 
 					addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
+					//Save the path to Task 
+					pathsToTargetGoal.add(pss);
 					//Take the Path Length
 					pathLength = Missions.getPathLength(pss);
 					if ( pathLength > biggerPathLength) {
@@ -443,8 +452,11 @@ public class TaskAssignment{
 				else { // N != M
 					if (numRobot > numTask){ //dummy task -> The Robot receive the task to stay in starting position
 						PoseSteering[] dummyTask = new PoseSteering[1];
-						dummyTask[1] = new PoseSteering(rr.getPose(),0);
+						dummyTask[0] = new PoseSteering(rr.getPose(),0);
+						//Add the path to the FleetMaster Interface 
 						addPath(robot, dummyTask.hashCode(), dummyTask, null, tec.getFootprint(robot));
+						//Save the path to Dummy Task 
+						pathsToTargetGoal.add(dummyTask);
 						PAll[robot][task] =  1;
 					}
 					else { //dummy robot -> Consider a only virtual Robot 
@@ -477,38 +489,38 @@ public class TaskAssignment{
 		//Evaluate the delay time on completion time for the actual couple of task and ID
 		//Initialize the time delay 
 		double delay = 0;
-		PoseSteering[] pathToTaskStart = new PoseSteering[1];
-		PoseSteering[] pathToTaskStart2 = new PoseSteering[1];
 		//Considering the Actual Assignment 
 		if (assignmentMatrix[robot-1][task]>0) {
 			// N = M
 			if(task < numTask && robot <= numRobot) {
 				//Evaluate the path for this couple of robot and task
 				//Evaluate the path length from Robot Starting Position to Task End Position
-				rsp.setStart(tec.getRobotReport(robot).getPose());
-				rsp.setGoals(tasks.get(task).getStartPose(),tasks.get(task).getGoalPose());
-				rsp.plan();
-				PoseSteering[] pss1 = rsp.getPath();
-				//Add the path to the FleetMaster Interface 
-				addPath(robot, pss1.hashCode(), pss1, null, tec.getFootprint(robot));
-				//If the B Matrix is evaluate considering an approximation, update the values of B with correct value
+				//rsp.setStart(tec.getRobotReport(robot).getPose());
+				//rsp.setGoals(tasks.get(task).getStartPose(),tasks.get(task).getGoalPose());
+				//rsp.plan();
+				//PoseSteering[] pss1 = rsp.getPath();
+				PoseSteering[] pss1 = pathsToTargetGoal.get((robot-1)*assignmentMatrix[0].length + task);	
+				//If the B Matrix is evaluate considering an approximation, update the values of B with correct values
 				if(approximationFlag) {
 					double Path_length = Missions.getPathLength(pss1);
 					optimizationProblem.objective().setCoefficient(optimizationProblem.variables()[robot*assignmentMatrix[0].length+task], Path_length);
 				}
+				
+				//Initialize Array of delays for thw two robots
 				TreeSet<IndexedDelay> te1TCDelays = new TreeSet<IndexedDelay>() ;
 				TreeSet<IndexedDelay> te2TCDelays = new TreeSet<IndexedDelay>() ;
 				//Compute the spatial Envelope of this Robot
 				SpatialEnvelope se1 = TrajectoryEnvelope.createSpatialEnvelope(pss1,tec.getFootprint(robot));
 				for(int m = 0; m < assignmentMatrix.length; m++) {
 					for(int n = 0; n < assignmentMatrix[0].length; n++) {
-						if (assignmentMatrix[m][n] >0 && m != robot && n != task && n <= numTask && m <= numRobot) {
+						if (assignmentMatrix [m][n] > 0 && m+1 != robot && n != task && n < numTask && m < numRobot) {
 							//Evaluate the path length from Robot Starting Position to Task End Position
-							rsp.setStart(tec.getRobotReport(m+1).getPose());
-							rsp.setGoals(tasks.get(n).getStartPose(),tasks.get(n).getGoalPose());
-							rsp.plan();
-							PoseSteering[] pss2 = rsp.getPath();
-							addPath(robot, pss2.hashCode(), pss2, null, tec.getFootprint(robot));
+							//rsp.setStart(tec.getRobotReport(m+1).getPose());
+							//rsp.setGoals(tasks.get(n).getStartPose(),tasks.get(n).getGoalPose());
+							//rsp.plan();
+							//PoseSteering[] pss2 = rsp.getPath();
+							PoseSteering[] pss2 = pathsToTargetGoal.get((m)*assignmentMatrix[0].length  + n);
+							//addPath(robot, pss2.hashCode(), pss2, null, tec.getFootprint(robot));
 							//Evaluate the Spatial Envelope of this second Robot
 							SpatialEnvelope se2 = TrajectoryEnvelope.createSpatialEnvelope(pss2,tec.getFootprint(m+1));
 							//Compute the Critical Section between this 2 robot
@@ -798,7 +810,7 @@ public class TaskAssignment{
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem); 
 		double sumPathLength = 0;
-		
+		int taskType = 0;
 	    /////////////////////////////////
 	    //START OBJECTIVE FUNCTION		
 	    MPObjective objective = optimizationProblem.objective();
@@ -806,8 +818,14 @@ public class TaskAssignment{
 	    if (approximation == false) {
 	    	 for (int i = 0; i < numRobotAug; i++) {
 	    		 int robotType = tec.getRobotType(i+1);
+	    		 
 				 for (int j = 0; j < numTaskAug; j++) {
-					 int taskType = tasks.get(j).getTaskType();
+					 if(j < numTask) {
+						 taskType = tasks.get(j).getTaskType();
+					 }else {
+						 taskType = robotType;
+					 }
+					 
 					 if (robotType == taskType) {
 						 objective.setCoefficient(decisionVariable[i][j], evaluatePathLength(i+1,j,rsp,tasks,tec));
 						 sumPathLength = sumPathLength + objective.getCoefficient(decisionVariable[i][j]);
@@ -819,7 +837,11 @@ public class TaskAssignment{
 	    	 for (int i = 0; i < numRobotAug; i++) {
 	    		 int robotType = tec.getRobotType(i+1);
 				 for (int j = 0; j < numTaskAug; j++) {
-					 int taskType = tasks.get(j).getTaskType();
+					 if(j < numTask) {
+						 taskType = tasks.get(j).getTaskType();
+					 }else {
+						 taskType = robotType;
+					 }
 					 if (robotType == taskType) {
 						 objective.setCoefficient(decisionVariable[i][j], evaluateApproximatePathLength(i+1,j,rsp,tasks,tec));
 						 sumPathLength = sumPathLength + objective.getCoefficient(decisionVariable[i][j]);
@@ -1021,7 +1043,7 @@ public class TaskAssignment{
 	 * @return An updated Trajectory Envelope Coordinator Simulation in which the mission for each
 	 * robot is defined
 	 */
-	public static ArrayList<Task> Task_Assignment(double [][] AssignmentMatrix,ReedsSheppCarPlanner rsp,ArrayList<Task> Tasks,AbstractTrajectoryEnvelopeCoordinator tec){
+	public ArrayList<Task> Task_Assignment(double [][] AssignmentMatrix,ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
 		int robotIDs = AssignmentMatrix.length;
 		int numTasks = AssignmentMatrix[0].length;
 		PoseSteering[] pathToTaskStart = new PoseSteering[1];
@@ -1030,38 +1052,39 @@ public class TaskAssignment{
 				
 		for (int i = 0; i < robotIDs; i++) {
 			 for (int j = 0; j < numTasks; j++) {
-				 if(AssignmentMatrix[i][j]>0) {
-					 if(j < numTask && i < numRobot) {
+				
+				 if (AssignmentMatrix[i][j]>0) {
+					 if (j < numTask && i < numRobot) {
 						 //Evaluate the path length from Robot Starting Position to Task End Position
-						 rsp.setStart(tec.getRobotReport(i+1).getPose());
-						 rsp.setGoals(Tasks.get(j).getStartPose(),Tasks.get(j).getGoalPose());
-					     if (!rsp.plan()) {
-					    	 throw new Error ("No path between Robot " + Tasks.get(j).getStartPose() + " and task" + Tasks.get(j).getStartPose());
-					     }
-						 PoseSteering[] pss = rsp.getPath();
+						 //rsp.setStart(tec.getRobotReport(i+1).getPose());
+						 //rsp.setGoals(Tasks.get(j).getStartPose(),Tasks.get(j).getGoalPose());
+					     //if (!rsp.plan()) {
+					    	// throw new Error ("No path between Robot " + Tasks.get(j).getStartPose() + " and task" + Tasks.get(j).getStartPose());
+					     //}
+						 //PoseSteering[] pss = rsp.getPath();
+						 PoseSteering[] pss = pathsToTargetGoal.get(i*numTask+j);
+						 System.out.print("Path between Robot " + i + " and task" + j);
 						 tec.addMissions(new Mission(i+1,pss));
-					 }else {
-						 if(j > numTask){
-							//rsp.setStart(tec.getRobotReport(i+1).getPose());
-							//rsp.setGoals(tec.getRobotReport(i+1).getPose());
-						 }else {
-							 //rsp.setStart(Tasks.get(j).getStartPose());
-							 //rsp.setGoals(Tasks.get(j).getStartPose());
-						 }
+						 tasks.get(j).setTaskIsAssigned(true);
+						 
 					 }
 				 } else {
-					 System.out.println("Nope");
-					
+					 System.out.println("Nope");	
 				 }
 			 }
 		 }
 		//Remove Assigned Tasks from the set
-		for (int i = 0; i < numRobot; i++) {	
-			if(i < Tasks.size()) {
-				Tasks.remove(0);
+		if(numRobot >= numTask){
+			for (int i = 0; i < numRobot; i++) {
+				if(i < tasks.size()) {
+					tasks.remove(0);
+				}
 			}
 		}
-		return Tasks;
+			else {// NumTask > NumRobot 
+
+		}
+		return tasks;
 	}//End Task Assignment Function
 
 	}//End Class

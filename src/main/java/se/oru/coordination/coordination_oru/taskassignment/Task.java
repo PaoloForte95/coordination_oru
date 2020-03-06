@@ -36,6 +36,7 @@ public class Task {
 	protected Pose StartPoint;
 	protected Pose GoalPoint;
 	protected int taskType;
+	protected boolean taskIsAssigned;
 	
 	
 	/**
@@ -66,8 +67,19 @@ public class Task {
 		return this.taskType;
 	}
 	
+	
+	public boolean getTaskIsAssigned() {
+		return this.taskIsAssigned;
+	}
+	
+	public void setTaskIsAssigned(boolean taskIsAssigned) {
+		this.taskIsAssigned = taskIsAssigned;
+	
+	}
+	
 	public void getInfo() {
-		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint + "\n Task Type ->"+ this.taskType);
+		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint + "\n Task Type ->"+ this.taskType
+				+"Task is Assigned "+ this.taskIsAssigned);
 	}
 
 	
