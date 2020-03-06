@@ -191,7 +191,7 @@ public abstract class AbstractFleetMasterInterface {
 			metaCSPLogger.severe("Robots' footprint cannot have null area!");
 			throw new Error("Robots' footprint cannot have null area!");
 		}
-		
+			
 		//already added
 		if (paths.containsKey(pathID) && paths.get(pathID) != new Long(0)) {
 			metaCSPLogger.warning("Path already stored.");
@@ -218,13 +218,14 @@ public abstract class AbstractFleetMasterInterface {
 			steering[i] = pathToAdd[i].getSteering();
 		}
 		
+		
 		Coordinate[] bbx = null;
 		if (boundingBox != null) bbx = boundingBox.getCoordinates();
 		else if (gridParams.dynamic_size) {
 			SpatialEnvelope se = TrajectoryEnvelope.createSpatialEnvelope(pathToAdd, coordinates);
 			boundingBox = se.getPolygon();
 		}
-			
+				
 		//Call the method. -1 is used as special value to indicate that the path was not correctly added.
 		Long pathCode = new Long(0);
 		TrajParams trjp = trajParams.containsKey(robotID) ? trajParams.get(robotID) : DEFAULT_TRAJ_PARAMS;
@@ -232,10 +233,9 @@ public abstract class AbstractFleetMasterInterface {
 		double bottom_left_y = (bbx == null) ? Double.MAX_VALUE : bbx[0].y;
 		double top_right_x = (bbx == null) ? Double.MAX_VALUE : bbx[2].x;
 		double top_right_y = (bbx == null) ? Double.MAX_VALUE : bbx[2].y;
-		System.out.print("stamp7");	
 		pathCode = new Long(INSTANCE.addPath(p, path, steering, pathToAdd.length, trjp, coordinates_x, coordinates_y, coordinates.length, bottom_left_x, bottom_left_y, top_right_x, top_right_y));
 		paths.put(pathID, pathCode);
-		
+
 		metaCSPLogger.info("Adding path RobotID: " + robotID + ", pathID: " + pathID + ", fleetmaster pathID: " + pathCode + ".");
 		
 		return !pathCode.equals(new Long(0));

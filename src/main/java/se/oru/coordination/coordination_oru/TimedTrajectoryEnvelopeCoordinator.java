@@ -104,7 +104,6 @@ public abstract class TimedTrajectoryEnvelopeCoordinator extends TrajectoryEnvel
 	 * @param maxSteeringAngleAcc The maximum steering acceleration (rad/s^2).
 	 */
 	public void setNominalTrajectoryParameters(int robotID, double maxVel, double maxVelRev, boolean useSteerDriveVel, double maxRotationalVel, double maxRotationalVelRev, double maxSteeringAngleVel, double maxAcc, double maxRotationalAcc, double maxSteeringAngleAcc) {
-		//fleetMasterInterface.setTrajParams(robotID, maxVel, maxVelRev, useSteerDriveVel, maxRotationalVel, maxRotationalVelRev, maxSteeringAngleVel, maxAcc, maxRotationalAcc, maxSteeringAngleAcc);
 		if (this.fleetMasterInterface != null) 
 			this.fleetMasterInterface.setTrajParams(robotID, maxVel, maxVelRev, useSteerDriveVel, maxRotationalVel, maxRotationalVelRev, maxSteeringAngleVel, maxAcc, maxRotationalAcc, maxSteeringAngleAcc);
 		else {
@@ -168,6 +167,7 @@ public abstract class TimedTrajectoryEnvelopeCoordinator extends TrajectoryEnvel
 			CumulatedIndexedDelaysList te2TCDelays = new CumulatedIndexedDelaysList();
 			Pair<Double, Double> delays = fleetMasterInterface.queryTimeDelay(cs, te1TCDelays, te2TCDelays);
 			if (oneOrderingIsUnsafe(delays.getFirst(), delays.getSecond())) {
+				if (Math.min(delays.getFirst(), delays.getSecond()) > Double.MAX_VALUE) return 0;
 				return delays.getFirst() < delays.getSecond() ? -1 : 1;
 			}
 		}
@@ -505,6 +505,7 @@ public abstract class TimedTrajectoryEnvelopeCoordinator extends TrajectoryEnvel
 						}
 						
 						else { //Both the robot can stop.
+							//FIXME If both the delays are infinite ... the closest goes first!!
 							
 							//If robot 1 has priority over robot 2
 							if (thisEstimatedDelays.getSecond() < thisEstimatedDelays.getFirst()) { //robot 2 may be delayed for a lower time if it will be required to yield.
