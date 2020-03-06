@@ -1045,29 +1045,30 @@ public class TaskAssignment{
 	 */
 	public ArrayList<Task> Task_Assignment(double [][] AssignmentMatrix,ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
 		int robotIDs = AssignmentMatrix.length;
-		int numTasks = AssignmentMatrix[0].length;
-		PoseSteering[] pathToTaskStart = new PoseSteering[1];
-		PoseSteering[] pathFinal = new PoseSteering[1];
-		
+		int numTasks = AssignmentMatrix[0].length;	
 				
 		for (int i = 0; i < robotIDs; i++) {
 			 for (int j = 0; j < numTasks; j++) {
 				
 				 if (AssignmentMatrix[i][j]>0) {
-					 if (j < numTask && i < numRobot) {
+					 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length+j);
+					 System.out.print("Path between Robot " + i + " and task" + j);
+					 tec.addMissions(new Mission(i+1,pss));
+					 if (numRobot >= numTask && j < numTask) {
+						 tasks.get(j).setTaskIsAssigned(true);
+					 } else { //numTask > numRobot
+						 if ( i > numRobot) { //Only virtual robot -> the task is stored
+							 tasks.get(j).setTaskIsAssigned(false);
+						 }
+						 
+					 }
 						 //Evaluate the path length from Robot Starting Position to Task End Position
 						 //rsp.setStart(tec.getRobotReport(i+1).getPose());
 						 //rsp.setGoals(Tasks.get(j).getStartPose(),Tasks.get(j).getGoalPose());
 					     //if (!rsp.plan()) {
 					    	// throw new Error ("No path between Robot " + Tasks.get(j).getStartPose() + " and task" + Tasks.get(j).getStartPose());
 					     //}
-						 //PoseSteering[] pss = rsp.getPath();
-						 PoseSteering[] pss = pathsToTargetGoal.get(i*numTask+j);
-						 System.out.print("Path between Robot " + i + " and task" + j);
-						 tec.addMissions(new Mission(i+1,pss));
-						 tasks.get(j).setTaskIsAssigned(true);
-						 
-					 }
+						 //PoseSteering[] pss = rsp.getPath();	 
 				 } else {
 					 System.out.println("Nope");	
 				 }
@@ -1081,11 +1082,19 @@ public class TaskAssignment{
 				}
 			}
 		}
-			else {// NumTask > NumRobot 
+		else {// NumTask > NumRobot 
+			int i = 0;
+			while(i <= numRobot) {
+				if(tasks.get(i).getTaskIsAssigned() && tasks.size() != numRobot) {
+					tasks.remove(i);
+				}else
+					i = i+1;
+			}
 
 		}
+		pathsToTargetGoal.removeAll(pathsToTargetGoal);
 		return tasks;
 	}//End Task Assignment Function
-
+	
 	}//End Class
 
