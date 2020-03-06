@@ -17,6 +17,7 @@ import org.metacsp.multi.spatioTemporal.paths.Trajectory;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelopeSolver;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope.SpatialEnvelope;
+import org.metacsp.utility.UI.Callback;
 import org.metacsp.utility.logging.MetaCSPLogging;
 import org.sat4j.sat.SolverController;
 import org.sat4j.sat.visu.SolverVisualisation;
@@ -59,26 +60,35 @@ import se.oru.coordination.coordination_oru.taskassignment.Task;
 
 
 public class TaskAssignment{
-	protected static int numRobot;
-	protected static int numTask;
-	protected static double infinity = java.lang.Double.POSITIVE_INFINITY;
-	protected static double totalPathsLength;
-	protected static double maxPathLength = 1;
-	protected static boolean approximationFlag;
-	protected static int dummyRobot;
-	protected static int dummyTask;
-	protected static int numRobotAug;
-	protected static int numTaskAug;
-	protected static Task [] TasksMissions;
-	protected static Integer[] IdleRobots;
+	protected int numRobot;
+	protected int numTask;
+	protected double infinity = java.lang.Double.POSITIVE_INFINITY;
+	protected double totalPathsLength;
+	protected double maxPathLength = 1;
+	protected boolean approximationFlag;
+	protected int dummyRobot;
+	protected int dummyTask;
+	protected int numRobotAug;
+	protected int numTaskAug;
+	protected ArrayList <Task> TasksMissions = new ArrayList <Task>();
+	protected Integer[] IdleRobots;
+	
+	//Motion planner and Coordinator Parameters
+
+	
+	
+	
 	//FleetMaster Interface Parameters
-	ArrayList <PoseSteering[]> pathsToTargetGoal = new ArrayList <PoseSteering[]>();
+	protected ArrayList <PoseSteering[]> pathsToTargetGoal = new ArrayList <PoseSteering[]>();
 	
 	protected AbstractFleetMasterInterface fleetMasterInterface = null;
 	protected boolean propagateDelays = false;
 	protected static Logger metaCSPLogger = MetaCSPLogging.getLogger(TrajectoryEnvelopeCoordinator.class);
 	
-
+	
+	protected int CONTROL_PERIOD_Task = 10000;
+	public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
+	
 	/**
 	 * The default footprint used for robots if none is specified.
 	 * NOTE: coordinates in footprints must be given in in CCW or CW order. 
@@ -215,9 +225,9 @@ public class TaskAssignment{
 		
 		if (this.fleetMasterInterface != null && fleetMasterInterface.checkPathHasBeenAdded(path1ID)&& fleetMasterInterface.checkPathHasBeenAdded(path2ID)) {
 			CumulatedIndexedDelaysList te1TCDelays = toIndexedDelaysList(delaysRobot1, pss1.length);
-			metaCSPLogger.info("[estimateTimeToCompletionDelays] te1TCDelays: " + te1TCDelays.toString());
+			//metaCSPLogger.info("[estimateTimeToCompletionDelays] te1TCDelays: " + te1TCDelays.toString());
 			CumulatedIndexedDelaysList te2TCDelays = toIndexedDelaysList(delaysRobot2, pss2.length);
-			metaCSPLogger.info("[estimateTimeToCompletionDelays] te2TCDelays: " + te2TCDelays.toString());
+			//metaCSPLogger.info("[estimateTimeToCompletionDelays] te2TCDelays: " + te2TCDelays.toString());
 			return fleetMasterInterface.queryTimeDelay(cs, te1TCDelays, te2TCDelays,pss1,pss2);
 		}
 		
@@ -225,7 +235,51 @@ public class TaskAssignment{
 	}
 	
 	/**
-	 * Considering the possibility to have a different number of robots (N) and tasks (M). If N > M, dummy tasks are 
+	 * Add a Task to Mission set
+	 * @param task -> the task to add
+	 * @return -> true if task is added correctly, otherwise false
+	 */
+	public boolean addTask(Task task) {
+		if(task == null) {
+			metaCSPLogger.severe("No task to add. Please give a correct Task.");
+			throw new Error("Cannot add the task");
+		}
+		boolean TaskisAdded = TasksMissions.add(task);
+		return TaskisAdded;
+	}
+	
+	/**
+	 * Remove a Task from Mission set
+	 * @param task -> the task to add
+	 * @return -> true if task is added correctly, otherwise false
+	 */
+	public boolean removeTask(Task task) {
+		if(task == null) {
+			metaCSPLogger.severe("No task to add. Please give a correct Task.");
+			throw new Error("Cannot remove the task");
+		}
+		boolean TaskisAdded = TasksMissions.remove(task);
+		return TaskisAdded;
+	}
+	
+	
+	
+	/**
+	 * Get the task from Mission set in the index position
+	 * @param index -> the index position of the task 
+	 * @return -> the task in i position
+	 */
+	public Task getTask (int index) {
+		if(index < 0 || index > TasksMissions.size()) {
+			metaCSPLogger.severe("Wrong index.");
+			throw new Error("The task" + index + "not exist");
+		}else {
+			return TasksMissions.get(index);
+		}
+	}
+	
+	/**
+	 * Consider the possibility to have a different number of robots (N) and tasks (M). If N > M, dummy tasks are 
 	 * considered, where a dummy task is a task for which a robot stay in starting position; while if M > N dummy robots
 	 * are considered, where a dummy robot is only a virtual robot
 	 * @param numRobot -> Number of Robots
@@ -233,7 +287,7 @@ public class TaskAssignment{
 	 * @return DummyVector -> A vector that contains the number of dummy robots (First Position) and tasks(Second Position)
 	 */
 
-	private static int[]  dummyRobotorTask(int numRobot, int numTasks) {
+	private int[]  dummyRobotorTask(int numRobot, int numTasks) {
 		int [] DummyVector = {numRobot,numTasks};
 		numRobotAug = numRobot;
 		numTaskAug = numTasks;
@@ -260,7 +314,7 @@ public class TaskAssignment{
 	 * @param optimizationProblem -> An optimization problem defined with {@link #buildOptimizationProblem}
 	 * @return 2D Matrix of Decision_Variable
 	 */
-	private static MPVariable [][] tranformArray(MPSolver optimizationProblem) {
+	private MPVariable [][] tranformArray(MPSolver optimizationProblem) {
 		int numRobot = numRobotAug;
 		int numTasks = numTaskAug;
 		//Take the vector of Decision Variable from the Optimization Problem
@@ -280,7 +334,7 @@ public class TaskAssignment{
 	 * @param assignmentMatrix -> The Assignment Matrix of the actual optimal solution
 	 * @return Optimization Problem updated with the new constraint on previous optimal solution found  
 	 */
-	private static MPSolver constraintOnPreviousSolution(MPSolver optimizationProblem, double [][] assignmentMatrix) {
+	private MPSolver constraintOnPreviousSolution(MPSolver optimizationProblem, double [][] assignmentMatrix) {
 		//Take decision Variable from Optimization Problem
 		MPVariable [][] DecisionVariable = tranformArray(optimizationProblem);
 		//Initialize a Constraint
@@ -306,7 +360,7 @@ public class TaskAssignment{
 	 * @param assignmentMatrix -> The Assignment Matrix of the actual optimal solution
 	 * @return Optimization Problem updated with the new constraint on previous optimal solution found  
 	 */
-	private static MPSolver constraintOnCostSolution(MPSolver optimizationProblem,double objectiveValue) {
+	private MPSolver constraintOnCostSolution(MPSolver optimizationProblem,double objectiveValue) {
 		//Take the vector of Decision Variable from the input solver
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem);
 		//Initialize a Constraint
@@ -331,7 +385,7 @@ public class TaskAssignment{
 	 * @return Assignment matrix for the optimization problem given as input
 	 */
 	
-	private static double [][] saveAssignmentMatrix(int numRobot,int numTasks,MPSolver optimizationProblem){
+	private double [][] saveAssignmentMatrix(int numRobot,int numTasks,MPSolver optimizationProblem){
 		//Take the decision variable from the optimization problem
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem);
 		double [][] assignmentMatrix = new double [numRobot][numTasks];	
@@ -355,7 +409,6 @@ public class TaskAssignment{
 	 * @return The cost associated to the path length for the couple of robot and task given as input
 	 */
 	private double evaluatePathLength(int robot , int task, ReedsSheppCarPlanner rsp, ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
-		
 		//Evaluate the path length for the actual couple of task and ID
 		double pathLength = 10000000;
 		// N = M -> Number of Robot = Number of Tasks
@@ -485,7 +538,7 @@ public class TaskAssignment{
 	 * @return The cost associated to the delay on completion of task j for robot i due to interference with other robot
 	 */
 	
-	private double evaluatePathDelay(int robot ,int task,double [][] assignmentMatrix,ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec,MPSolver optimizationProblem){
+	private double evaluatePathDelay(int robot ,int task,double [][] assignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec,MPSolver optimizationProblem){
 		//Evaluate the delay time on completion time for the actual couple of task and ID
 		//Initialize the time delay 
 		double delay = 0;
@@ -557,7 +610,7 @@ public class TaskAssignment{
 	 * @param goalsPose -> Vector of goals Pose
 	 * @return The cost associated to the path length for the couple of robot and task given as input
 	 */
-	private static double evaluateApproximatePathLength(int robot ,int task, ReedsSheppCarPlanner rsp, ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
+	private double evaluateApproximatePathLength(int robot ,int task, ReedsSheppCarPlanner rsp, ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
 		//Take the state for the i-th Robot
 		RobotReport rr = tec.getRobotReport(robot);
 		if (rr == null) {
@@ -614,7 +667,7 @@ public class TaskAssignment{
 	 * @param goalsPose -> Vector of goals Pose
 	 * @return The cost associated to the path length for the couple of robot and task given as input
 	 */
-	private static double[][] evaluatePAllApproximation(ReedsSheppCarPlanner rsp, ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
+	private double[][] evaluatePAllApproximation(ReedsSheppCarPlanner rsp, ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
 		//Take the state for the i-th Robot
 		double pathLength = 10000000;
 		double biggerPathLength = 0;
@@ -796,9 +849,10 @@ public class TaskAssignment{
 	 * @param tec -> An AbstractTrajectoryEnvelopeCoordinator Coordinator
 	 * @return An optimization problem 
 	 */
-	public MPSolver buildOptimizationProblemWithB(int numRobotInitial,ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,boolean approximation,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public MPSolver buildOptimizationProblemWithB(int numRobotInitial,ReedsSheppCarPlanner rsp,boolean approximation,AbstractTrajectoryEnvelopeCoordinator tec) {
+		//Take the number of tasks
 		//Save the initial number of Robot and Task
-		numTask = tasks.size();
+		numTask = TasksMissions.size();
 		
 		//Get free robots
 		numRobot = tec.getIdleRobots(numRobotInitial).length;
@@ -821,13 +875,13 @@ public class TaskAssignment{
 	    		 
 				 for (int j = 0; j < numTaskAug; j++) {
 					 if(j < numTask) {
-						 taskType = tasks.get(j).getTaskType();
+						 taskType = TasksMissions.get(j).getTaskType();
 					 }else {
 						 taskType = robotType;
 					 }
 					 
 					 if (robotType == taskType) {
-						 objective.setCoefficient(decisionVariable[i][j], evaluatePathLength(i+1,j,rsp,tasks,tec));
+						 objective.setCoefficient(decisionVariable[i][j], evaluatePathLength(i+1,j,rsp,TasksMissions,tec));
 						 sumPathLength = sumPathLength + objective.getCoefficient(decisionVariable[i][j]);
 					 }
 					 
@@ -838,12 +892,12 @@ public class TaskAssignment{
 	    		 int robotType = tec.getRobotType(i+1);
 				 for (int j = 0; j < numTaskAug; j++) {
 					 if(j < numTask) {
-						 taskType = tasks.get(j).getTaskType();
+						 taskType = TasksMissions.get(j).getTaskType();
 					 }else {
 						 taskType = robotType;
 					 }
 					 if (robotType == taskType) {
-						 objective.setCoefficient(decisionVariable[i][j], evaluateApproximatePathLength(i+1,j,rsp,tasks,tec));
+						 objective.setCoefficient(decisionVariable[i][j], evaluateApproximatePathLength(i+1,j,rsp,TasksMissions,tec));
 						 sumPathLength = sumPathLength + objective.getCoefficient(decisionVariable[i][j]);
 					 } 
 				 }			 
@@ -873,13 +927,13 @@ public class TaskAssignment{
 	 * @param tec -> An AbstractTrajectoryEnvelopeCoordinator Coordinator
 	 * @return An optimization problem 
 	 */
-	public MPSolver buildOptimizationProblemWithBNormalized(int numRobotInitial,ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,boolean approximation,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public MPSolver buildOptimizationProblemWithBNormalized(int numRobot,ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,boolean approximation,AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Save the initial number of Robot and Task
 		numTask = tasks.size();
 		//Get free robots
-		numRobot = tec.getIdleRobots(numRobotInitial).length;
+		this.numRobot = tec.getIdleRobots(numRobot).length;
 		//Evaluate dummy robot and dummy task
-		dummyRobotorTask(numRobot,numTask);
+		dummyRobotorTask(this.numRobot,numTask);
 		//Consider possibility to have dummy Robot or Tasks
 		//Build the solver and an objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
@@ -934,7 +988,7 @@ public class TaskAssignment{
 	 * @return An Optimal Assignment that minimize the objective function
 	 */
 	
-	public double [][] solveOptimizationProblem(ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,MPSolver optimizationProblem,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+	public double [][] solveOptimizationProblem(MPSolver optimizationProblem,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
 		//Initialize the optimal assignment and the cost associated to it
 		int numTasks = numTaskAug;
 		int numRobot = numRobotAug;
@@ -955,7 +1009,7 @@ public class TaskAssignment{
 			for (int i = 0; i < numRobot; i++) {
 				for(int j = 0;j < numTasks; j++) {
 					if(AssignmentMatrix[i][j]>0) {
-						costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,rsp,tasks,tec,optimizationProblem);
+						costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec,optimizationProblem);
 					}				
 				}		
 			}
@@ -988,7 +1042,7 @@ public class TaskAssignment{
 	 * @return The Optimal Assignment that minimize the objective function
 	 */
 
-	public double [][] solveOptimizationProblemExactAlgorithm(ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+	public double [][] solveOptimizationProblemExactAlgorithm(ReedsSheppCarPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
 		approximationFlag = false;
 		int numTasks = numTaskAug;
 		int numRobot = numRobotAug;
@@ -996,7 +1050,7 @@ public class TaskAssignment{
 		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
 		double objectiveOptimalValue = 100000000;
 		//Initialize optimization problem
-		MPSolver optimizationProblem = buildOptimizationProblem(numRobot,tasks.size());
+		MPSolver optimizationProblem = buildOptimizationProblem(numRobot,TasksMissions.size());
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
 		
@@ -1013,8 +1067,8 @@ public class TaskAssignment{
 			for (int i = 0; i < numRobot ; i++) {
 				for(int j=0;j < numTasks; j++) {
 					if(AssignmentMatrix[i][j]>0) {
-							costBFunction = costBFunction + evaluatePathLength(i+1,j,rsp,tasks,tec);
-							costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,rsp,tasks,tec,optimizationProblem);
+							costBFunction = costBFunction + evaluatePathLength(i+1,j,rsp,TasksMissions,tec);
+							costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec,optimizationProblem);
 						
 					}
 				}
@@ -1043,10 +1097,9 @@ public class TaskAssignment{
 	 * @return An updated Trajectory Envelope Coordinator Simulation in which the mission for each
 	 * robot is defined
 	 */
-	public ArrayList<Task> Task_Assignment(double [][] AssignmentMatrix,ReedsSheppCarPlanner rsp,ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
+	public ArrayList<Task> Task_Assignment(double [][] AssignmentMatrix,ReedsSheppCarPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec){
 		int robotIDs = AssignmentMatrix.length;
 		int numTasks = AssignmentMatrix[0].length;	
-				
 		for (int i = 0; i < robotIDs; i++) {
 			 for (int j = 0; j < numTasks; j++) {
 				
@@ -1055,10 +1108,10 @@ public class TaskAssignment{
 					 System.out.print("Path between Robot " + i + " and task" + j);
 					 tec.addMissions(new Mission(i+1,pss));
 					 if (numRobot >= numTask && j < numTask) {
-						 tasks.get(j).setTaskIsAssigned(true);
+						 TasksMissions.get(j).setTaskIsAssigned(true);
 					 } else { //numTask > numRobot
 						 if ( i > numRobot) { //Only virtual robot -> the task is stored
-							 tasks.get(j).setTaskIsAssigned(false);
+							 TasksMissions.get(j).setTaskIsAssigned(false);
 						 }
 						 
 					 }
@@ -1077,24 +1130,23 @@ public class TaskAssignment{
 		//Remove Assigned Tasks from the set
 		if(numRobot >= numTask){
 			for (int i = 0; i < numRobot; i++) {
-				if(i < tasks.size()) {
-					tasks.remove(0);
+				if(i < TasksMissions.size()) {
+					TasksMissions.remove(0);
 				}
 			}
 		}
 		else {// NumTask > NumRobot 
 			int i = 0;
 			while(i <= numRobot) {
-				if(tasks.get(i).getTaskIsAssigned() && tasks.size() != numRobot) {
-					tasks.remove(i);
+				if(TasksMissions.get(i).getTaskIsAssigned() && TasksMissions.size() != numRobot) {
+					TasksMissions.remove(i);
 				}else
 					i = i+1;
 			}
 
 		}
 		pathsToTargetGoal.removeAll(pathsToTargetGoal);
-		return tasks;
+		return TasksMissions;
 	}//End Task Assignment Function
-	
 	}//End Class
 
