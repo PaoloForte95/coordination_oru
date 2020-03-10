@@ -18,6 +18,7 @@ import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
 import se.oru.coordination.coordination_oru.RobotReport;
 import se.oru.coordination.coordination_oru.demo.DemoDescription;
 import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
+import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.util.BrowserVisualization;
 import se.oru.coordination.coordination_oru.util.JTSDrawingPanelVisualization;
@@ -36,7 +37,7 @@ import org.metacsp.multi.spatioTemporal.paths.Trajectory;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 
 
-
+import se.oru.coordination.coordination_oru.taskassignment.Task;
 
 
 
@@ -63,7 +64,8 @@ public class TaskAssignmentThreeRobots {
 		// -- the factory method getNewTracker() which returns a trajectory envelope tracker
 		// -- the getCurrentTimeInMillis() method, which is used by the coordinator to keep time
 		//You still need to add one or more comparators to determine robot orderings thru critical sections (comparators are evaluated in the order in which they are added)
-		final TrajectoryEnvelopeCoordinatorSimulation tec = new TrajectoryEnvelopeCoordinatorSimulation(MAX_VEL,MAX_ACCEL);
+		//final TrajectoryEnvelopeCoordinatorSimulation tec = new TrajectoryEnvelopeCoordinatorSimulation(MAX_VEL,MAX_ACCEL);
+		final TimedTrajectoryEnvelopeCoordinatorSimulation tec = new TimedTrajectoryEnvelopeCoordinatorSimulation(MAX_VEL,MAX_ACCEL);
 		tec.addComparator(new Comparator<RobotAtCriticalSection> () {
 			@Override
 			public int compare(RobotAtCriticalSection o1, RobotAtCriticalSection o2) {
@@ -83,9 +85,17 @@ public class TaskAssignmentThreeRobots {
 
 		//You probably also want to provide a non-trivial forward model
 		//(the default assumes that robots can always stop)
-		tec.setForwardModel(1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		tec.setForwardModel(2, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		tec.setForwardModel(3, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		
+		//Need to instantiate the fleetmaster interface
+		tec.instantiateFleetMaster(0.1, false);
+		
+		
+		
+		tec.addRobot(1, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		tec.addRobot(2, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		tec.addRobot(3, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		
+		
 		
 		Coordinate footprint1 = new Coordinate(-1.0,0.5);
 		Coordinate footprint2 = new Coordinate(1.0,0.5);
@@ -98,7 +108,7 @@ public class TaskAssignmentThreeRobots {
 		//JTSDrawingPanelVisualization viz = new JTSDrawingPanelVisualization();
 		//viz.setSize(1024, 768);
 		BrowserVisualization viz = new BrowserVisualization();
-		viz.setInitialTransform(54, 0, 0);
+		viz.setInitialTransform(20, 0, 0);
 		tec.setVisualization(viz);
 		
 		tec.setUseInternalCriticalPoints(false);
@@ -120,14 +130,9 @@ public class TaskAssignmentThreeRobots {
 		Pose goalPoseRobot3 = new Pose(21.0,3.0,-Math.PI/2);
 		
 		
-		Pose startPoseRobot4 = new Pose(12.0,5.0,Math.PI/2);
-		Pose startPoseRobot5 = new Pose(20.0,2.0,Math.PI/2);
-		
-		
-		PoseSteering[] pss = rsp.getPath();
-		
-		
-		
+		Pose startPoseRobot4 = new Pose(16.0,30.0,-Math.PI/2);
+		Pose startPoseRobot5 = new Pose(-5.0,-5.0,Math.PI/2);
+
 		//Place robots in their initial locations (looked up in the data file that was loaded above)
 		// -- creates a trajectory envelope for each location, representing the fact that the robot is parked
 		// -- each trajectory envelope has a path of one pose (the pose of the location)
@@ -135,28 +140,53 @@ public class TaskAssignmentThreeRobots {
 		tec.placeRobot(1, startPoseRobot1);
 		tec.placeRobot(2, startPoseRobot2);
 		tec.placeRobot(3, startPoseRobot3);
+		//tec.addRobot(4, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		//tec.addRobot(5, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		//tec.placeRobot(4, startPoseRobot4);
+		//tec.placeRobot(5, startPoseRobot5);
 		
+
 		
-		int num_robot = 3;
-		int num_task = 3;
+		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
+		Pose startPoseGoal2 = new Pose(25.0,7.0,0.0);
+		Pose startPoseGoal3 = new Pose(4.0,8.0,0.0);
+		
+		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
+		Task task2 = new Task(startPoseGoal2,goalPoseRobot2,1);
+		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
+
+		Pose startPoseGoal4 = new Pose(8.0,16.0,-Math.PI/2);
+		Pose endPoseGoal4 = new Pose(12.0,20.0,-Math.PI/2);
+		Pose startPoseGoal5 = new Pose(-5.0,-5.0,Math.PI/2);
+		Pose endPoseGoal5 = new Pose(-15.0,-8.0,Math.PI/2);
+		//Task task4 = new Task(startPoseGoal4,endPoseGoal4,1);
+		//Task task5 = new Task(startPoseGoal5,endPoseGoal5,1);
+
+		
+		int numRobot = 3;
 		double alpha = 1;
-		Pose [] startPose = {startPoseRobot1,startPoseRobot2,startPoseRobot3};
-		Pose [] goalPose = {goalPoseRobot1,goalPoseRobot2,goalPoseRobot3};
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-
-		//MPSolver solver = TaskAssignment.optimization_problem_complete(num_robot, num_task, rsp, startPose, goalPose,false);
-		//double [][] prova3 = TaskAssignment.solve_optimization_problem(num_robot, num_task, rsp, startPose, goalPose,solver,tec,alpha);	
-		//double [][] prova3 = TaskAssignment.solve_optimization_problem_exact(num_robot, num_task, rsp, startPose, goalPose,solver,tec,alpha);
+		TaskAssignment ll = new TaskAssignment();
+		ll.addTask(task1);
+		ll.addTask(task2);
+		ll.addTask(task3);
+		//ll.addTask(task4);
+		//ll.addTask(task5);
 		
-		double [][] prova3 = new double [3][3];
-		for (int i = 0; i < num_robot; i++) {
-			for (int j = 0; j < num_task; j++) {
-					//System.out.println("aaaaaaaaaa>> "+ prova5[i][j]+"i>> "+i+" j>> "+j);
+		ll.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
+		
+		
+		ll.instantiateFleetMaster(0.1, false);
+		
+		MPSolver solver = ll.buildOptimizationProblemWithB(numRobot, rsp, false, tec);
+		double [][] prova3 = ll.solveOptimizationProblem(solver,tec,alpha);
+		for (int i = 0; i < prova3.length; i++) {
+			for (int j = 0; j < prova3[0].length; j++) {
+					
 					System.out.println("cccccccccc>> "+prova3[i][j]+" i>> "+i+" j>> "+j);			
 			} 
 		}
-		
-	    //TaskAssignment.Task_Assignment(prova3, rsp, startPose, goalPose, tec);	
+	    ll.TaskAllocation(prova3,tec);	
 	}
 }
