@@ -12,4 +12,5 @@ public interface ForwardModel {
 	
 	public int[] getStoppingPathIndicesBounds(TrajectoryEnvelope te, RobotReport currentState, int numberOfAdditionalCoordinationPeriods);
 
+
 }

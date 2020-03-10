@@ -21,6 +21,7 @@ public class ConstantAccelerationForwardModel implements ForwardModel {
 		this.controlPeriodInMillis = controlPeriodInMillis;
 		this.trackingPeriodInMillis = trackingPeriodInMillis;
 	}
+	
 
 	@Override
 	public boolean canStop(TrajectoryEnvelope te, RobotReport currentState, int targetPathIndex, boolean useVelocity) {

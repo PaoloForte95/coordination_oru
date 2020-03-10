@@ -129,25 +129,13 @@ public class TaskAssignmentThreeRobots2 {
 		rsp.setTurningRadius(4.0);
 		rsp.setDistanceBetweenPathPoints(0.5);
 		
-		
-		
 		Pose startPoseRobot1 = new Pose(4.0,6.0,0.0);
-		Pose goalPoseRobot1 = new Pose(16.0,15.0,Math.PI/4);
 		Pose startPoseRobot2 = new Pose(6.0,16.0,-Math.PI/4);
-		Pose goalPoseRobot2 = new Pose(25.0,3.0,-Math.PI/4);
 		Pose startPoseRobot3 = new Pose(9.0,6.0,Math.PI/2);
-		Pose goalPoseRobot3 = new Pose(21.0,3.0,-Math.PI/2);
 		
 		
 		Pose startPoseRobot4 = new Pose(16.0,30.0,-Math.PI/2);
 		Pose startPoseRobot5 = new Pose(-5.0,-5.0,Math.PI/2);
-		
-		
-		
-		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
-		Pose startPoseGoal2 = new Pose(25.0,7.0,0.0);
-		Pose startPoseGoal3 = new Pose(4.0,8.0,0.0);
-		
 
 		//Place robots in their initial locations (looked up in the data file that was loaded above)
 		// -- creates a trajectory envelope for each location, representing the fact that the robot is parked
@@ -157,44 +145,80 @@ public class TaskAssignmentThreeRobots2 {
 		tec.placeRobot(2, startPoseRobot2);
 		tec.placeRobot(3, startPoseRobot3);
 		
-		//tec.addRobot(4, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		//tec.addRobot(5, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		//tec.placeRobot(4, startPoseRobot4);
-		//tec.placeRobot(5, startPoseRobot5);
 		
 		
-		ArrayList <Task> Tasks2 = new ArrayList <Task>();
+		tec.addRobot(4, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		tec.addRobot(5, 1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		tec.placeRobot(4, startPoseRobot4);
+		tec.placeRobot(5, startPoseRobot5);
+		
+
+
+		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
+		Pose startPoseGoal2 = new Pose(25.0,7.0,0.0);
+		Pose startPoseGoal3 = new Pose(4.0,8.0,0.0);
+		
+		
+		Pose goalPoseRobot1 = new Pose(16.0,15.0,Math.PI/4);
+		Pose goalPoseRobot2 = new Pose(27.0,3.0,-Math.PI/4);
+		Pose goalPoseRobot3 = new Pose(21.0,3.0,-Math.PI/2);
+		
 		
 		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
 		Task task2 = new Task(startPoseGoal2,goalPoseRobot2,1);
 		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
-		Tasks2.add(task1);
-		Tasks2.add(task2);
-		Tasks2.add(task3);
-		
-		
-		Task task4 = new Task(startPoseRobot4,startPoseGoal1,1);
-		Task task5 = new Task(startPoseRobot5,startPoseGoal3,1);
-		Tasks2.add(task4);
-		Tasks2.add(task5);
 
-		int num_robot = 3;
+		
+		
+		Pose startPoseGoal4 = new Pose(8.0,16.0,-Math.PI/2);
+		Pose endPoseGoal4 = new Pose(12.0,20.0,-Math.PI/2);
+		Pose startPoseGoal5 = new Pose(-7.0,-7.0,Math.PI/2);
+		Pose endPoseGoal5 = new Pose(-15.0,-8.0,Math.PI/2);
+		Task task4 = new Task(startPoseGoal4,endPoseGoal4,1);
+		Task task5 = new Task(startPoseGoal5,endPoseGoal5,1);
+
+
+		int numRobot = 5;
 		double alpha = 1;
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
 		TaskAssignment ll = new TaskAssignment();
+		ll.addTask(task1);
+		ll.addTask(task2);
+		ll.addTask(task3);
+		ll.addTask(task4);
+		ll.addTask(task5);
+		
+		ll.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
+		
+		
 		ll.instantiateFleetMaster(0.1, false);
-		MPSolver solver = ll.buildOptimizationProblemWithB(num_robot, rsp, Tasks2, false, tec);
-		double [][] prova3 = ll.solveOptimizationProblem(rsp, Tasks2,solver,tec,alpha);	
-		//double [][] prova3 = TaskAssignment.solve_optimization_problem_exact(num_robot, num_task, rsp, startPose, goalPose,solver,tec,alpha);
+		ll.startTaskAssignment(numRobot,rsp, false, tec);
 		
-		for (int i = 0; i < prova3.length; i++) {
-			for (int j = 0; j < prova3[0].length; j++) {
-					//System.out.println("aaaaaaaaaa>> "+ prova5[i][j]+"i>> "+i+" j>> "+j);
-					System.out.println("cccccccccc>> "+prova3[i][j]+" i>> "+i+" j>> "+j);			
-			} 
-		}
 		
-	    ll.Task_Assignment(prova3, rsp, Tasks2, tec);	
+		
+		Pose startPoseGoal1new = new Pose(18.0,12.0,0.0);
+		Pose startPoseGoal2new = new Pose(30.0,9.0,0.0);
+		Pose startPoseGoal3new = new Pose(4.0,4.0,0.0);
+		
+		Pose newPoseGoal1 = new Pose(20.0,15.0,0.0);
+		Pose newPoseGoal2 = new Pose(32.0,10.0,0.0);
+		Pose newPoseGoal3 = new Pose(8.0,10.0,0.0);
+		Task task1new = new Task(startPoseGoal1new,newPoseGoal1,1);
+		Task task2new = new Task(startPoseGoal2new,newPoseGoal2,1);
+		Task task3new = new Task(startPoseGoal3new,newPoseGoal3,1);
+		
+		
+		
+		
+		
+		Thread.sleep(2000);
+		System.out.print("new Task add");
+		ll.addTask(task1new);
+		ll.addTask(task2new);
+		ll.addTask(task3new);
+		
+		
+		
 	}
 }

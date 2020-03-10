@@ -173,6 +173,17 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 		return IdleRobots.toArray(new Integer[IdleRobots.size()]);
 	}
 	
+	public Integer[] getIdleRobots() {
+		ArrayList<Integer> IdleRobots = new ArrayList<Integer>();
+		int i = 1;
+		while(getRobotReport(i) != null) {
+			if(!isDriving(i)) {
+				IdleRobots.add(getRobotReport(i).getRobotID());
+			}
+			i += 1;
+		}
+		return IdleRobots.toArray(new Integer[IdleRobots.size()]);
+	}
 	
 	
 	
@@ -398,6 +409,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 				// TODO Auto-generated method stub
 				return null;
 			}
+			
 		};
 	}
 
