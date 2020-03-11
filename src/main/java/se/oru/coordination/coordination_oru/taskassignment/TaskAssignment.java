@@ -10,6 +10,7 @@ import java.util.TreeSet;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.metacsp.multi.spatial.DE9IM.GeometricShapeDomain;
 import org.metacsp.multi.spatial.DE9IM.GeometricShapeVariable;
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -42,6 +43,7 @@ import se.oru.coordination.coordination_oru.demo.DemoDescription;
 import se.oru.coordination.coordination_oru.fleetmasterinterface.AbstractFleetMasterInterface;
 import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInterface;
 import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInterfaceLib.CumulatedIndexedDelaysList;
+import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
 import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
 import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
@@ -68,12 +70,14 @@ public class TaskAssignment{
 	protected int dummyTask;
 	protected int numRobotAug;
 	protected int numTaskAug;
+	protected double linearWeight = 1;
 	protected ArrayList <Task> TasksMissions = new ArrayList <Task>();
 	//Number of Idle Robots
 	protected Integer[] IDsIdleRobots;
 	//Path and arrival Time Parameters
 	//Infinity cost if path to reach a goal note exists
 	protected double MaxPathLength = 10000000;
+	//This is the sum of max path length for each robot
 	protected double sumMaxPathsLength = 1;
 	//This is the sum of arrival time considering max path length for each robot
 	protected double sumArrivalTime = 1;
@@ -81,16 +85,21 @@ public class TaskAssignment{
 	protected double minMaxVel;
 	protected double minMaxAcc;
 	//Motion planner and Coordinator Parameters
-	protected ReedsSheppCarPlanner motionplanner;
 	protected AbstractTrajectoryEnvelopeCoordinator coordinator;
-	//FleetMaster Interface Parameters
+	protected AbstractMotionPlanner defaultMotionPlanner = null;
 	protected ArrayList <PoseSteering[]> pathsToTargetGoal = new ArrayList <PoseSteering[]>();
+	protected ArrayList <SpatialEnvelope> pathsDrivingRobot = new ArrayList <SpatialEnvelope>();
+	//FleetMaster Interface Parameters
+	
 	protected AbstractFleetMasterInterface fleetMasterInterface = null;
 	protected boolean propagateDelays = false;
 	protected static Logger metaCSPLogger = MetaCSPLogging.getLogger(TrajectoryEnvelopeCoordinator.class);
+	
+	
 	//Task Allocation Thread Parameters 
 	protected int CONTROL_PERIOD_Task = 16000;
 	public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
+	
 	
 	/**
 	 * The default footprint used for robots if none is specified.
@@ -247,6 +256,28 @@ public class TaskAssignment{
 		return new Pair<Double, Double> (Double.NaN, Double.NaN);
 	}
 	
+	
+	/**
+	 * Set a motion planner to be used for planning for all robots
+	 * (unless a specific motion planner is specified for an individual robot).
+	 * @param mp The motion planner that will be called for planning for any
+	 * robot. 
+	 */
+	public void setDefaultMotionPlanner(AbstractMotionPlanner mp) {
+		this.defaultMotionPlanner = mp;
+	}
+	
+	
+	/**
+	 * Get the motion planner to be used for planning for all robots.
+	 * @return The motion planner used for planning for all robots that do not
+	 * have a dedicated motion planner.
+	 */
+	public AbstractMotionPlanner getDefaultMotionPlanner() {
+		return this.defaultMotionPlanner;
+	}
+	
+	
 	/**
 	 * Add a Task to Mission set
 	 * @param task -> the task to add
@@ -303,6 +334,9 @@ public class TaskAssignment{
 		int [] DummyVector = {numRobot,numTasks};
 		numRobotAug = numRobot;
 		numTaskAug = numTasks;
+		//Restore initial value for dummy robot and task
+		dummyTask = 0;
+		dummyRobot = 0;
 		//Considering the possibility to have n != m
 		//If n > m -> we have dummy robot, so at some robot is assign the task to stay in starting position
 		if(numRobot > numTasks) {
@@ -315,15 +349,17 @@ public class TaskAssignment{
 			numRobotAug = numRobot + dummyRobot;
 			DummyVector[0] = dummyRobot;
 		}
-		if (dummyTask == 0 || dummyRobot != 0) {
-			//Only if we have already a dummy task this check can be avoided
+		//Only if we have already a dummy task this check can be avoided
+		if(dummyTask == 0 || dummyRobot != 0) {
 			for (int i = 0; i < numRobot; i++) {
 				boolean flagAllocate = false;
 				 for (int j = 0; j < numTasks; j++) {
-					 if(TasksMissions.get(j).getTaskType() == tec.getRobotType(i+1)) {
+					 if(TasksMissions.get(j).getTaskType() == tec.getRobotType(IDsIdleRobots[i])) {
 						 flagAllocate = true;
+						 
 					 }
 				 }
+				 
 				 //the robot cannot be assigned to any task
 				 if(!flagAllocate) {
 					 
@@ -433,12 +469,13 @@ public class TaskAssignment{
 	 * If a path between a couple of robot and task does not exists the cost is consider infinity.
 	 * @param robot -> The i-th Robot
 	 * @param task -> The j-th the Task
-	 * @param rsp -> A motion planner
+	 * @param rsp -> The motion planner that will be called for planning for any
+	 * robot. 
 	 * @param tasks -> Vector of Tasks
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 * @return The cost associated to the path length for the couple of robot and task given as input
 	 */
-	private double evaluatePathLength(int robot , int task, ReedsSheppCarPlanner rsp, ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
+	private double evaluatePathLength(int robot , int task, AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
 		//Evaluate the path length for the actual couple of task and ID
 		double pathLength = MaxPathLength;
 		// N = M -> Number of Robot = Number of Tasks
@@ -452,7 +489,7 @@ public class TaskAssignment{
 			}
 			//Evaluate the path from the Robot Starting Pose to Task End Pose
 			rsp.setStart(rr.getPose());
-			rsp.setGoals(tasks.get(task).getStartPose(),tasks.get(task).getGoalPose());
+			rsp.setGoals(TasksMissions.get(task).getStartPose(),TasksMissions.get(task).getGoalPose());
 			if (!rsp.plan()) {
 				//the path to reach target end not exits
 				pathsToTargetGoal.add(null);
@@ -460,9 +497,6 @@ public class TaskAssignment{
 			}
 			//Take the Pose Steering representing the path
 			PoseSteering[] pss = rsp.getPath();
-			System.out.println("Starting X" +pss[0].getX());
-			System.out.println("Ending X" +pss[pss.length-1].getX());
-			System.out.println("Stat Pose >> "+tec.getRobotReport(IDsIdleRobots[robot-1]).getPose()+" End Pose >>"+TasksMissions.get(task).getGoalPose());
 			//Add the path to the FleetMaster Interface 
 			addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
 			//Save the path to Task 
@@ -491,6 +525,7 @@ public class TaskAssignment{
 				return pathLength;
 			}
 			else { //dummy robot -> Consider a only virtual Robot 
+				pathsToTargetGoal.add(null);
 				pathLength = 1;
 				return pathLength;
 			}	
@@ -503,12 +538,13 @@ public class TaskAssignment{
 	/**
 	 * Evaluate the cost associated to the path length for the a couple of robot and task.
 	 * If a path between a couple of robot and task does not exists the cost is consider infinity.
-	 * @param rsp -> A motion planner
+	 * @param rsp -> The motion planner that will be called for planning for any
+	 * robot. 
 	 * @param tasks -> Vector of Tasks
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 * @return The cost associated to the path length for the couple of robot and task given as input
 	 */
-	private double[][] evaluatePAll(ReedsSheppCarPlanner rsp, ArrayList<Task> tasks,AbstractTrajectoryEnvelopeCoordinator tec){
+	private double[][] evaluatePAll(AbstractMotionPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec){
 		//Evaluate the path length for the actual couple of task and ID
 		double pathLength = MaxPathLength;
 		double sumPathsLength = 0;
@@ -529,7 +565,7 @@ public class TaskAssignment{
 					}
 					//Evaluate the path from the Robot Starting Pose to Task End Pose
 					rsp.setStart(rr.getPose());
-					rsp.setGoals(tasks.get(task).getStartPose(),tasks.get(task).getGoalPose());
+					rsp.setGoals(TasksMissions.get(task).getStartPose(),TasksMissions.get(task).getGoalPose());
 					if (!rsp.plan()) {
 						//the path to reach target end not exits
 						pathsToTargetGoal.add(null);
@@ -568,6 +604,7 @@ public class TaskAssignment{
 					}
 					else { //dummy robot -> Consider a only virtual Robot 
 						PAll[robot][task] =  1;
+						pathsToTargetGoal.add(null);
 						
 					}	
 				}
@@ -616,18 +653,30 @@ public class TaskAssignment{
 					for(int n = 0; n < assignmentMatrix[0].length; n++) {
 						if (assignmentMatrix [m][n] > 0 && m+1 != robot && n != task && n < numTask && m < numRobot) {
 							PoseSteering[] pss2 = pathsToTargetGoal.get((m)*assignmentMatrix[0].length  + n);
-							//Evaluate the Spatial Envelope of this second Robot
-							SpatialEnvelope se2 = TrajectoryEnvelope.createSpatialEnvelope(pss2,tec.getFootprint(m+1));
-							//Compute the Critical Section between this 2 robot
-							CriticalSection [] css = AbstractTrajectoryEnvelopeCoordinator.getCriticalSections(se1, se2,true, Math.min(tec.getFootprintPolygon(robot).getArea(),tec.getFootprintPolygon(m+1).getArea()));
-							//Compute the delay due to precedence constraint in Critical Section
-							for (int g = 0; g < css.length; g++) {
-								Pair<Double, Double> a1 = estimateTimeToCompletionDelays(pss1.hashCode(),pss1,te1TCDelays,pss2.hashCode(),pss2,te2TCDelays, css[g]);
-								delay +=  a1.getFirst()/sumArrivalTime;
+							if(pss2 != null) {//if == null if robotType is equal to Task type
+								//Evaluate the Spatial Envelope of this second Robot
+								SpatialEnvelope se2 = TrajectoryEnvelope.createSpatialEnvelope(pss2,tec.getFootprint(m+1));
+								//Compute the Critical Section between this 2 robot
+								CriticalSection [] css = AbstractTrajectoryEnvelopeCoordinator.getCriticalSections(se1, se2,true, Math.min(tec.getFootprintPolygon(robot).getArea(),tec.getFootprintPolygon(m+1).getArea()));
+								//Compute the delay due to precedence constraint in Critical Section
+								for (int g = 0; g < css.length; g++) {
+									Pair<Double, Double> a1 = estimateTimeToCompletionDelays(pss1.hashCode(),pss1,te1TCDelays,pss2.hashCode(),pss2,te2TCDelays, css[g]);
+									delay +=  a1.getFirst();
+								}
 							}
-						}
+						//Evaluate the delay time due to driving robot
+					    pathsDrivingRobot = tec.getDrivingEnvelope();
+					    
+					    for(int k = 0; k < pathsDrivingRobot.size(); k++) {
+					    	CriticalSection [] cssDrivingRobot = AbstractTrajectoryEnvelopeCoordinator.getCriticalSections(se1, pathsDrivingRobot.get(k),true, Math.min(tec.getFootprintPolygon(robot).getArea(),tec.getFootprintPolygon(m+1).getArea()));
+					    	for (int b = 0; b < cssDrivingRobot.length; b++) {
+								Pair<Double, Double> a1 = estimateTimeToCompletionDelays(pss1.hashCode(),pss1,te1TCDelays,pathsDrivingRobot.get(k).getPath().hashCode(),pathsDrivingRobot.get(k).getPath(),te2TCDelays, cssDrivingRobot[b]);
+								delay +=  a1.getFirst();
+							}
+					    }
 					}
-				}
+				}	
+			}
 				
 			} else { // N != M
 				if(numRobot > numTask){ //dummy task
@@ -778,11 +827,13 @@ public class TaskAssignment{
 	 * The objective function is defined as sum(c_ij * x_ij) for (i = 1...n)(j = 1...m)
 	 * with n = number of robot and m = number of tasks.
 	 * Only the B function is considered in this case
-	 * @param rsp -> A motion planner
+	 * @param rsp -> The motion planner that will be called for planning for any
+	 * robot. 
 	 * @param tec -> An AbstractTrajectoryEnvelopeCoordinator Coordinator
 	 * @return An optimization problem 
 	 */
-	public MPSolver buildOptimizationProblemWithB(ReedsSheppCarPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public MPSolver buildOptimizationProblemWithB(AbstractMotionPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec) {
+		
 		//Take the number of tasks
 		//Save the initial number of Robot and Task
 		numTask = TasksMissions.size();
@@ -797,29 +848,33 @@ public class TaskAssignment{
 		//Build the solver and an objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem); 
-		int taskType = 0;
-		int robotType = 0;
+		
+		
 	    /////////////////////////////////
 	    //START OBJECTIVE FUNCTION
 		
 	    MPObjective objective = optimizationProblem.objective();
     	 for (int i = 0; i < numRobotAug; i++) {
+    		 int robotType = 0;
     		 if( i < numRobot) {
     			 robotType = tec.getRobotType(i+1);
     		 }
 			 for (int j = 0; j < numTaskAug; j++) {
+				 int taskType = 0;
 				 //Considering the case of Dummy Task
 				 if(j < numTask ) {
 					 taskType = TasksMissions.get(j).getTaskType();
-					 
+					 if(robotType == 0) {
+						 robotType = taskType;
+					 }
 				 }else {
-					 //Dummy task take the same type as the robot -> it can be performed by any robot
+					 //dummy task
 					 taskType = robotType;
 				 }
-				 
-				 if (robotType == taskType) {
+				 if (robotType == taskType ) {
+					 //robotType == 0 is for only virtual robot
 					//Set the coefficient of the objective function with the normalized path length
-					double pathLength  = evaluatePathLength(i+1,j,rsp,TasksMissions,tec);
+					double pathLength  = evaluatePathLength(i+1,j,rsp,tec);
 					if( pathLength != MaxPathLength) {
 						objective.setCoefficient(decisionVariable[i][j], pathLength); 
 					}else {//the path to reach the task not exists
@@ -828,7 +883,7 @@ public class TaskAssignment{
 					}
 					
 				 }else { //robotType != taskType
-					 System.out.println("Task Type different from robot type"+ " i>> "+ i +" j>> "+ j);
+					
 					 pathsToTargetGoal.add(null);
 					 MPConstraint c2 = optimizationProblem.makeConstraint(0,0);
 					 c2.setCoefficient(decisionVariable[i][j],1); 
@@ -844,7 +899,7 @@ public class TaskAssignment{
 	}
 	
 	/**
-	 *  * Builds the optimization_problem complete with Objective Function. Define a decision variable X_ij as a binary variable in which i indicate
+	 * Builds the optimization_problem complete with Objective Function. Define a decision variable X_ij as a binary variable in which i indicate
 	 * the robot id, j the tasks. Also constraints are defined:
 	 * the constraints considered are :
 	 * 1) Each Task can be assign only to a robot;
@@ -853,12 +908,10 @@ public class TaskAssignment{
 	 * with n = number of robot and m = number of tasks.
 	 * Only the B function is considered in this case, and each cost is normalized with the max path length considering
 	 * all missions.
-	 * @param numRobot -> Number of Robots
-	 * @param rsp -> A motion planner
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 * @return An optimization problem 
 	 */
-	public MPSolver buildOptimizationProblemWithBNormalized(int numRobot,ReedsSheppCarPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public MPSolver buildOptimizationProblemWithBNormalized(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Save the initial number of Robot and Task
 		numTask = TasksMissions.size();
 		//Get free robots
@@ -870,23 +923,23 @@ public class TaskAssignment{
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem); 
 		
-		int taskType = 0;
-		int robotType = 0;
+	
+		
 	    /////////////////////////////////
 	    //START OBJECTIVE FUNCTION		
 	    MPObjective objective = optimizationProblem.objective();
-    	double[][] PAll = evaluatePAll(rsp,TasksMissions,tec);
+    	double[][] PAll = evaluatePAll(defaultMotionPlanner,tec);
     	
     	 for (int i = 0; i < numRobotAug; i++) {
+    		 int robotType = 0;
     		 if( i < numRobot) {
     			 robotType = tec.getRobotType(i+1);
     		 }
 			 for (int j = 0; j < numTaskAug; j++) {
+				 int taskType = 0;
 				//Considering the case of Dummy Task
 				 if(j < numTask) {
 					 taskType = TasksMissions.get(j).getTaskType();
-				 }else {
-					 taskType = robotType;
 				 }
 				 if (robotType == taskType) {
 					 double pathLength  =  PAll[i][j];
@@ -900,7 +953,7 @@ public class TaskAssignment{
 					 }
 					
 				 }else { //robotType != taskType
-					 System.out.println("Task Type different from robot type"+ " i>> "+ i +" j>> "+ j);
+					
 					 pathsToTargetGoal.add(null);
 					 MPConstraint c2 = optimizationProblem.makeConstraint(0,0);
 					 c2.setCoefficient(decisionVariable[i][j],1); 
@@ -950,7 +1003,10 @@ public class TaskAssignment{
 				for (int i = 0; i < numRobot; i++) {
 					for(int j = 0;j < numTasks; j++) {
 						if(AssignmentMatrix[i][j]>0) {
-							costFFunction = costFFunction +0; //evaluatePathDelay(i+1,j,AssignmentMatrix,tec,optimizationProblem)/sumArrivalTime;
+							if(alpha != 1) {
+								//Evaluate cost of F function only if alpha is not equal to 1
+								costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
+							}
 						}				
 					}		
 				}
@@ -974,14 +1030,13 @@ public class TaskAssignment{
 	 * with n = number of robot and m = number of tasks
 	 * Assignments are computed at each step in this case. In this case the solver consider all the feasible solutions for the problem.
 	 * Exact Algorithm.  
-	 * @param rsp -> A motion planner 
 	 * @param tec -> TrajectoryEnvelopeCoordinatorSimulation
 	 * @param alpha -> the linear parameter used to weights B and F function expressed in percent( 1-> 100%). The objective function is
-	 * considered as B*alpha + (1-alpha)*F 
+	 * considered as B*alpha + (1 - alpha)*F 
 	 * @return The Optimal Assignment that minimize the objective function
 	 */
 
-	public double [][] solveOptimizationProblemExactAlgorithm(ReedsSheppCarPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+	public double [][] solveOptimizationProblemExactAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
 		int numTasks = numTaskAug;
 		int numRobot = numRobotAug;
 		//Initialize the optimal assignment and the cost associated to it
@@ -1000,19 +1055,19 @@ public class TaskAssignment{
 			double objectiveFunctionValue = 0;
 			double costBFunction = 0;
 			double costFFunction = 0;
-			double [][] PAll = evaluatePAll(rsp, TasksMissions, tec);
+			double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
 			//Evaluate the cost for this Assignment
 			for (int i = 0; i < numRobot ; i++) {
 				for(int j=0;j < numTasks; j++) {
 					if(AssignmentMatrix[i][j]>0) {
 							costBFunction = costBFunction + PAll[i][j]/sumMaxPathsLength;
-							if(alpha != 0) {
+							if(alpha != 1) {
 								costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
 							}	
 					}
 				}
 			}
-			objectiveFunctionValue = alpha * costBFunction + (1- alpha)*costFFunction;
+			objectiveFunctionValue = alpha * costBFunction + (1-alpha)*costFFunction;
 			//Compare actual solution and optimal solution finds so far
 			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 				objectiveOptimalValue = objectiveFunctionValue;
@@ -1036,41 +1091,44 @@ public class TaskAssignment{
 	public boolean TaskAllocation(double [][] AssignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
 		int robotIDs = AssignmentMatrix.length;
 		int numTasks = AssignmentMatrix[0].length;	
+		 System.out.println(" Robot #" + numRobot);
+		 System.out.println(" Task #" + numTask);
 		for (int i = 0; i < robotIDs; i++) {
 			 for (int j = 0; j < numTasks; j++) {
 				
 				 if (AssignmentMatrix[i][j] > 0) {
 					 if(i < numRobot) { //Considering only real Robot
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
-						 if(pss != null) {
-							 System.out.println(" Pose Initial" + pss[0].getX());
-							 System.out.println(" Robot ID" + IDsIdleRobots[i]);
+						 if(pss != null) {					
 							 tec.addMissions(new Mission(IDsIdleRobots[i],pss));
-							 //tec.addMissions(new Mission(i+1,pss));
-						 }
-						
+						 }		
 					 }
+					
 					 if (numRobot >= numTask ) { //All tasks are assigned 
 						 if(j < numTask) { // considering only true task
 							 TasksMissions.get(j).setTaskIsAssigned(true);
+							 System.out.println("Task1 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());
 						 }	 
 					 } else { //numTask > numRobot
 						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
 							 TasksMissions.get(j).setTaskIsAssigned(false);
+							 if(j <numTask) {
+								 System.out.println("Task2 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());
+							 }
 						 }else{// the task is assigned to a real robot
-							 TasksMissions.get(j).setTaskIsAssigned(true);
-							
-						 }
-						 System.out.println("Task # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());
-						 
+							 if(j < numTask) {
+								 TasksMissions.get(j).setTaskIsAssigned(true);
+								 System.out.println("Task3 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());			
+							 }	
+						 }		 
 					 }
 				 } 
 			 }
 		 }
 		
 		//Remove Assigned Tasks from the set
-		System.out.println("Number Robot" +numRobot);
-		System.out.println("Number Task" +numTask);
+		
+		
 		if (numRobot >= numTask){
 			int i = 0;
 			while (i < numTask) {
@@ -1083,12 +1141,12 @@ public class TaskAssignment{
 		}
 		else {// NumTask > NumRobot 
 			int i = 0;
-			while (i <= numRobot) {
+			while (i < numRobot) {
 				if(TasksMissions.size() < numRobot) {
 					break;
 				}
 				
-				if (TasksMissions.get(i).getTaskIsAssigned()) {
+				if (TasksMissions.get(i).getTaskIsAssigned() ) {
 					TasksMissions.remove(i);
 					
 				}else
@@ -1096,6 +1154,7 @@ public class TaskAssignment{
 			}
 
 		}
+		 System.out.println("Taskssss #"+ TasksMissions.size());
 		//Remove all path from the path set
 		pathsToTargetGoal.removeAll(pathsToTargetGoal);
 		return true;
@@ -1112,17 +1171,27 @@ public class TaskAssignment{
 			}
 		}
 	};
-	
-	public void startTaskAssignment(int numRobot,ReedsSheppCarPlanner rsp,boolean approximation,AbstractTrajectoryEnvelopeCoordinator tec) {
-		
+	/**
+	 * Start the Task Allocation Algorithm 
+	 * @param rsp -> The motion planner that will be called for planning for any
+	 * robot. 
+	 * @param alpha -> the weight of B and F function in objective function. It is considered as
+	 * B*alpha + (1-alpha)*F
+	 * @param tec -> An Abstract Trajectory Envelope Coordinator
+	 */
+	public void startTaskAssignment(AbstractMotionPlanner rsp,double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
-		motionplanner = rsp;
+		defaultMotionPlanner = rsp;
 		coordinator = tec;
-		this.numRobot = coordinator.getIdleRobots(numRobot).length;
+		numRobot = coordinator.getIdleRobots().length;
+		linearWeight = alpha;
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallback();
 
 	}
+	
+	
+	
 	
 	protected void setupInferenceCallback() {
 		
@@ -1133,15 +1202,14 @@ public class TaskAssignment{
 			public void run() {
 				while (true) {
 					System.out.println("Thread Running");
-					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots(numRobot).length != 0 ) {
-						MPSolver solverOnline = buildOptimizationProblemWithB(motionplanner, coordinator);
-						double [][] prova = solveOptimizationProblem(solverOnline,coordinator,1);
+					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+						MPSolver solverOnline = buildOptimizationProblemWithB(defaultMotionPlanner, coordinator);
+						double [][] prova = solveOptimizationProblem(solverOnline,coordinator,linearWeight);
 						for (int i = 0; i < prova.length; i++) {
 							for (int j = 0; j < prova[0].length; j++) {
 									System.out.println("cccccccccc>> "+prova[i][j]+" i>> "+i+" j>> "+j);			
 							} 
 						}
-						
 						TaskAllocation(prova,coordinator);
 						System.out.print("Task to be completed "+ TasksMissions.size());
 						solverOnline.clear();
