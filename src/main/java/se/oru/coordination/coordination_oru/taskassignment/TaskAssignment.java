@@ -490,6 +490,9 @@ public class TaskAssignment{
 			//Evaluate the path from the Robot Starting Pose to Task End Pose
 			rsp.setStart(rr.getPose());
 			rsp.setGoals(TasksMissions.get(task).getStartPose(),TasksMissions.get(task).getGoalPose());
+			System.out.println("Starting  robot "+ rr.getPose()+" robot>>  " + rr.getRobotID() );
+			System.out.println("Starting  "+ TasksMissions.get(task).getStartPose() );
+			System.out.println("Ending  "+ TasksMissions.get(task).getGoalPose() );
 			if (!rsp.plan()) {
 				//the path to reach target end not exits
 				pathsToTargetGoal.add(null);
@@ -497,6 +500,7 @@ public class TaskAssignment{
 			}
 			//Take the Pose Steering representing the path
 			PoseSteering[] pss = rsp.getPath();
+			
 			//Add the path to the FleetMaster Interface 
 			addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
 			//Save the path to Task 
@@ -1108,17 +1112,20 @@ public class TaskAssignment{
 						 if(j < numTask) { // considering only true task
 							 TasksMissions.get(j).setTaskIsAssigned(true);
 							 System.out.println("Task1 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());
+							 System.out.println("Task1 # >> "+j+ " has goal pose >> "+TasksMissions.get(j).getGoalPose());
 						 }	 
 					 } else { //numTask > numRobot
 						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
 							 TasksMissions.get(j).setTaskIsAssigned(false);
 							 if(j <numTask) {
 								 System.out.println("Task2 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());
+								 System.out.println("Task2 # >> "+j+ " has goal pose >> "+TasksMissions.get(j).getGoalPose());
 							 }
 						 }else{// the task is assigned to a real robot
 							 if(j < numTask) {
 								 TasksMissions.get(j).setTaskIsAssigned(true);
-								 System.out.println("Task3 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());			
+								 System.out.println("Task3 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());	
+								 System.out.println("Task3 # >> "+j+ " has goal pose >> "+TasksMissions.get(j).getGoalPose());
 							 }	
 						 }		 
 					 }
@@ -1141,7 +1148,7 @@ public class TaskAssignment{
 		}
 		else {// NumTask > NumRobot 
 			int i = 0;
-			while (i < numRobot) {
+			while (i <= numRobot) {
 				if(TasksMissions.size() < numRobot) {
 					break;
 				}
