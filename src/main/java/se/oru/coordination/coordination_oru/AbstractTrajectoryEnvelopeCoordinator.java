@@ -144,9 +144,10 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	 * @param ForwardModel -> Forward Model of the Robot 
 	 */
 	
-	public void addRobot(int robotID,int robotType,ForwardModel fm) {
+	public void addRobot(int robotID,int robotType,ForwardModel fm,Pose StartingPosition) {
 		setForwardModel(robotID,fm);
 		this.robotType.put(robotID, robotType); 
+		placeRobot(robotID,StartingPosition);
 	}
 	
 	public Integer getRobotType(int robotID) {
