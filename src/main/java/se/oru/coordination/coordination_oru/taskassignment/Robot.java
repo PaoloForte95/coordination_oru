@@ -1,49 +1,66 @@
 package se.oru.coordination.coordination_oru.taskassignment;
 
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Iterator;
+import java.util.TreeSet;
 import java.util.logging.Logger;
-import javax.swing.SwingUtilities;
-import org.apache.commons.collections.comparators.ComparatorChain;
-import org.metacsp.framework.Constraint;
-import org.metacsp.meta.spatioTemporal.paths.Map;
-import org.metacsp.multi.allenInterval.AllenIntervalConstraint;
+
+import org.apache.commons.lang.ArrayUtils;
 import org.metacsp.multi.spatial.DE9IM.GeometricShapeDomain;
 import org.metacsp.multi.spatial.DE9IM.GeometricShapeVariable;
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
+import org.metacsp.multi.spatioTemporal.paths.Trajectory;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
-import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope.SpatialEnvelope;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelopeSolver;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope.SpatialEnvelope;
-import org.metacsp.time.Bounds;
 import org.metacsp.utility.UI.Callback;
 import org.metacsp.utility.logging.MetaCSPLogging;
+import org.sat4j.sat.SolverController;
+import org.sat4j.sat.visu.SolverVisualisation;
+
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.util.AffineTransformation;
+
+import aima.core.agent.Model;
 import aima.core.util.datastructure.Pair;
+import se.oru.coordination.coordination_oru.AbstractTrajectoryEnvelopeCoordinator;
 import se.oru.coordination.coordination_oru.AbstractTrajectoryEnvelopeTracker;
 import se.oru.coordination.coordination_oru.ConstantAccelerationForwardModel;
+import se.oru.coordination.coordination_oru.CriticalSection;
 import se.oru.coordination.coordination_oru.ForwardModel;
+import se.oru.coordination.coordination_oru.IndexedDelay;
+import se.oru.coordination.coordination_oru.Mission;
+import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
+import se.oru.coordination.coordination_oru.RobotReport;
+import se.oru.coordination.coordination_oru.TrajectoryEnvelopeCoordinator;
+import se.oru.coordination.coordination_oru.demo.DemoDescription;
+import se.oru.coordination.coordination_oru.fleetmasterinterface.AbstractFleetMasterInterface;
+import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInterface;
+import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInterfaceLib.CumulatedIndexedDelaysList;
 import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
+import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
+import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
-import se.oru.coordination.coordination_oru.util.FleetVisualization;
-import se.oru.coordination.coordination_oru.util.StringUtils;
+import se.oru.coordination.coordination_oru.tests.icaps2018.eval.TrajectoryEnvelopeCoordinatorSimulationICAPS;
+import se.oru.coordination.coordination_oru.util.Missions;
+import com.google.ortools.linearsolver.*;
+import com.google.ortools.linearsolver.MPSolver.OptimizationProblemType;
+import com.google.ortools.linearsolver.MPSolver.ResultStatus;
+import com.google.ortools.linearsolver.PartialVariableAssignment;
+import com.google.ortools.constraintsolver.Solver;
+import com.google.ortools.constraintsolver.SolverParameters;
+import com.google.ortools.constraintsolver.Solver;
+import com.google.ortools.*;
+import com.google.ortools.sat.*;
+import se.oru.coordination.coordination_oru.taskassignment.Task;
 public class Robot {
 	 protected int robotID;
 	 protected int robotType;
@@ -57,25 +74,19 @@ public class Robot {
 		 * NOTE: coordinates in footprints must be given in in CCW or CW order. 
 		 */
 	 private static Coordinate[] DEFAULT_FOOTPRINT = new Coordinate[] {
-			 new Coordinate(-1.7, 0.7),	//back left
-			 new Coordinate(-1.7, -0.7),	//back right
-			 new Coordinate(2.7, -0.7),	//front right
-			 new Coordinate(2.7, 0.7)	//front left
+			 new Coordinate(-1.0,0.5),
+				new Coordinate(1.0,0.5),
+				new Coordinate(1.0,-0.5),
+				new Coordinate(-1.0,-0.5)
 		};
 		
-	 /**
-		 * The default forward model used for robots if none is specified.
-		 * NOTE: coordinates in footprints must be given in in CCW or CW order. 
-		 */
-	 
-	 private static ForwardModel DEFAULT_FORWARD_MODEL = new ConstantAccelerationForwardModel(2, 2,1000, 1000,30);
 	 /**
 		 * Create a new {@link Robot} 
 		 * @param RobotID -> The ID of the Robot
 		 * @param RobotType -> The type of the Robot
-		 * @param StartingPosition The Starting Position of the Robot.
-		 * @param footprint The footprint of the robot. 
-		 * @param fm The forward model of the robot.
+		 * @param StartingPosition -> The Starting Position of the Robot.
+		 * @param footprint -> The footprint of the robot. 
+		 * @param fm -> The forward model of the robot.
 		 */
 	 public Robot(int robotID, int robotType, Pose startingPosition,Coordinate[] footprint, ForwardModel fm) {
 		 this.robotID = robotID;
@@ -85,33 +96,38 @@ public class Robot {
 		 this.fm = fm;
 		
 	 }
-	 
-	 public Robot(int robotID,Pose startingPosition) {
-		 this(robotID,0,startingPosition,DEFAULT_FOOTPRINT,DEFAULT_FORWARD_MODEL);
+	 /**
+	  * Create a new {@link Robot}; footprint is set to default footprint and default type is = 1
+	  * @param robotID ->  The ID of the Robot
+	  * @param startingPosition -> The Starting Position of the Robot.
+	  * @param fm -> The forward model of the robot.
+	  */
+	 public Robot(int robotID,Pose startingPosition,ForwardModel fm) {
+		 this(robotID,1,startingPosition,DEFAULT_FOOTPRINT,fm);
 	 }
 
-	 public int getrobotID() {
+	 public int getRobotID() {
 		 return this.robotID;
 	 }
 
 	
-	 public int getrobotType() {
+	 public int getRobotType() {
 		 return this.robotType;
 	 }
 
-	 public void setrobotType(int robotType) {
+	 public void setRobotType(int robotType) {
 		 this.robotType= robotType;;
 	 }
 	 
-	 public Pose getstartingPosition() {
+	 public Pose getStartingPosition() {
 		 return this.startingPosition;
 	 }
 
-	 public  Coordinate[] getfootprint() {
+	 public  Coordinate[] getFootprint() {
 		 return this.footprint;
 	 }
 
-	 public void setfootprint(Coordinate[] footprint) {
+	 public void setFootprint(Coordinate[] footprint) {
 		 this.footprint= footprint;;
 	 }
 	 
