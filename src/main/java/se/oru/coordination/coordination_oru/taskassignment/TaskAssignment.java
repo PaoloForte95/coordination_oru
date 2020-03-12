@@ -611,7 +611,7 @@ public class TaskAssignment{
 					PAll[robot][task] = pathLength;
 				}
 				else { // N != M
-					if (numRobot  >= numTask && robot <= numRobot){ //dummy task -> The Robot receive the task to stay in starting position
+					if (numRobot  >= numTask && robot < numRobot){ //dummy task -> The Robot receive the task to stay in starting position
 						//the second condition is used in the special case in which we have that one robot cannot be 
 						//assigned to any tasks due to its type, so we must add a dummy robot and a dummy task, but we 
 						//Take the state for the i-th Robot
@@ -940,16 +940,14 @@ public class TaskAssignment{
 		//Save the initial number of Robot and Task
 		numTask = TasksMissions.size();
 		//Get free robots
-		this.numRobot = tec.getIdleRobots().length;
+		numRobot = tec.getIdleRobots().length;
+		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
-		dummyRobotorTask(this.numRobot,numTask,tec);
+		dummyRobotorTask(numRobot,numTask,tec);
 		//Consider possibility to have dummy Robot or Tasks
 		//Build the solver and an objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem); 
-		
-	
-		
 	    /////////////////////////////////
 	    //START OBJECTIVE FUNCTION		
 	    MPObjective objective = optimizationProblem.objective();
@@ -963,8 +961,15 @@ public class TaskAssignment{
 			 for (int j = 0; j < numTaskAug; j++) {
 				 int taskType = 0;
 				//Considering the case of Dummy Task
-				 if(j < numTask) {
+				 if(j < numTask ) {
 					 taskType = TasksMissions.get(j).getTaskType();
+					 ///dummy robot
+					 if(i >= numRobot) {
+						 robotType = taskType;
+					 }
+				 }else {
+					 //dummy task
+					 taskType = robotType;
 				 }
 				 if (robotType == taskType) {
 					 double pathLength  =  PAll[i][j];
@@ -1062,15 +1067,24 @@ public class TaskAssignment{
 	 */
 
 	public double [][] solveOptimizationProblemExactAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+		numTask = TasksMissions.size();
+		//Get free robots
+		numRobot = tec.getIdleRobots().length;
+		IDsIdleRobots = tec.getIdleRobots();
+		//Evaluate dummy robot and dummy task
+		dummyRobotorTask(numRobot,numTask,tec);
 		int numTasks = numTaskAug;
 		int numRobot = numRobotAug;
+		//Consider possibility to have dummy Robot or Tasks
+		//Build the solver and an objective function
+		MPSolver optimizationProblem = buildOptimizationProblem(numRobot,numTasks);
 		//Initialize the optimal assignment and the cost associated to it
 		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
 		double objectiveOptimalValue = 100000000;
 		//Initialize optimization problem
-		MPSolver optimizationProblem = buildOptimizationProblem(numRobot,TasksMissions.size());
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
+		double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 			//Evaluate a feasible assignment
 			resultStatus = optimizationProblem.solve();
@@ -1080,10 +1094,72 @@ public class TaskAssignment{
 			double objectiveFunctionValue = 0;
 			double costBFunction = 0;
 			double costFFunction = 0;
-			double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
 			//Evaluate the cost for this Assignment
-			for (int i = 0; i < numRobot ; i++) {
-				for(int j=0;j < numTasks; j++) {
+			for (int i = 0; i < numRobotAug ; i++) {
+				for(int j=0;j < numTaskAug ; j++) {
+					if(AssignmentMatrix[i][j]>0) {
+							costBFunction = costBFunction + PAll[i][j]/sumMaxPathsLength;
+							if(alpha != 1) {
+								costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
+							}	
+					}
+				}
+			}
+			objectiveFunctionValue = alpha * costBFunction + (1-alpha)*costFFunction;
+			//Compare actual solution and optimal solution finds so far
+			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
+				objectiveOptimalValue = objectiveFunctionValue;
+				optimalAssignmentMatrix = AssignmentMatrix;
+			}
+			//Add the constraint to actual solution in order to consider this solution as already found  
+			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
+		}
+		//Return the Optimal Assignment Matrix
+		return  optimalAssignmentMatrix;    
+	}
+	
+	
+	/** 
+	 * Solve the optimization problem given as input considering both B and F Functions. The objective function is defined as sum(c_ij * x_ij) for (i = 1...n)(j = 1...m).
+	 * with n = number of robot and m = number of tasks
+	 * The problem is resolved considering a greedy algorithm
+	 * @param tec -> TrajectoryEnvelopeCoordinatorSimulation
+	 * @param alpha -> the linear parameter used to weights B and F function expressed in percent( 1-> 100%). The objective function is
+	 * considered as B*alpha + (1 - alpha)*F 
+	 * @return The Optimal Assignment that minimize the objective function
+	 */
+
+	public double [][] solveOptimizationProblemGredyAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+		numTask = TasksMissions.size();
+		//Get free robots
+		numRobot = tec.getIdleRobots().length;
+		IDsIdleRobots = tec.getIdleRobots();
+		//Evaluate dummy robot and dummy task
+		dummyRobotorTask(numRobot,numTask,tec);
+		int numTasks = numTaskAug;
+		int numRobot = numRobotAug;
+		//Consider possibility to have dummy Robot or Tasks
+		//Build the solver and an objective function
+		MPSolver optimizationProblem = buildOptimizationProblem(numRobot,numTasks);
+		//Initialize the optimal assignment and the cost associated to it
+		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
+		double objectiveOptimalValue = 100000000;
+		//Initialize optimization problem
+		//Solve the optimization problem
+		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
+		double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
+		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
+			//Evaluate a feasible assignment
+			resultStatus = optimizationProblem.solve();
+			//Evaluate the Assignment Matrix
+			double [][] AssignmentMatrix = saveAssignmentMatrix(numRobot,numTasks,optimizationProblem);
+			//Initialize cost of objective value
+			double objectiveFunctionValue = 0;
+			double costBFunction = 0;
+			double costFFunction = 0;
+			//Evaluate the cost for this Assignment
+			for (int i = 0; i < numRobotAug ; i++) {
+				for(int j=0;j < numTaskAug ; j++) {
 					if(AssignmentMatrix[i][j]>0) {
 							costBFunction = costBFunction + PAll[i][j]/sumMaxPathsLength;
 							if(alpha != 1) {
@@ -1241,7 +1317,7 @@ public class TaskAssignment{
 				while (true) {
 					System.out.println("Thread Running");
 					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
-						MPSolver solverOnline = buildOptimizationProblemWithB(coordinator);
+						MPSolver solverOnline = buildOptimizationProblemWithBNormalized(coordinator);
 						double [][] assignmentMatrix = solveOptimizationProblem(solverOnline,coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
 							for (int j = 0; j < assignmentMatrix[0].length; j++) {
