@@ -97,7 +97,7 @@ public class TaskAssignment{
 	
 	
 	//Task Allocation Thread Parameters 
-	protected int CONTROL_PERIOD_Task = 16000;
+	protected int CONTROL_PERIOD_Task = 15000;
 	public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
 	
 	
@@ -352,16 +352,16 @@ public class TaskAssignment{
 		//Only if we have already a dummy task this check can be avoided
 		if(dummyTask == 0 || dummyRobot != 0) {
 			for (int i = 0; i < numRobot; i++) {
-				boolean flagAllocate = false;
+				boolean flagAllocateRobot = false;
 				 for (int j = 0; j < numTasks; j++) {
 					 if(TasksMissions.get(j).getTaskType() == tec.getRobotType(IDsIdleRobots[i])) {
-						 flagAllocate = true;
+						 flagAllocateRobot = true;
 						 
 					 }
 				 }
 				 
 				 //the robot cannot be assigned to any task
-				 if(!flagAllocate) {
+				 if(!flagAllocateRobot) {
 					 
 					 dummyRobot += 1 ;
 					 dummyTask += 1 ;
@@ -370,6 +370,28 @@ public class TaskAssignment{
 				 }
 			}
 		}
+		
+		//Only if we have already a dummy robot this check can be avoided
+		if(dummyRobot == 0 || dummyTask != 0) {
+			for (int i = 0; i < numTasks; i++) {
+				boolean flagAllocateTask = false;
+				 for (int j = 0; j < numRobot; j++) {
+					 if(TasksMissions.get(i).getTaskType() == tec.getRobotType(IDsIdleRobots[j])) {
+						 flagAllocateTask = true;
+						 
+					 }
+				 }
+				 //the robot cannot be assigned to any task
+				 if(!flagAllocateTask) {
+					 
+					 dummyRobot += 1 ;
+					 dummyTask += 1 ;
+					 numRobotAug += 1;
+					 numTaskAug += 1;
+				 }
+			}
+		}
+
 		return DummyVector;
 	}
 
@@ -831,12 +853,10 @@ public class TaskAssignment{
 	 * The objective function is defined as sum(c_ij * x_ij) for (i = 1...n)(j = 1...m)
 	 * with n = number of robot and m = number of tasks.
 	 * Only the B function is considered in this case
-	 * @param rsp -> The motion planner that will be called for planning for any
-	 * robot. 
 	 * @param tec -> An AbstractTrajectoryEnvelopeCoordinator Coordinator
 	 * @return An optimization problem 
 	 */
-	public MPSolver buildOptimizationProblemWithB(AbstractMotionPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public MPSolver buildOptimizationProblemWithB(AbstractTrajectoryEnvelopeCoordinator tec) {
 		
 		//Take the number of tasks
 		//Save the initial number of Robot and Task
@@ -868,7 +888,8 @@ public class TaskAssignment{
 				 //Considering the case of Dummy Task
 				 if(j < numTask ) {
 					 taskType = TasksMissions.get(j).getTaskType();
-					 if(robotType == 0) {
+					 ///dummy robot
+					 if(i >= numRobot) {
 						 robotType = taskType;
 					 }
 				 }else {
@@ -878,7 +899,7 @@ public class TaskAssignment{
 				 if (robotType == taskType ) {
 					 //robotType == 0 is for only virtual robot
 					//Set the coefficient of the objective function with the normalized path length
-					double pathLength  = evaluatePathLength(i+1,j,rsp,tec);
+					double pathLength  = evaluatePathLength(i+1,j,defaultMotionPlanner,tec);
 					if( pathLength != MaxPathLength) {
 						objective.setCoefficient(decisionVariable[i][j], pathLength); 
 					}else {//the path to reach the task not exists
@@ -1095,11 +1116,12 @@ public class TaskAssignment{
 	public boolean TaskAllocation(double [][] AssignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
 		int robotIDs = AssignmentMatrix.length;
 		int numTasks = AssignmentMatrix[0].length;	
-		 System.out.println(" Robot #" + numRobot);
-		 System.out.println(" Task #" + numTask);
+		System.out.println("Number of Robot : " + numRobot);
+		System.out.println("Number of Task : " + numTask);
+		System.out.println("Number of dummy Robot : " + dummyRobot);
+		System.out.println("Number of dummy Task : " + dummyTask);
 		for (int i = 0; i < robotIDs; i++) {
 			 for (int j = 0; j < numTasks; j++) {
-				
 				 if (AssignmentMatrix[i][j] > 0) {
 					 if(i < numRobot) { //Considering only real Robot
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
@@ -1109,23 +1131,22 @@ public class TaskAssignment{
 					 }
 					
 					 if (numRobot >= numTask ) { //All tasks are assigned 
-						 if(j < numTask) { // considering only true task
+						 if(j < numTask && i < numRobot) { // considering only true task
 							 TasksMissions.get(j).setTaskIsAssigned(true);
-							 System.out.println("Task1 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());
-							 System.out.println("Task1 # >> "+j+ " has goal pose >> "+TasksMissions.get(j).getGoalPose());
+							 System.out.println("Task # "+ (j+1) + " is Assigned");
+		
 						 }	 
 					 } else { //numTask > numRobot
 						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
 							 TasksMissions.get(j).setTaskIsAssigned(false);
 							 if(j <numTask) {
-								 System.out.println("Task2 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());
-								 System.out.println("Task2 # >> "+j+ " has goal pose >> "+TasksMissions.get(j).getGoalPose());
+								 System.out.println("Task2 # "+ (j+1) + " is not Assigned");
+								 
 							 }
 						 }else{// the task is assigned to a real robot
 							 if(j < numTask) {
 								 TasksMissions.get(j).setTaskIsAssigned(true);
-								 System.out.println("Task3 # >> "+j+ " is >> "+TasksMissions.get(j).getTaskIsAssigned());	
-								 System.out.println("Task3 # >> "+j+ " has goal pose >> "+TasksMissions.get(j).getGoalPose());
+								 System.out.println("Task3 # "+ (j+1) + " is Assigned");		 
 							 }	
 						 }		 
 					 }
@@ -1138,16 +1159,24 @@ public class TaskAssignment{
 		
 		if (numRobot >= numTask){
 			int i = 0;
+			int cont = 0;
 			while (i < numTask) {
-				if(TasksMissions.size() == 0) {
+				if(TasksMissions.size() == 0 || TasksMissions.size() <= i) {
 					break;
 				}
-				TasksMissions.remove(0);
-				i = i+1;
+				if (TasksMissions.get(i).getTaskIsAssigned()){
+					TasksMissions.remove(i);
+					System.out.println("Task # "+ (cont+1) + " is removed ");
+				}else {
+					i = i+1;
+				}
+				cont +=1;	
+				
 			}
 		}
 		else {// NumTask > NumRobot 
 			int i = 0;
+			int cont = 0;
 			while (i <= numRobot) {
 				if(TasksMissions.size() < numRobot) {
 					break;
@@ -1155,13 +1184,16 @@ public class TaskAssignment{
 				
 				if (TasksMissions.get(i).getTaskIsAssigned() ) {
 					TasksMissions.remove(i);
+					System.out.println("Task # "+ (cont+1) + " is removed ");
 					
-				}else
+				}else {
 					i = i+1;
+				}
+				cont +=1;	
+				
 			}
-
 		}
-		 System.out.println("Taskssss #"+ TasksMissions.size());
+		 System.out.println("Remaining task: "+ TasksMissions.size());
 		//Remove all path from the path set
 		pathsToTargetGoal.removeAll(pathsToTargetGoal);
 		return true;
@@ -1186,9 +1218,8 @@ public class TaskAssignment{
 	 * B*alpha + (1-alpha)*F
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 */
-	public void startTaskAssignment(AbstractMotionPlanner rsp,double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public void startTaskAssignment(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
-		defaultMotionPlanner = rsp;
 		coordinator = tec;
 		numRobot = coordinator.getIdleRobots().length;
 		linearWeight = alpha;
@@ -1210,14 +1241,17 @@ public class TaskAssignment{
 				while (true) {
 					System.out.println("Thread Running");
 					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
-						MPSolver solverOnline = buildOptimizationProblemWithB(defaultMotionPlanner, coordinator);
-						double [][] prova = solveOptimizationProblem(solverOnline,coordinator,linearWeight);
-						for (int i = 0; i < prova.length; i++) {
-							for (int j = 0; j < prova[0].length; j++) {
-									System.out.println("cccccccccc>> "+prova[i][j]+" i>> "+i+" j>> "+j);			
+						MPSolver solverOnline = buildOptimizationProblemWithB(coordinator);
+						double [][] assignmentMatrix = solveOptimizationProblem(solverOnline,coordinator,linearWeight);
+						for (int i = 0; i < assignmentMatrix.length; i++) {
+							for (int j = 0; j < assignmentMatrix[0].length; j++) {
+									System.out.println("x"+"["+(i+1)+","+(j+1)+"]"+" is "+ assignmentMatrix[i][j]);
+									if(assignmentMatrix[i][j] == 1) {
+										System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1));
+									}
 							} 
 						}
-						TaskAllocation(prova,coordinator);
+						TaskAllocation(assignmentMatrix,coordinator);
 						System.out.print("Task to be completed "+ TasksMissions.size());
 						solverOnline.clear();
 					}
