@@ -512,9 +512,6 @@ public class TaskAssignment{
 			//Evaluate the path from the Robot Starting Pose to Task End Pose
 			rsp.setStart(rr.getPose());
 			rsp.setGoals(TasksMissions.get(task).getStartPose(),TasksMissions.get(task).getGoalPose());
-			System.out.println("Starting  robot "+ rr.getPose()+" robot>>  " + rr.getRobotID() );
-			System.out.println("Starting  "+ TasksMissions.get(task).getStartPose() );
-			System.out.println("Ending  "+ TasksMissions.get(task).getGoalPose() );
 			if (!rsp.plan()) {
 				//the path to reach target end not exits
 				pathsToTargetGoal.add(null);
@@ -902,9 +899,11 @@ public class TaskAssignment{
 					double pathLength  = evaluatePathLength(i+1,j,defaultMotionPlanner,tec);
 					if( pathLength != MaxPathLength) {
 						objective.setCoefficient(decisionVariable[i][j], pathLength); 
+						System.out.println("cost>>>>>"+pathLength/sumMaxPathsLength+ " I >>"+ (i+1) +" J>> "+ (j+1));
 					}else {//the path to reach the task not exists
 						MPConstraint c3 = optimizationProblem.makeConstraint(0,0);
 						 c3.setCoefficient(decisionVariable[i][j],1); 
+						 
 					}
 					
 				 }else { //robotType != taskType
@@ -976,6 +975,7 @@ public class TaskAssignment{
 					 if( pathLength != MaxPathLength) {
 						 //Set the coefficient of the objective function with the normalized path length
 						 objective.setCoefficient(decisionVariable[i][j], pathLength/sumMaxPathsLength);
+						 
 					 }else {
 						//the path to reach the task not exists
 						MPConstraint c3 = optimizationProblem.makeConstraint(0,0);
@@ -1122,14 +1122,15 @@ public class TaskAssignment{
 	/** 
 	 * Solve the optimization problem given as input considering both B and F Functions. The objective function is defined as sum(c_ij * x_ij) for (i = 1...n)(j = 1...m).
 	 * with n = number of robot and m = number of tasks
-	 * The problem is resolved considering a greedy algorithm
+	 * The problem is resolved considering a greedy algorithm, so each robot is assigned to the best task for him and then the robot and Task are
+	 * removed from their set
 	 * @param tec -> TrajectoryEnvelopeCoordinatorSimulation
 	 * @param alpha -> the linear parameter used to weights B and F function expressed in percent( 1-> 100%). The objective function is
 	 * considered as B*alpha + (1 - alpha)*F 
 	 * @return The Optimal Assignment that minimize the objective function
 	 */
 
-	public double [][] solveOptimizationProblemGredyAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+	public double [][] solveOptimizationProblemGreedyAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
 		numTask = TasksMissions.size();
 		//Get free robots
 		numRobot = tec.getIdleRobots().length;
@@ -1138,50 +1139,55 @@ public class TaskAssignment{
 		dummyRobotorTask(numRobot,numTask,tec);
 		int numTasks = numTaskAug;
 		int numRobot = numRobotAug;
-		//Consider possibility to have dummy Robot or Tasks
-		//Build the solver and an objective function
-		MPSolver optimizationProblem = buildOptimizationProblem(numRobot,numTasks);
-		//Initialize the optimal assignment and the cost associated to it
-		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
-		double objectiveOptimalValue = 100000000;
-		//Initialize optimization problem
-		//Solve the optimization problem
-		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
 		double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
-		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
-			//Evaluate a feasible assignment
-			resultStatus = optimizationProblem.solve();
-			//Evaluate the Assignment Matrix
-			double [][] AssignmentMatrix = saveAssignmentMatrix(numRobot,numTasks,optimizationProblem);
-			//Initialize cost of objective value
-			double objectiveFunctionValue = 0;
+		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
+		
+		
+		int iOtt = 0;
+		int jOtt = 0;
+		//Evaluate the cost for this Assignment
+		boolean [] TasksMissionsAllocates = new boolean [numTaskAug];
+		
+		for (int i = 0; i < numRobotAug ; i++) {
 			double costBFunction = 0;
-			double costFFunction = 0;
-			//Evaluate the cost for this Assignment
-			for (int i = 0; i < numRobotAug ; i++) {
-				for(int j=0;j < numTaskAug ; j++) {
-					if(AssignmentMatrix[i][j]>0) {
-							costBFunction = costBFunction + PAll[i][j]/sumMaxPathsLength;
-							if(alpha != 1) {
-								costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
-							}	
-					}
-				}
+			int robotType = 0;
+			double OptimalValueBFunction = 100000000;
+			if( i < numRobot) {
+   			 robotType = tec.getRobotType(i+1);
+   		 	}
+			for(int j=0;j < numTaskAug ; j++) {
+				 int taskType = 0;
+				//Considering the case of Dummy Task
+				 if(j < numTask ) {
+					 taskType = TasksMissions.get(j).getTaskType();
+					 ///dummy robot
+					 if(i >= numRobot) {
+						 robotType = taskType;
+					 }
+				 }else {
+					 //dummy task
+					 taskType = robotType;
+				 }
+				 if (robotType == taskType) {
+					 costBFunction = PAll[i][j]/sumMaxPathsLength;
+					 System.out.println("Valueeee "+ costBFunction);
+					 System.out.println("ValueeeeOpt "+ OptimalValueBFunction);	
+					 if(costBFunction < OptimalValueBFunction  && !TasksMissionsAllocates[j] ) {
+							OptimalValueBFunction = costBFunction;			
+							iOtt = i;
+							jOtt= j;
+						}
+				 }
 			}
-			objectiveFunctionValue = alpha * costBFunction + (1-alpha)*costFFunction;
-			//Compare actual solution and optimal solution finds so far
-			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
-				objectiveOptimalValue = objectiveFunctionValue;
-				optimalAssignmentMatrix = AssignmentMatrix;
-			}
-			//Add the constraint to actual solution in order to consider this solution as already found  
-			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
+			optimalAssignmentMatrix[iOtt][jOtt] = 1;
+			
+			//the task is already assigned
+			TasksMissionsAllocates[jOtt] = true;
 		}
 		//Return the Optimal Assignment Matrix
 		return  optimalAssignmentMatrix;    
 	}
-	
-	
+
 	/**
 	 * Perform the task Assignment defining the mission for each robot
 	 * @param AssignmentMatrix -> An Assignment Matrix of the optimization problem
@@ -1216,13 +1222,13 @@ public class TaskAssignment{
 						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
 							 TasksMissions.get(j).setTaskIsAssigned(false);
 							 if(j <numTask) {
-								 System.out.println("Task2 # "+ (j+1) + " is not Assigned");
+								 System.out.println("Task # "+ (j+1) + " is not Assigned");
 								 
 							 }
 						 }else{// the task is assigned to a real robot
 							 if(j < numTask) {
 								 TasksMissions.get(j).setTaskIsAssigned(true);
-								 System.out.println("Task3 # "+ (j+1) + " is Assigned");		 
+								 System.out.println("Task # "+ (j+1) + " is Assigned");		 
 							 }	
 						 }		 
 					 }
@@ -1230,9 +1236,7 @@ public class TaskAssignment{
 			 }
 		 }
 		
-		//Remove Assigned Tasks from the set
-		
-		
+		//Remove Assigned Tasks from the set	
 		if (numRobot >= numTask){
 			int i = 0;
 			int cont = 0;
@@ -1317,7 +1321,7 @@ public class TaskAssignment{
 				while (true) {
 					System.out.println("Thread Running");
 					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
-						MPSolver solverOnline = buildOptimizationProblemWithBNormalized(coordinator);
+						MPSolver solverOnline = buildOptimizationProblemWithB(coordinator);
 						double [][] assignmentMatrix = solveOptimizationProblem(solverOnline,coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
 							for (int j = 0; j < assignmentMatrix[0].length; j++) {
@@ -1353,5 +1357,131 @@ public class TaskAssignment{
 		TaskAssignmentThread.start();
 	}
 	
+	/**
+	 * Start the Task Allocation Algorithm with Greedy Algorithm
+	 * @param rsp -> The motion planner that will be called for planning for any
+	 * robot. 
+	 * @param alpha -> the weight of B and F function in objective function. It is considered as
+	 * B*alpha + (1-alpha)*F
+	 * @param tec -> An Abstract Trajectory Envelope Coordinator
+	 */
+	public void startTaskAssignmentGreedyAlgorithm(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
+		//Create meta solver and solver
+		coordinator = tec;
+		numRobot = coordinator.getIdleRobots().length;
+		linearWeight = alpha;
+		//Start a thread that checks and enforces dependencies at every clock tick
+		this.setupInferenceCallbackGreedy();
+
+	}
+	
+	
+	protected void setupInferenceCallbackGreedy() {
+		
+		Thread TaskAssignmentThread = new Thread("Task Assignment") {
+			private long threadLastUpdate = Calendar.getInstance().getTimeInMillis();
+			@Override
+			
+			public void run() {
+				while (true) {
+					System.out.println("Thread Running");
+					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+						double [][] assignmentMatrix = solveOptimizationProblemGreedyAlgorithm(coordinator,linearWeight);
+						for (int i = 0; i < assignmentMatrix.length; i++) {
+							for (int j = 0; j < assignmentMatrix[0].length; j++) {
+									System.out.println("x"+"["+(i+1)+","+(j+1)+"]"+" is "+ assignmentMatrix[i][j]);
+									if(assignmentMatrix[i][j] == 1) {
+										System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1));
+									}
+							} 
+						}
+						TaskAllocation(assignmentMatrix,coordinator);
+						System.out.print("Task to be completed "+ TasksMissions.size());
+					}
+					//Sleep a little...
+					if (CONTROL_PERIOD_Task > 0) {
+						try { 
+							System.out.println("Thread Sleeping");
+							Thread.sleep(CONTROL_PERIOD_Task); } //Thread.sleep(Math.max(0, CONTROL_PERIOD-Calendar.getInstance().getTimeInMillis()+threadLastUpdate)); }
+						catch (InterruptedException e) { e.printStackTrace(); }
+					}
+
+					long threadCurrentUpdate = Calendar.getInstance().getTimeInMillis();
+					EFFECTIVE_CONTROL_PERIOD_task = (int)(threadCurrentUpdate-threadLastUpdate);
+					threadLastUpdate = threadCurrentUpdate;
+					
+					if (cb != null) cb.performOperation();
+
+				}
+			}
+		};
+		TaskAssignmentThread.setPriority(Thread.MAX_PRIORITY);
+		TaskAssignmentThread.start();
+	}
+	
+	
+	
+	/**
+	 * Start the Task Allocation Algorithm with Exact Algorithm
+	 * @param rsp -> The motion planner that will be called for planning for any
+	 * robot. 
+	 * @param alpha -> the weight of B and F function in objective function. It is considered as
+	 * B*alpha + (1-alpha)*F
+	 * @param tec -> An Abstract Trajectory Envelope Coordinator
+	 */
+	public void startTaskAssignmentExactAlgorithm(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
+		//Create meta solver and solver
+		coordinator = tec;
+		numRobot = coordinator.getIdleRobots().length;
+		linearWeight = alpha;
+		//Start a thread that checks and enforces dependencies at every clock tick
+		this.setupInferenceCallbackExact();
+
+	}
+	
+	
+	protected void setupInferenceCallbackExact() {
+		
+		Thread TaskAssignmentThread = new Thread("Task Assignment") {
+			private long threadLastUpdate = Calendar.getInstance().getTimeInMillis();
+			@Override
+			
+			public void run() {
+				while (true) {
+					System.out.println("Thread Running");
+					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+						double [][] assignmentMatrix = solveOptimizationProblemExactAlgorithm(coordinator,linearWeight);
+						for (int i = 0; i < assignmentMatrix.length; i++) {
+							for (int j = 0; j < assignmentMatrix[0].length; j++) {
+									System.out.println("x"+"["+(i+1)+","+(j+1)+"]"+" is "+ assignmentMatrix[i][j]);
+									if(assignmentMatrix[i][j] == 1) {
+										System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1));
+									}
+							} 
+						}
+						TaskAllocation(assignmentMatrix,coordinator);
+						System.out.print("Task to be completed "+ TasksMissions.size());
+					}
+
+					//Sleep a little...
+					if (CONTROL_PERIOD_Task > 0) {
+						try { 
+							System.out.println("Thread Sleeping");
+							Thread.sleep(CONTROL_PERIOD_Task); } //Thread.sleep(Math.max(0, CONTROL_PERIOD-Calendar.getInstance().getTimeInMillis()+threadLastUpdate)); }
+						catch (InterruptedException e) { e.printStackTrace(); }
+					}
+
+					long threadCurrentUpdate = Calendar.getInstance().getTimeInMillis();
+					EFFECTIVE_CONTROL_PERIOD_task = (int)(threadCurrentUpdate-threadLastUpdate);
+					threadLastUpdate = threadCurrentUpdate;
+					
+					if (cb != null) cb.performOperation();
+
+				}
+			}
+		};
+		TaskAssignmentThread.setPriority(Thread.MAX_PRIORITY);
+		TaskAssignmentThread.start();
+	}
 	}//End Class
 
