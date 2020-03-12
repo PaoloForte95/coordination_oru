@@ -77,6 +77,7 @@ public class TaskAssignment{
 	//Path and arrival Time Parameters
 	//Infinity cost if path to reach a goal note exists
 	protected double MaxPathLength = 10000000;
+	protected double MaxPathForAssignment = 1;
 	//This is the sum of max path length for each robot
 	protected double sumMaxPathsLength = 1;
 	//This is the sum of arrival time considering max path length for each robot
@@ -624,11 +625,12 @@ public class TaskAssignment{
 						//Save the path to Dummy Task 
 						pathsToTargetGoal.add(dummyTask);
 						PAll[robot][task] =  1;
+						pathLength = 1;
 					}
 					else { //dummy robot -> Consider a only virtual Robot 
 						PAll[robot][task] =  1;
 						pathsToTargetGoal.add(null);
-						
+						pathLength =1;
 					}	
 				}
 				
@@ -899,7 +901,6 @@ public class TaskAssignment{
 					double pathLength  = evaluatePathLength(i+1,j,defaultMotionPlanner,tec);
 					if( pathLength != MaxPathLength) {
 						objective.setCoefficient(decisionVariable[i][j], pathLength); 
-						System.out.println("cost>>>>>"+pathLength/sumMaxPathsLength+ " I >>"+ (i+1) +" J>> "+ (j+1));
 					}else {//the path to reach the task not exists
 						MPConstraint c3 = optimizationProblem.makeConstraint(0,0);
 						 c3.setCoefficient(decisionVariable[i][j],1); 
@@ -1017,6 +1018,7 @@ public class TaskAssignment{
 		int numRobot = numRobotAug;
 		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
 		double objectiveOptimalValue = 100000000;
+		int cont = 0;
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
@@ -1027,30 +1029,39 @@ public class TaskAssignment{
 			//Initialize cost of objective value
 			double objectiveFunctionValue = 0;
 			double costFFunction = 0;
-			double costBFunction = optimizationProblem.objective().value();
-			if(alpha != 0) {
-				//Evaluate the cost of F Function for this Assignment
-				for (int i = 0; i < numRobot; i++) {
-					for(int j = 0;j < numTasks; j++) {
-						if(AssignmentMatrix[i][j]>0) {
-							if(alpha != 1) {
-								//Evaluate cost of F function only if alpha is not equal to 1
-								costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
-							}
-						}				
-					}		
-				}
+			double costBFunction = 0;
+			MaxPathForAssignment = 1/sumMaxPathsLength;
+			//Evaluate the cost of F Function for this Assignment
+			for (int i = 0; i < numRobot; i++) {
+				for(int j = 0;j < numTasks; j++) {
+					if( AssignmentMatrix[i][j] > 0) {
+						if(alpha != 1) {
+							//Evaluate cost of F function only if alpha is not equal to 1
+							costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
+						}
+						double value = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTasks+j]);
+						costBFunction = costBFunction + value;
+						System.out.println("provaaa "+ value +"i >> " + (i+1) +" j>> " +(j+1));
+						
+						if (value > MaxPathForAssignment){
+							MaxPathForAssignment = value;
+							
+						}
+					}				
+				}		
 			}
-			objectiveFunctionValue = alpha*costBFunction + (1-alpha)*costFFunction;
+			objectiveFunctionValue = alpha*costBFunction + (1-alpha)*costFFunction + MaxPathForAssignment/sumMaxPathsLength;
 			//Compare actual solution and optimal solution finds so far
 			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 				objectiveOptimalValue = objectiveFunctionValue;
 				optimalAssignmentMatrix = AssignmentMatrix;
 				//Add the constraint on cost for next solution
-				optimizationProblem = constraintOnCostSolution(optimizationProblem,objectiveFunctionValue);
+				//optimizationProblem = constraintOnCostSolution(optimizationProblem,objectiveFunctionValue);
 			}
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
+			cont +=1;
+			
 		}
 		//Return the Optimal Assignment Matrix 
 		return  optimalAssignmentMatrix;    
@@ -1170,8 +1181,6 @@ public class TaskAssignment{
 				 }
 				 if (robotType == taskType) {
 					 costBFunction = PAll[i][j]/sumMaxPathsLength;
-					 System.out.println("Valueeee "+ costBFunction);
-					 System.out.println("ValueeeeOpt "+ OptimalValueBFunction);	
 					 if(costBFunction < OptimalValueBFunction  && !TasksMissionsAllocates[j] ) {
 							OptimalValueBFunction = costBFunction;			
 							iOtt = i;
@@ -1321,7 +1330,7 @@ public class TaskAssignment{
 				while (true) {
 					System.out.println("Thread Running");
 					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
-						MPSolver solverOnline = buildOptimizationProblemWithB(coordinator);
+						MPSolver solverOnline = buildOptimizationProblemWithBNormalized(coordinator);
 						double [][] assignmentMatrix = solveOptimizationProblem(solverOnline,coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
 							for (int j = 0; j < assignmentMatrix[0].length; j++) {
