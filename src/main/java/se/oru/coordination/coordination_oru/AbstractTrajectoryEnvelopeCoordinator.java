@@ -38,6 +38,7 @@ import com.vividsolutions.jts.geom.util.AffineTransformation;
 import aima.core.util.datastructure.Pair;
 import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
+import se.oru.coordination.coordination_oru.taskassignment.Robot;
 import se.oru.coordination.coordination_oru.util.FleetVisualization;
 import se.oru.coordination.coordination_oru.util.StringUtils;
 
@@ -150,12 +151,39 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 		placeRobot(robotID,StartingPosition);
 	}
 	
+	/**
+	 * Add a robot with type and ForwardModel
+	 * @param robot -> The robot to add
+	 */
+	
+	public void addRobot(Robot robot) {
+		setForwardModel(robot.getRobotID(),robot.getForwardModel());
+		this.robotType.put(robot.getRobotID(), robot.getRobotType()); 
+		placeRobot(robot.getRobotID(),robot.getStartingPosition());
+		setFootprint(robot.getRobotID(),robot.getFootprint());
+	}
+	
+	
 	public Integer getRobotType(int robotID) {
 		if (robotType.containsKey(robotID)) {
 			return robotType.get(robotID);
 		}else return -1;
 	
 	}
+	
+	
+	public ArrayList<SpatialEnvelope> getDrivingEnvelope() {
+		//Collect all driving envelopes and current pose indices
+		ArrayList<SpatialEnvelope> drivingEnvelopes = new ArrayList<SpatialEnvelope>();
+		for (AbstractTrajectoryEnvelopeTracker atet : trackers.values()) {
+			if (!(atet instanceof TrajectoryEnvelopeTrackerDummy)) {
+				drivingEnvelopes.add(atet.getTrajectoryEnvelope().getSpatialEnvelope());
+				//metaCSPLogger.info(atet.getRobotReport().getRobotID() + " is driving.");
+			}
+		}
+	return drivingEnvelopes;
+	}
+	
 	
 	
 	/**
@@ -1384,7 +1412,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	public static CriticalSection[] getCriticalSections(SpatialEnvelope se1, SpatialEnvelope se2, boolean checkEscapePoses, double maxDimensionOfSmallestRobot) {
 		return getCriticalSections(se1, se2, null, -1, null, -1, checkEscapePoses, maxDimensionOfSmallestRobot);
 	}
-
+	
 	protected void cleanUp(TrajectoryEnvelope te) {
 		synchronized (solver) {
 			metaCSPLogger.info("Cleaning up " + te);
