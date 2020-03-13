@@ -975,7 +975,7 @@ public class TaskAssignment{
 					 double pathLength  =  PAll[i][j];
 					 if( pathLength != MaxPathLength) {
 						 //Set the coefficient of the objective function with the normalized path length
-						 objective.setCoefficient(decisionVariable[i][j], pathLength/sumMaxPathsLength);
+						 objective.setCoefficient(decisionVariable[i][j], pathLength);
 						 
 					 }else {
 						//the path to reach the task not exists
@@ -1018,7 +1018,6 @@ public class TaskAssignment{
 		int numRobot = numRobotAug;
 		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
 		double objectiveOptimalValue = 100000000;
-		int cont = 0;
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
@@ -1030,6 +1029,7 @@ public class TaskAssignment{
 			double objectiveFunctionValue = 0;
 			double costFFunction = 0;
 			double costBFunction = 0;
+			double costValue = 0; // -> is the cost of B function non normalized
 			MaxPathForAssignment = 1/sumMaxPathsLength;
 			//Evaluate the cost of F Function for this Assignment
 			for (int i = 0; i < numRobot; i++) {
@@ -1039,12 +1039,13 @@ public class TaskAssignment{
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
 						}
-						double value = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTasks+j]);
-						costBFunction = costBFunction + value;
-						System.out.println("provaaa "+ value +"i >> " + (i+1) +" j>> " +(j+1));
+						double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTasks+j]);
+						costBFunction = costBFunction + pathValue/sumMaxPathsLength;
+						costValue = costBFunction + pathValue; // is the same value of objective function but non normalized
 						
-						if (value > MaxPathForAssignment){
-							MaxPathForAssignment = value;
+						//Save the max path length for each Assignment
+						if (pathValue > MaxPathForAssignment){
+							MaxPathForAssignment = pathValue;
 							
 						}
 					}				
@@ -1056,12 +1057,12 @@ public class TaskAssignment{
 				objectiveOptimalValue = objectiveFunctionValue;
 				optimalAssignmentMatrix = AssignmentMatrix;
 				//Add the constraint on cost for next solution
-				//optimizationProblem = constraintOnCostSolution(optimizationProblem,objectiveFunctionValue);
+				optimizationProblem = constraintOnCostSolution(optimizationProblem,costValue);
+				
 			}
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
-			cont +=1;
-			
+
 		}
 		//Return the Optimal Assignment Matrix 
 		return  optimalAssignmentMatrix;    
