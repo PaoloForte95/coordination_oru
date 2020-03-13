@@ -206,6 +206,7 @@ public class BrowserVisualization implements FleetVisualization {
 		double theta = rr.getPose().getTheta();
 		
 		String name = "R"+rr.getRobotID();
+		
 		String extraData = " : " + rr.getPathIndex();
 		if (extraStatusInfo != null) {
 			for (String st : extraStatusInfo) {
@@ -259,25 +260,27 @@ public class BrowserVisualization implements FleetVisualization {
 	}
 	
 	
-	public void addSpatialEnvelope(SpatialEnvelope se1,Pose StartPose) {
+	public void addSpatialEnvelope(SpatialEnvelope se1) {
 		Geometry geom = se1.getPolygon();
-		
 		String jsonString = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+se1.hashCode(), geom, "#efe007", -1, false, null) + "}";
 		enqueueMessage(jsonString);
 	
 	}
 	
-	public void displayTask(Pose StartPose,Pose GoalPose,int ID) {
+	public void displayTask(Pose StartPose,Pose GoalPose,int ID,String color) {
+		if(color == null) {
+			color = "yellow";
+		}
 		String name1 = "TS"+ID;
 		String name2 = "TG"+ID;
 		Geometry circle0 = createCircle(StartPose, 1);
 		Geometry circle1 = createCircle(StartPose, 1);
 		Geometry circle2 = createCircle(GoalPose, 1);
 		Geometry circle3 = createCircle(GoalPose, 1);
-		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, "#ffffff", -1, false, null) + "}";
-		String jsonString1 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name1, circle1, "#ffffff", -1, false, null) + "}";
-		String jsonString2 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name2, circle2, "#ffffff", -1, false, null) + "}";
-		String jsonString3 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name2, circle3, "#ffffff", -1, false, null) + "}";
+		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, color, -1, true, null) + "}";
+		String jsonString1 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name1, circle1, "#ffffff", -1, true, null) + "}";
+		String jsonString2 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name2, circle2, color, -1, true, null) + "}";
+		String jsonString3 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name2, circle3, "#ffffff", -1, true, null) + "}";
 		enqueueMessage(jsonString0);
 		enqueueMessage(jsonString1);
 		enqueueMessage(jsonString2);
@@ -313,17 +316,17 @@ public class BrowserVisualization implements FleetVisualization {
 	private Geometry createCircle(Pose pose, double radius) {		
 		GeometryFactory gf = new GeometryFactory();
 		Coordinate[] coords = new Coordinate[7];
-		for(int i =0; i<= 2*Math.PI;i += Math.PI/2) {
+		for(int i =0; i <= 2*Math.PI;i += Math.PI/2) {
 			coords[i] = new Coordinate(radius*Math.cos(i),radius*Math.sin(i));
 			
 		}
 		coords[6]  = new Coordinate(1,0);
-		Polygon arrow = gf.createPolygon(coords);
+		Polygon circle = gf.createPolygon(coords);
 		AffineTransformation at = new AffineTransformation();
 		at.scale(1, 1);
-		at.rotate(0);
+		at.rotate(pose.getTheta());
 		at.translate(pose.getX(), pose.getY());
-		Geometry ret = at.transform(arrow);
+		Geometry ret = at.transform(circle);
 		return ret;
 	}
 	
