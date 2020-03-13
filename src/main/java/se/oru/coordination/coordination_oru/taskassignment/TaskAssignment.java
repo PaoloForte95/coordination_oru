@@ -48,6 +48,8 @@ import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPla
 import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.tests.icaps2018.eval.TrajectoryEnvelopeCoordinatorSimulationICAPS;
+import se.oru.coordination.coordination_oru.util.BrowserVisualization;
+import se.oru.coordination.coordination_oru.util.FleetVisualization;
 import se.oru.coordination.coordination_oru.util.Missions;
 import com.google.ortools.linearsolver.*;
 import com.google.ortools.linearsolver.MPSolver.OptimizationProblemType;
@@ -101,6 +103,14 @@ public class TaskAssignment{
 	//Task Allocation Thread Parameters 
 	protected int CONTROL_PERIOD_Task = 15000;
 	public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
+	
+	protected BrowserVisualization viz = null;
+	
+	
+	public void setBrowserVisualization(BrowserVisualization viz) {
+		this.viz = viz;
+	}
+	
 	
 	
 	/**
@@ -504,12 +514,16 @@ public class TaskAssignment{
 			//Evaluate the path from the Robot Starting Pose to Task End Pose
 			rsp.setStart(rr.getPose());
 			rsp.setGoals(TasksMissions.get(task).getStartPose(),TasksMissions.get(task).getGoalPose());
-			if (!rsp.plan()) {
+			rsp.setFootprint(tec.getFootprint(robot));
+			System.out.print("PAth" +" robot>> "+robot +" task>>" + (task+1));
+			if (!rsp.plan() ) {
 				//the path to reach target end not exits
 				pathsToTargetGoal.add(null);
 				//Infinity cost is returned 
 				return pathLength;
 			}
+			
+			System.out.print("No path");
 			//If the path exists
 			//Take the Pose Steering representing the path
 			PoseSteering[] pss = rsp.getPath();
@@ -519,6 +533,7 @@ public class TaskAssignment{
 			pathsToTargetGoal.add(pss);
 			//Take the Path Length
 			pathLength = Missions.getPathLength(pss);
+			
 		} else { //There also virtual robot and task are considered 
 			//There are considered real robot and dummy task
 			if (numRobot >= numTask && robot <= numRobot){ //dummy task -> The Robot receive the task to stay in starting position
@@ -795,6 +810,8 @@ public class TaskAssignment{
 	 * @return A constrained optimization problem with the objective function
 	 */
 	public MPSolver buildOptimizationProblemWithB(AbstractTrajectoryEnvelopeCoordinator tec) {
+		
+		
 		//Take the number of tasks
 		numTask = TasksMissions.size();
 		//Get free robots and their IDs
@@ -953,22 +970,22 @@ public class TaskAssignment{
 			double [][] AssignmentMatrix = saveAssignmentMatrix(numRobot,numTasks,optimizationProblem);
 			//Initialize cost of objective value
 			double objectiveFunctionValue = 0;
-			double costFFunction = 0;
-			double costBFunction = 0;
 			double costValue = 0; // -> is the cost of B function non normalized
 			MaxPathForAssignment = 1/sumMaxPathsLength;
+			double costofAssignment = 0;
+			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
 			for (int i = 0; i < numRobot; i++) {
 				for(int j = 0;j < numTasks; j++) {
 					if( AssignmentMatrix[i][j] > 0) {
 						if(alpha != 1) {
 							//Evaluate cost of F function only if alpha is not equal to 1
-							costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
+							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
 						}
 						double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTasks+j]);
-						costBFunction = costBFunction + pathValue/sumMaxPathsLength;
-						costValue = costBFunction + pathValue; // is the same value of objective function but non normalized
-						
+						double costB = pathValue/sumMaxPathsLength;
+						costValue = costValue + pathValue; // is the same value of objective function but non normalized
+						costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
 						//Save the max path length for each Assignment
 						if (pathValue > MaxPathForAssignment){
 							MaxPathForAssignment = pathValue;
@@ -977,7 +994,7 @@ public class TaskAssignment{
 					}				
 				}		
 			}
-			objectiveFunctionValue = alpha*costBFunction + (1-alpha)*costFFunction + MaxPathForAssignment/sumMaxPathsLength;
+			objectiveFunctionValue = costofAssignment;
 			//Compare actual solution and optimal solution finds so far
 			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 				objectiveOptimalValue = objectiveFunctionValue;
@@ -1139,6 +1156,7 @@ public class TaskAssignment{
 				 if (AssignmentMatrix[i][j] > 0) {
 					 if(i < numRobot) { //Considering only real Robot
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
+						 
 						 if(pss != null) {					
 							 tec.addMissions(new Mission(IDsIdleRobots[i],pss));
 						 }		
@@ -1146,6 +1164,7 @@ public class TaskAssignment{
 					
 					 if (numRobot >= numTask ) { //All tasks are assigned 
 						 if(j < numTask && i < numRobot) { // considering only true task
+							 viz.displayTask(TasksMissions.get(j).getStartPose(), TasksMissions.get(j).getGoalPose(), (j+1), "red");
 							 TasksMissions.get(j).setTaskIsAssigned(true);
 							 System.out.println("Task # "+ (j+1) + " is Assigned");
 		
