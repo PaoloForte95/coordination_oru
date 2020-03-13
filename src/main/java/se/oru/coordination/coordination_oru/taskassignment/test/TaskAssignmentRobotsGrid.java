@@ -113,7 +113,7 @@ public class TaskAssignmentRobotsGrid {
 		for(int i = 1; i<= 8; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
-			Robot robot = new Robot(i, startPoseRobot, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+			Robot robot = new Robot(i, startPoseRobot);
 			tec.addRobot(robot);
 			Pose startPoseGoal = new Pose(15.0,(6.0 + delta),0.0);
 			Pose goalPoseRobot = new Pose(30.0 ,(6.0 + delta) ,0.0);

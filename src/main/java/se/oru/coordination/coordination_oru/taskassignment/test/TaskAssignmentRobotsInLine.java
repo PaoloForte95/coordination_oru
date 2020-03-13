@@ -109,13 +109,13 @@ public class TaskAssignmentRobotsInLine {
 		
 		
 		Pose startPoseRobot1 = new Pose(20.0,6.0,0.0);
-		Pose startPoseRobot2 = new Pose(12.0,6.0,0.0);
-		Pose startPoseRobot3 = new Pose(4.0,6.0,0.0);
+		Pose startPoseRobot2 = new Pose(16.0,6.0,0.0);
+		Pose startPoseRobot3 = new Pose(12.0,6.0,0.0);
 	
 
-		Robot robot1 = new Robot(1, startPoseRobot1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		Robot robot2 = new Robot(2, startPoseRobot2, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
-		Robot robot3 = new Robot(3, startPoseRobot3, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+		Robot robot1 = new Robot(1, startPoseRobot1);
+		Robot robot2 = new Robot(2, startPoseRobot2);
+		Robot robot3 = new Robot(3, startPoseRobot3);
 		
 		
 		tec.addRobot(robot1);
@@ -124,12 +124,12 @@ public class TaskAssignmentRobotsInLine {
 	
 
 	
-		Pose startPoseGoal1 = new Pose(22.0,6.0,0.0);
-		Pose startPoseGoal2 = new Pose(14.0,6.0,0.0);
-		Pose startPoseGoal3 = new Pose(6.0,6.0,0.0);
-		Pose goalPoseRobot1 = new Pose(41.0,6.0,0.0);
-		Pose goalPoseRobot2 = new Pose(31.0,6.0,0.0);
-		Pose goalPoseRobot3 = new Pose(21.0,6.0,0.0);
+		Pose startPoseGoal1 = new Pose(24.0,6.0,0.0);
+		Pose startPoseGoal2 = new Pose(24.0,6.0,0.0);
+		Pose startPoseGoal3 = new Pose(24.0,6.0,0.0);
+		Pose goalPoseRobot1 = new Pose(34.0,6.0,0.0);
+		Pose goalPoseRobot2 = new Pose(30.0,6.0,0.0);
+		Pose goalPoseRobot3 = new Pose(26.0,6.0,0.0);
 		
 		
 		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
@@ -157,5 +157,6 @@ public class TaskAssignmentRobotsInLine {
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
 		assignmentProblem.startTaskAssignment(alpha, tec);
+		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
 	}
 }
