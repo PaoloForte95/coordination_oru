@@ -661,7 +661,14 @@ public class TaskAssignment{
 								//Compute the delay due to precedence constraint in Critical Section
 								for (int g = 0; g < css.length; g++) {
 									Pair<Double, Double> a1 = estimateTimeToCompletionDelays(pss1.hashCode(),pss1,te1TCDelays,pss2.hashCode(),pss2,te2TCDelays, css[g]);
-									delay +=  a1.getFirst();
+									double delayCriticalSection = a1.getFirst();
+									if(delayCriticalSection < 0 ) {
+										delay += 0;
+									}else if(delayCriticalSection == Double.POSITIVE_INFINITY) {
+										delay += 100;
+									}else {
+										delay += delayCriticalSection;
+									}
 								}
 							}
 						//Take the paths of driving robots from coordinator
@@ -847,8 +854,6 @@ public class TaskAssignment{
 					 typesAreEqual = true;
 					}
 				 if (typesAreEqual) {
-//				 if (robotType == taskType ) {
-					 //robotType == 0 is for only virtual robot
 					//Set the coefficient of the objective function with the normalized path length
 					double pathLength  = evaluatePathLength(i+1,j,defaultMotionPlanner,tec);
 					if ( pathLength != MaxPathLength) {
@@ -961,7 +966,9 @@ public class TaskAssignment{
 						if (alpha != 1) {
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
+							
 						}
+						System.out.print("Cost F>>"+costF);
 						double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTasks+j]);
 						double costB = pathValue/sumMaxPathsLength;
 						costValue = costValue + pathValue; // is the same value of objective function but non normalized
@@ -1084,24 +1091,16 @@ public class TaskAssignment{
 			double costBFunction = 0;
 //			int robotType = 0;
 			double OptimalValueBFunction = 100000000;
-//			if ( i < numRobot) {
-//   			 robotType = tec.getRobotType(i+1);
-//   		 	}
+			boolean typesAreEqual = false;
 			for(int j=0;j < numTaskAug ; j++) {
-//				 int taskType = 0;
-				//Considering the case of Dummy Task
-//				 if (j < numTask ) {
-//					 taskType = taskQueue.get(j).getTaskType();
-//					 ///dummy robot -> the type is taken from task 
-//					 if (i >= numRobot) {
-//						 robotType = taskType;
-//					 }
-//				 }else {
-//					 //dummy task -> the type is taken from robot
-//					 taskType = robotType;
-//				 }
-//				 if (robotType == taskType) {
-				 if (taskQueue.get(j).isCompatible(tec.getRobot(i+1))) {
+			 if (j < numTask && i < numRobot ) {
+				 typesAreEqual = taskQueue.get(j).isCompatible(tec.getRobot(i+1));
+			 }
+			 else {
+				 //Considering a dummy robot or  a dummy task -> they don't have type
+				 typesAreEqual = true;
+				}
+			 if (typesAreEqual) {
 					 costBFunction = PAll[i][j]/sumMaxPathsLength;
 					 if (costBFunction < OptimalValueBFunction  && !TasksMissionsAllocates[j] ) {
 							OptimalValueBFunction = costBFunction;			
