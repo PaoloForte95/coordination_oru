@@ -39,10 +39,7 @@ public class Task {
 	
 	protected PoseSteering StartPoint;
 	protected PoseSteering GoalPoint;
-//	protected int taskType;
-//	protected boolean taskIsAssigned;
 	protected int decidedRobotID = -1;
-	
 	protected List<PoseSteering[]> paths = null;
 	protected Set<Integer> robotTypes = null;
 	
@@ -106,10 +103,7 @@ public class Task {
 		return this.GoalPoint;	
 	}
 
-//	public int getTaskType() {
-//		return this.taskType;
-//	}
-	
+
 	public boolean isCompatible(Robot robot) {
 		return this.robotTypes.contains(robot.getRobotType());
 	}
@@ -118,11 +112,7 @@ public class Task {
 		return this.decidedRobotID != -1;
 		//return this.taskIsAssigned;
 	}
-	
-//	public void setTaskIsAssigned(boolean taskIsAssigned) {
-//		this.taskIsAssigned = taskIsAssigned;
-//	
-//	}
+
 	
 	public void getInfo() {
 		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint + "\n Robot Types ->"+ this.robotTypes
