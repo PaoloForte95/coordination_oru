@@ -62,6 +62,7 @@ import com.google.ortools.*;
 import com.google.ortools.sat.*;
 import se.oru.coordination.coordination_oru.taskassignment.Task;
 public class Robot {
+	
 	 protected int robotID;
 	 protected int robotType;
 	 protected Coordinate[] footprint;

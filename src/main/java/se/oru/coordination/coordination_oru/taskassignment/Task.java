@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -31,57 +34,118 @@ import com.google.ortools.constraintsolver.SolverParameters;
 import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.*;
 import com.google.ortools.sat.*;
+
 public class Task {
 	
-	protected Pose StartPoint;
-	protected Pose GoalPoint;
-	protected int taskType;
-	protected boolean taskIsAssigned;
+	protected PoseSteering StartPoint;
+	protected PoseSteering GoalPoint;
+//	protected int taskType;
+//	protected boolean taskIsAssigned;
+	protected int decidedRobotID = -1;
 	
+	protected List<PoseSteering[]> paths = null;
+	protected Set<Integer> robotTypes = null;
 	
+
 	/**
-	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
+ 	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
 	 * robot can perform this task
-	 * @param StartPose -> Starting Pose for Task;
-	 * @param GoalPose -> Ending Pose for Task
-	 * @param taskType -> The type of the Task expressed as int
+	 * @param StartPose
+	 * @param GoalPose
+	 * @param robotTypes
 	 */
-	public Task (Pose StartPose,Pose GoalPose,int taskType) {
+	public Task (Pose StartPose, Pose GoalPose, int ... robotTypes) {
+		this(new PoseSteering(StartPose, 0.0), new PoseSteering(GoalPose, 0.0), robotTypes);
+	}
+
+	/**
+ 	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
+	 * robot can perform this task
+	 * @param StartPose
+	 * @param GoalPose
+	 * @param robotTypes
+	 */
+	public Task (PoseSteering StartPose, PoseSteering GoalPose, int ... robotTypes) {
 		this.StartPoint = StartPose;
 		this.GoalPoint = GoalPose;
-		this.taskType = taskType;
-		
-		
+		if (robotTypes.length == 0) throw new Error("Need to specifiy at least one robot type!");
+		this.robotTypes = new HashSet<Integer>();
+		for (int rt : robotTypes) this.robotTypes.add(rt);
 	}
 
+	public List<PoseSteering[]> getPaths() {
+		return paths;
+	}
+	
+	public void setPaths(PoseSteering[] ... newPaths) {
+		for (int i = 0; i < newPaths.length-1; i++) {
+			if (!(newPaths[i][newPaths[i].length-1].equals(newPaths[i+1][0]))) throw new Error("Teletransport not supported yet!");
+			this.paths.add(newPaths[i]);
+		}
+		this.paths.add(newPaths[newPaths.length-1]);
+	}
+	
+	public int getNumPaths() {
+		if (this.paths == null) return 0;
+		return this.paths.size();
+	}
+	
 	public Pose getStartPose() {
-		return this.StartPoint;
-		
+		return this.StartPoint.getPose();		
 	}
+	
 	public Pose getGoalPose() {
-		return this.GoalPoint;
-		
+		return this.GoalPoint.getPose();	
+	}
+
+	public PoseSteering getStart() {
+		return this.StartPoint;		
 	}
 	
-	public int getTaskType() {
-		return this.taskType;
+	public PoseSteering getGoal() {
+		return this.GoalPoint;	
+	}
+
+//	public int getTaskType() {
+//		return this.taskType;
+//	}
+	
+	public boolean isCompatible(Robot robot) {
+		return this.robotTypes.contains(robot.getRobotType());
 	}
 	
-	
-	public boolean getTaskIsAssigned() {
-		return this.taskIsAssigned;
+	public boolean isTaskAssigned() {
+		return this.decidedRobotID != -1;
+		//return this.taskIsAssigned;
 	}
 	
-	public void setTaskIsAssigned(boolean taskIsAssigned) {
-		this.taskIsAssigned = taskIsAssigned;
-	
-	}
+//	public void setTaskIsAssigned(boolean taskIsAssigned) {
+//		this.taskIsAssigned = taskIsAssigned;
+//	
+//	}
 	
 	public void getInfo() {
-		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint + "\n Task Type ->"+ this.taskType
-				+"Task is Assigned "+ this.taskIsAssigned);
+		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint + "\n Robot Types ->"+ this.robotTypes
+				+"\n Task is Assigned "+ this.isTaskAssigned());
+	}
+	
+	public void assignRobot(int robotID) {
+		this.decidedRobotID = robotID;
 	}
 
+	public Mission[] getMissions() {
+		if (this.paths == null) throw new Error("No paths specified!");
+		if (this.decidedRobotID == -1) throw new Error("No robot assigned!");
+		Mission[] ret = new Mission[paths.size()];
+		for (int i = 0; i < paths.size(); i++) {
+			ret[i] = new Mission(this.decidedRobotID, paths.get(i));
+			if (i == 0) ret[i].setFromLocation("Init for Robot" + this.decidedRobotID);
+			else if (i ==  paths.size()-1) ret[i].setFromLocation("Goal for Robot" + this.decidedRobotID);
+			else ret[i].setFromLocation("Waypoint " + i + " for Robot" + this.decidedRobotID);
+		}
+		return ret;
+		//Now you can do this: Missions.enqueue(task.getMissions());
+	}
 	
 	
 	

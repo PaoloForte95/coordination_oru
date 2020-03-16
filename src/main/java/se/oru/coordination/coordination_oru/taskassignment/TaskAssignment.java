@@ -357,7 +357,8 @@ public class TaskAssignment{
 				boolean flagAllocateRobot = false;
 				 for (int j = 0; j < numTasks; j++) {
 					 //check if robot can be assigned to one task
-					 if (taskQueue.get(j).getTaskType() == tec.getRobotType(IDsIdleRobots[i])) {
+					 //if (taskQueue.get(j).getTaskType() == tec.getRobotType(IDsIdleRobots[i])) {
+					 if (taskQueue.get(j).isCompatible(tec.getRobot(IDsIdleRobots[i]))) {
 						 flagAllocateRobot = true;
 						 
 					 }
@@ -378,7 +379,8 @@ public class TaskAssignment{
 				boolean flagAllocateTask = false;
 				 for (int j = 0; j < numRobot; j++) {
 					//check if task can be assigned to one robot
-					 if (taskQueue.get(i).getTaskType() == tec.getRobotType(IDsIdleRobots[j])) {
+					 //if (taskQueue.get(i).getTaskType() == tec.getRobotType(IDsIdleRobots[j])) {
+					 if (taskQueue.get(i).isCompatible(tec.getRobot(IDsIdleRobots[j]))) {
 						 flagAllocateTask = true;
 					 }
 				 }
@@ -821,24 +823,26 @@ public class TaskAssignment{
 		
 	    MPObjective objective = optimizationProblem.objective();
     	 for (int i = 0; i < numRobotAug; i++) {
-    		 int robotType = 0;
-    		 if ( i < numRobot) {
-    			 robotType = tec.getRobotType(i+1);
-    		 }
+//    		 int robotType = 0;
+//    		 if ( i < numRobot) {
+//    			 //robotType = tec.getRobotType(i+1);
+//    			 robotType = tec.getRobot(i+1).getRobotType();
+//    		 }
 			 for (int j = 0; j < numTaskAug; j++) {
-				 int taskType = 0;
-				 //Considering the case of Dummy Task
-				 if (j < numTask ) {
-					 taskType = taskQueue.get(j).getTaskType();
-					 ///dummy robot -> the type is taken from task
-					 if (i >= numRobot) {
-						 robotType = taskType;
-					 }
-				 }else {
-					 //dummy task -> the type is taken from robot
-					 taskType = robotType;
-				 }
-				 if (robotType == taskType ) {
+//				 int taskType = 0;
+//				 //Considering the case of Dummy Task
+//				 if (j < numTask ) {
+//					 taskType = taskQueue.get(j).getTaskType();
+//					 ///dummy robot -> the type is taken from task
+//					 if (i >= numRobot) {
+//						 robotType = taskType;
+//					 }
+//				 }else {
+//					 //dummy task -> the type is taken from robot
+//					 taskType = robotType;
+//				 }
+				 if (taskQueue.get(j).isCompatible(tec.getRobot(i+1))) {
+//				 if (robotType == taskType ) {
 					 //robotType == 0 is for only virtual robot
 					//Set the coefficient of the objective function with the normalized path length
 					double pathLength  = evaluatePathLength(i+1,j,defaultMotionPlanner,tec);
@@ -893,24 +897,25 @@ public class TaskAssignment{
     	double[][] PAll = evaluatePAll(defaultMotionPlanner,tec);
     	
     	 for (int i = 0; i < numRobotAug; i++) {
-    		 int robotType = 0;
-    		 if ( i < numRobot) {
-    			 robotType = tec.getRobotType(i+1);
-    		 }
+//    		 int robotType = 0;
+//    		 if ( i < numRobot) {
+//    			 robotType = tec.getRobotType(i+1);
+//    		 }
 			 for (int j = 0; j < numTaskAug; j++) {
-				 int taskType = 0;
-				//Considering the case of Dummy Task
-				 if (j < numTask ) {
-					 taskType = taskQueue.get(j).getTaskType();
-					 ///dummy robot -> the type is taken from task
-					 if (i >= numRobot) {
-						 robotType = taskType;
-					 }
-				 }else {
-					 //dummy task -> the type is taken from robot
-					 taskType = robotType;
-				 }
-				 if (robotType == taskType) {
+//				 int taskType = 0;
+//				//Considering the case of Dummy Task
+//				 if (j < numTask ) {
+//					 taskType = taskQueue.get(j).getTaskType();
+//					 ///dummy robot -> the type is taken from task
+//					 if (i >= numRobot) {
+//						 robotType = taskType;
+//					 }
+//				 }else {
+//					 //dummy task -> the type is taken from robot
+//					 taskType = robotType;
+//				 }
+//				 if (robotType == taskType) {
+				 if (taskQueue.get(j).isCompatible(tec.getRobot(i+1))) {
 					 double pathLength  =  PAll[i][j];
 					 if ( pathLength != MaxPathLength) {
 						 //Set the coefficient of the objective function with the normalized path length
@@ -1096,25 +1101,26 @@ public class TaskAssignment{
 		boolean [] TasksMissionsAllocates = new boolean [numTaskAug];
 		for (int i = 0; i < numRobotAug ; i++) {
 			double costBFunction = 0;
-			int robotType = 0;
+//			int robotType = 0;
 			double OptimalValueBFunction = 100000000;
-			if ( i < numRobot) {
-   			 robotType = tec.getRobotType(i+1);
-   		 	}
+//			if ( i < numRobot) {
+//   			 robotType = tec.getRobotType(i+1);
+//   		 	}
 			for(int j=0;j < numTaskAug ; j++) {
-				 int taskType = 0;
+//				 int taskType = 0;
 				//Considering the case of Dummy Task
-				 if (j < numTask ) {
-					 taskType = taskQueue.get(j).getTaskType();
-					 ///dummy robot -> the type is taken from task 
-					 if (i >= numRobot) {
-						 robotType = taskType;
-					 }
-				 }else {
-					 //dummy task -> the type is taken from robot
-					 taskType = robotType;
-				 }
-				 if (robotType == taskType) {
+//				 if (j < numTask ) {
+//					 taskType = taskQueue.get(j).getTaskType();
+//					 ///dummy robot -> the type is taken from task 
+//					 if (i >= numRobot) {
+//						 robotType = taskType;
+//					 }
+//				 }else {
+//					 //dummy task -> the type is taken from robot
+//					 taskType = robotType;
+//				 }
+//				 if (robotType == taskType) {
+				 if (taskQueue.get(j).isCompatible(tec.getRobot(i+1))) {
 					 costBFunction = PAll[i][j]/sumMaxPathsLength;
 					 if (costBFunction < OptimalValueBFunction  && !TasksMissionsAllocates[j] ) {
 							OptimalValueBFunction = costBFunction;			
@@ -1159,20 +1165,22 @@ public class TaskAssignment{
 					 if (numRobot >= numTask ) { //All tasks are assigned 
 						 if (j < numTask && i < numRobot) { // considering only true task
 							 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
-							 taskQueue.get(j).setTaskIsAssigned(true);
+							 //taskQueue.get(j).setTaskIsAssigned(true);
+							 taskQueue.get(j).assignRobot(i+1);
 							 System.out.println("Task # "+ (j+1) + " is Assigned");
 		
 						 }	 
 					 } else { //numTask > numRobot
 						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
-							 taskQueue.get(j).setTaskIsAssigned(false);
+							 //taskQueue.get(j).setTaskIsAssigned(false);
 							 if (j <numTask) {
 								 System.out.println("Task # "+ (j+1) + " is not Assigned");
 								 
 							 }
 						 }else{// the virtual task is assigned to a real robot
 							 if (j < numTask) {
-								 taskQueue.get(j).setTaskIsAssigned(true);
+								 //taskQueue.get(j).setTaskIsAssigned(true);
+								 taskQueue.get(j).assignRobot(i+1);
 								 System.out.println("Virtual Task # "+ (j+1) + " is Assigned");		 
 							 }	
 						 }		 
@@ -1188,7 +1196,7 @@ public class TaskAssignment{
 				if (taskQueue.size() == 0 || taskQueue.size() <= i) {
 					break;
 				}
-				if (taskQueue.get(i).getTaskIsAssigned()){
+				if (taskQueue.get(i).isTaskAssigned()){
 					taskQueue.remove(i);
 					System.out.println("Task # "+ (cont+1) + " is removed ");
 				}else {
@@ -1206,7 +1214,7 @@ public class TaskAssignment{
 					break;
 				}
 				
-				if (taskQueue.get(i).getTaskIsAssigned() ) {
+				if (taskQueue.get(i).isTaskAssigned() ) {
 					taskQueue.remove(i);
 					System.out.println("Task # "+ (cont+1) + " is removed ");
 					

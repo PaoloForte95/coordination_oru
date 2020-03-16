@@ -132,7 +132,8 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	protected double maxFaultsProbability = NetworkConfiguration.PROBABILITY_OF_PACKET_LOSS;
 	protected int numberOfReplicas = 1;
 	
-	protected HashMap<Integer,Integer> robotType = new HashMap<Integer, Integer>();
+	//protected HashMap<Integer,Integer> robotType = new HashMap<Integer, Integer>();
+	protected HashMap<Integer,Robot> robots = new HashMap<Integer, Robot>();
 	
 	//State knowledge
 	protected HashMap<Integer,Boolean> isDriving = new HashMap<Integer, Boolean>();
@@ -145,11 +146,11 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	 * @param ForwardModel -> Forward Model of the Robot 
 	 */
 	
-	public void addRobot(int robotID,int robotType,ForwardModel fm,Pose StartingPosition) {
-		setForwardModel(robotID,fm);
-		this.robotType.put(robotID, robotType); 
-		placeRobot(robotID,StartingPosition);
-	}
+//	public void addRobot(int robotID,int robotType,ForwardModel fm,Pose StartingPosition) {
+//		setForwardModel(robotID,fm);
+//		this.robotType.put(robotID, robotType); 
+//		placeRobot(robotID,StartingPosition);
+//	}
 	
 	/**
 	 * Add a robot with type and ForwardModel
@@ -158,19 +159,22 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	
 	public void addRobot(Robot robot) {
 		setForwardModel(robot.getRobotID(),robot.getForwardModel());
-		this.robotType.put(robot.getRobotID(), robot.getRobotType()); 
+		//this.robotType.put(robot.getRobotID(), robot.getRobotType());
+		this.robots.put(robot.getRobotID(), robot);
 		placeRobot(robot.getRobotID(),robot.getStartingPosition());
 		setFootprint(robot.getRobotID(),robot.getFootprint());
 	}
-	
-	
-	public Integer getRobotType(int robotID) {
-		if (robotType.containsKey(robotID)) {
-			return robotType.get(robotID);
-		}else return -1;
-	
+
+	public Robot getRobot(int robotID) {
+		return this.robots.get(robotID);
 	}
 	
+//	public Integer getRobotType(int robotID) {
+//		if (robotType.containsKey(robotID)) {
+//			return robotType.get(robotID);
+//		}else return -1;
+//	
+//	}	
 	
 	public ArrayList<SpatialEnvelope> getDrivingEnvelope() {
 		//Collect all driving envelopes and current pose indices
