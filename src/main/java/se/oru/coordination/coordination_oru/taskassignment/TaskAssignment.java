@@ -67,13 +67,12 @@ public class TaskAssignment{
 	//Optimization Problem Parameters
 	protected int numRobot;
 	protected int numTask;
-	protected double infinity = java.lang.Double.POSITIVE_INFINITY;
 	protected int dummyRobot;
 	protected int dummyTask;
 	protected int numRobotAug;
 	protected int numTaskAug;
 	protected double linearWeight = 1;
-	protected ArrayList <Task> TasksMissions = new ArrayList <Task>();
+	protected ArrayList <Task> taskQueue = new ArrayList <Task>();
 	//Number of Idle Robots
 	protected Integer[] IDsIdleRobots;
 	//Path and arrival Time Parameters
@@ -293,26 +292,21 @@ public class TaskAssignment{
 	 * @return -> true if task is added correctly, otherwise false
 	 */
 	public boolean addTask(Task task) {
-		if(task == null) {
+		if (task == null) {
 			metaCSPLogger.severe("No task to add. Please give a correct Task.");
 			throw new Error("Cannot add the task");
 		}
-		boolean TaskisAdded = TasksMissions.add(task);
+		boolean TaskisAdded = taskQueue.add(task);
 		return TaskisAdded;
 	}
 	
 	/**
-	 * Remove a Task from Mission set
-	 * @param task -> the task to remove
-	 * @return -> true if task is removed correctly, otherwise false
+	 * Remove a task from the queue
+	 * @param task The task to remove
+	 * @return <code>true</code> if task is removed correctly, otherwise false
 	 */
 	public boolean removeTask(Task task) {
-		if(task == null) {
-			metaCSPLogger.severe("No task to add. Please give a correct Task.");
-			throw new Error("Cannot remove the task");
-		}
-		boolean TaskisRemoved= TasksMissions.remove(task);
-		return TaskisRemoved;
+		return taskQueue.remove(task);
 	}
 	
 	
@@ -323,11 +317,11 @@ public class TaskAssignment{
 	 * @return -> the task in index position
 	 */
 	public Task getTask(int index) {
-		if(index < 0 || index > TasksMissions.size()) {
+		if (index < 0 || index > taskQueue.size()) {
 			metaCSPLogger.severe("Wrong index.");
 			throw new Error("The task" + index + "not exist");
 		}else {
-			return TasksMissions.get(index);
+			return taskQueue.get(index);
 		}
 	}
 	
@@ -335,8 +329,8 @@ public class TaskAssignment{
 	 * Compute the number of Dummy Robots and/or Tasks. Consider the possibility to have a different number of robots (N) and tasks (M). If N > M, dummy tasks are 
 	 * considered, where a dummy task is a task for which a robot stay in starting position; while if M > N dummy robots
 	 * are considered, where a dummy robot is only a virtual robot. 
-	 * @param numRobot -> Number of Robots
-	 * @param numTasks -> Number of Tasks
+	 * @param numRobot Number of robots
+	 * @param numTasks Number of tasks
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 */
 	private void dummyRobotorTask(int numRobot, int numTasks,AbstractTrajectoryEnvelopeCoordinator tec) {
@@ -347,29 +341,29 @@ public class TaskAssignment{
 		dummyRobot = 0;
 		//Considering the possibility to have n != m
 		//If n > m -> we have dummy robot, so at some robot is assign the task to stay in starting position
-		if(numRobot > numTasks) {
+		if (numRobot > numTasks) {
 			dummyTask = numRobot - numTasks;
 			numTaskAug = numTasks + dummyTask;
 		}
-		else if(numRobot < numTasks) {
+		else if (numRobot < numTasks) {
 			dummyRobot = numTasks - numRobot;
 			numRobotAug = numRobot + dummyRobot;
 		}
 		//This second check is used when we have particular cases due to Robot Type and Task Type
 		//Only if we have already a dummy task this check can be avoided
 		//If A robot cannot be assigned to any task 
-		if(dummyTask == 0 || dummyRobot != 0) {
+		if (dummyTask == 0 || dummyRobot != 0) {
 			for (int i = 0; i < numRobot; i++) {
 				boolean flagAllocateRobot = false;
 				 for (int j = 0; j < numTasks; j++) {
 					 //check if robot can be assigned to one task
-					 if(TasksMissions.get(j).getTaskType() == tec.getRobotType(IDsIdleRobots[i])) {
+					 if (taskQueue.get(j).getTaskType() == tec.getRobotType(IDsIdleRobots[i])) {
 						 flagAllocateRobot = true;
 						 
 					 }
 				 }
 				 //the robot cannot be assigned to any task -> add a dummy robot and task
-				 if(!flagAllocateRobot) {
+				 if (!flagAllocateRobot) {
 					 dummyRobot += 1 ;
 					 dummyTask += 1 ;
 					 numRobotAug += 1;
@@ -379,17 +373,17 @@ public class TaskAssignment{
 		}
 		//Only if we have already a dummy robot this check can be avoided
 		//If A task cannot be assigned to any robot
-		if(dummyRobot == 0 || dummyTask != 0) {
+		if (dummyRobot == 0 || dummyTask != 0) {
 			for (int i = 0; i < numTasks; i++) {
 				boolean flagAllocateTask = false;
 				 for (int j = 0; j < numRobot; j++) {
 					//check if task can be assigned to one robot
-					 if(TasksMissions.get(i).getTaskType() == tec.getRobotType(IDsIdleRobots[j])) {
+					 if (taskQueue.get(i).getTaskType() == tec.getRobotType(IDsIdleRobots[j])) {
 						 flagAllocateTask = true;
 					 }
 				 }
 				 //the task cannot be assigned to any robot -> add a dummy robot and task
-				 if(!flagAllocateTask) {
+				 if (!flagAllocateTask) {
 					 dummyRobot += 1 ;
 					 dummyTask += 1 ;
 					 numRobotAug += 1;
@@ -430,11 +424,11 @@ public class TaskAssignment{
 		//Take decision Variable from Optimization Problem
 		MPVariable [][] DecisionVariable = tranformArray(optimizationProblem);
 		//Initialize a Constraint
-		MPConstraint c2 = optimizationProblem.makeConstraint(-infinity,1);
+		MPConstraint c2 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY,1);
 		//Define the actual optimal solution as a Constraint in order to not consider more it
     	for (int i = 0; i < numRobotAug; i++) {
     		for (int j = 0; j < numTaskAug; j++) {
-    				if(assignmentMatrix[i][j] >0) {
+    				if (assignmentMatrix[i][j] >0) {
 	    				c2.setCoefficient(DecisionVariable[i][j],1);
 	    			}else {
 	    				c2.setCoefficient(DecisionVariable[i][j],0);
@@ -457,7 +451,7 @@ public class TaskAssignment{
 		//Take the vector of Decision Variable from the input solver
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem);
 		//Initialize a Constraint
-		MPConstraint c3 = optimizationProblem.makeConstraint(-infinity,objectiveValue);
+		MPConstraint c3 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY,objectiveValue);
 		//Define a constraint for which the next optimal solutions considering only B must have a cost less than objectiveValue
     	for (int i = 0; i < numRobotAug; i++) {
     		for (int j = 0; j < numTaskAug; j++) {
@@ -513,7 +507,7 @@ public class TaskAssignment{
 			}
 			//Evaluate the path from the Robot Starting Pose to Task End Pose
 			rsp.setStart(rr.getPose());
-			rsp.setGoals(TasksMissions.get(task).getStartPose(),TasksMissions.get(task).getGoalPose());
+			rsp.setGoals(taskQueue.get(task).getStartPose(),taskQueue.get(task).getGoalPose());
 			rsp.setFootprint(tec.getFootprint(robot));
 			System.out.print("PAth" +" robot>> "+robot +" task>>" + (task+1));
 			if (!rsp.plan() ) {
@@ -579,7 +573,7 @@ public class TaskAssignment{
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 * @return The PAll matrix
 	 */
-	private double[][] evaluatePAll(AbstractMotionPlanner rsp,AbstractTrajectoryEnvelopeCoordinator tec){
+	private double[][] evaluatePAll(AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
 		//Evaluate the path length for the actual couple of task and ID
 		double pathLength = MaxPathLength;
 		//Initialize the sum of max paths lengths and time to do it for each robot
@@ -629,7 +623,7 @@ public class TaskAssignment{
 		//Considering the Actual Assignment 
 		if (assignmentMatrix[robot-1][task]>0) {
 			// Only for real robots and tasks
-			if(task < numTask && robot <= numRobot) {
+			if (task < numTask && robot <= numRobot) {
 				//Take the Pose steering relate to i-th robot and j-th task from path set
 				PoseSteering[] pss1 = pathsToTargetGoal.get((robot-1)*assignmentMatrix[0].length + task);	
 				//Initialize Array of delays for the two robots
@@ -643,7 +637,7 @@ public class TaskAssignment{
 						if (assignmentMatrix [m][n] > 0 && m+1 != robot && n != task && n < numTask && m < numRobot) {
 							//Take the path of this second robot from path set
 							PoseSteering[] pss2 = pathsToTargetGoal.get((m)*assignmentMatrix[0].length  + n);
-							if(pss2 != null) {//is == null if robotType is different to Task type
+							if (pss2 != null) {//is == null if robotType is different to Task type
 								//Evaluate the Spatial Envelope of this second Robot
 								SpatialEnvelope se2 = TrajectoryEnvelope.createSpatialEnvelope(pss2,tec.getFootprint(m+1));
 								//Compute the Critical Section between this 2 robot
@@ -710,7 +704,7 @@ public class TaskAssignment{
 			//Solve the optimization Problem
     		resultStatus = optimizationProblemCopy.solve();
     		//If The solution is feasible increment the number of feasible solution
-    		if(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
+    		if (resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
     			numberFeasibleSolution = numberFeasibleSolution+1;
     		}
     		double [][] assignmentMatrix = saveAssignmentMatrix(numRobot,numTasks,optimizationProblemCopy);
@@ -777,7 +771,7 @@ public class TaskAssignment{
 		//Each Robot can be assign only to a Task	    
 		 for (int i = 0; i < numRobot; i++) {
 			 //Initialize the constraint
-			 MPConstraint c0 = optimizationProblem.makeConstraint(-infinity, 1);
+			 MPConstraint c0 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY, 1);
 			 for (int j = 0; j < numTasks; j++) {
 				 //Build the constraint
 				 c0.setCoefficient(Decision_Variable[i][j], 1); 
@@ -813,7 +807,7 @@ public class TaskAssignment{
 		
 		
 		//Take the number of tasks
-		numTask = TasksMissions.size();
+		numTask = taskQueue.size();
 		//Get free robots and their IDs
 		numRobot = tec.getIdleRobots().length;
 		IDsIdleRobots = tec.getIdleRobots();
@@ -828,16 +822,16 @@ public class TaskAssignment{
 	    MPObjective objective = optimizationProblem.objective();
     	 for (int i = 0; i < numRobotAug; i++) {
     		 int robotType = 0;
-    		 if( i < numRobot) {
+    		 if ( i < numRobot) {
     			 robotType = tec.getRobotType(i+1);
     		 }
 			 for (int j = 0; j < numTaskAug; j++) {
 				 int taskType = 0;
 				 //Considering the case of Dummy Task
-				 if(j < numTask ) {
-					 taskType = TasksMissions.get(j).getTaskType();
+				 if (j < numTask ) {
+					 taskType = taskQueue.get(j).getTaskType();
 					 ///dummy robot -> the type is taken from task
-					 if(i >= numRobot) {
+					 if (i >= numRobot) {
 						 robotType = taskType;
 					 }
 				 }else {
@@ -848,7 +842,7 @@ public class TaskAssignment{
 					 //robotType == 0 is for only virtual robot
 					//Set the coefficient of the objective function with the normalized path length
 					double pathLength  = evaluatePathLength(i+1,j,defaultMotionPlanner,tec);
-					if( pathLength != MaxPathLength) {
+					if ( pathLength != MaxPathLength) {
 						objective.setCoefficient(decisionVariable[i][j], pathLength); 
 					}else {//the path to reach the task not exists
 						//the decision variable is set to 0 -> this allocation is not valid
@@ -884,7 +878,7 @@ public class TaskAssignment{
 	 */
 	public MPSolver buildOptimizationProblemWithBNormalized(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Take the number of tasks
-		numTask = TasksMissions.size();
+		numTask = taskQueue.size();
 		//Get free robots and their IDs
 		numRobot = tec.getIdleRobots().length;
 		IDsIdleRobots = tec.getIdleRobots();
@@ -900,16 +894,16 @@ public class TaskAssignment{
     	
     	 for (int i = 0; i < numRobotAug; i++) {
     		 int robotType = 0;
-    		 if( i < numRobot) {
+    		 if ( i < numRobot) {
     			 robotType = tec.getRobotType(i+1);
     		 }
 			 for (int j = 0; j < numTaskAug; j++) {
 				 int taskType = 0;
 				//Considering the case of Dummy Task
-				 if(j < numTask ) {
-					 taskType = TasksMissions.get(j).getTaskType();
+				 if (j < numTask ) {
+					 taskType = taskQueue.get(j).getTaskType();
 					 ///dummy robot -> the type is taken from task
-					 if(i >= numRobot) {
+					 if (i >= numRobot) {
 						 robotType = taskType;
 					 }
 				 }else {
@@ -918,7 +912,7 @@ public class TaskAssignment{
 				 }
 				 if (robotType == taskType) {
 					 double pathLength  =  PAll[i][j];
-					 if( pathLength != MaxPathLength) {
+					 if ( pathLength != MaxPathLength) {
 						 //Set the coefficient of the objective function with the normalized path length
 						 objective.setCoefficient(decisionVariable[i][j], pathLength); 
 					 }else {
@@ -977,8 +971,8 @@ public class TaskAssignment{
 			//Evaluate the cost of F Function for this Assignment
 			for (int i = 0; i < numRobot; i++) {
 				for(int j = 0;j < numTasks; j++) {
-					if( AssignmentMatrix[i][j] > 0) {
-						if(alpha != 1) {
+					if ( AssignmentMatrix[i][j] > 0) {
+						if (alpha != 1) {
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
 						}
@@ -1022,7 +1016,7 @@ public class TaskAssignment{
 	 */
 
 	public double [][] solveOptimizationProblemExactAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
-		numTask = TasksMissions.size();
+		numTask = taskQueue.size();
 		//Get free robots
 		numRobot = tec.getIdleRobots().length;
 		IDsIdleRobots = tec.getIdleRobots();
@@ -1051,9 +1045,9 @@ public class TaskAssignment{
 			//Evaluate the cost for this Assignment
 			for (int i = 0; i < numRobotAug ; i++) {
 				for(int j=0;j < numTaskAug ; j++) {
-					if(AssignmentMatrix[i][j]>0) {
+					if (AssignmentMatrix[i][j]>0) {
 							costBFunction = costBFunction + PAll[i][j]/sumMaxPathsLength;
-							if(alpha != 1) {
+							if (alpha != 1) {
 								costFFunction = costFFunction + evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
 							}	
 					}
@@ -1085,7 +1079,7 @@ public class TaskAssignment{
 	 */
 
 	public double [][] solveOptimizationProblemGreedyAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
-		numTask = TasksMissions.size();
+		numTask = taskQueue.size();
 		//Get free robots
 		numRobot = tec.getIdleRobots().length;
 		IDsIdleRobots = tec.getIdleRobots();
@@ -1104,16 +1098,16 @@ public class TaskAssignment{
 			double costBFunction = 0;
 			int robotType = 0;
 			double OptimalValueBFunction = 100000000;
-			if( i < numRobot) {
+			if ( i < numRobot) {
    			 robotType = tec.getRobotType(i+1);
    		 	}
 			for(int j=0;j < numTaskAug ; j++) {
 				 int taskType = 0;
 				//Considering the case of Dummy Task
-				 if(j < numTask ) {
-					 taskType = TasksMissions.get(j).getTaskType();
+				 if (j < numTask ) {
+					 taskType = taskQueue.get(j).getTaskType();
 					 ///dummy robot -> the type is taken from task 
-					 if(i >= numRobot) {
+					 if (i >= numRobot) {
 						 robotType = taskType;
 					 }
 				 }else {
@@ -1122,7 +1116,7 @@ public class TaskAssignment{
 				 }
 				 if (robotType == taskType) {
 					 costBFunction = PAll[i][j]/sumMaxPathsLength;
-					 if(costBFunction < OptimalValueBFunction  && !TasksMissionsAllocates[j] ) {
+					 if (costBFunction < OptimalValueBFunction  && !TasksMissionsAllocates[j] ) {
 							OptimalValueBFunction = costBFunction;			
 							iOtt = i;
 							jOtt= j;
@@ -1154,31 +1148,31 @@ public class TaskAssignment{
 		for (int i = 0; i < robotIDs; i++) {
 			 for (int j = 0; j < numTasks; j++) {
 				 if (AssignmentMatrix[i][j] > 0) {
-					 if(i < numRobot) { //Considering only real Robot
+					 if (i < numRobot) { //Considering only real Robot
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
 						 
-						 if(pss != null) {					
+						 if (pss != null) {					
 							 tec.addMissions(new Mission(IDsIdleRobots[i],pss));
 						 }		
 					 }
 					
 					 if (numRobot >= numTask ) { //All tasks are assigned 
-						 if(j < numTask && i < numRobot) { // considering only true task
-							 viz.displayTask(TasksMissions.get(j).getStartPose(), TasksMissions.get(j).getGoalPose(), (j+1), "red");
-							 TasksMissions.get(j).setTaskIsAssigned(true);
+						 if (j < numTask && i < numRobot) { // considering only true task
+							 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
+							 taskQueue.get(j).setTaskIsAssigned(true);
 							 System.out.println("Task # "+ (j+1) + " is Assigned");
 		
 						 }	 
 					 } else { //numTask > numRobot
 						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
-							 TasksMissions.get(j).setTaskIsAssigned(false);
-							 if(j <numTask) {
+							 taskQueue.get(j).setTaskIsAssigned(false);
+							 if (j <numTask) {
 								 System.out.println("Task # "+ (j+1) + " is not Assigned");
 								 
 							 }
 						 }else{// the virtual task is assigned to a real robot
-							 if(j < numTask) {
-								 TasksMissions.get(j).setTaskIsAssigned(true);
+							 if (j < numTask) {
+								 taskQueue.get(j).setTaskIsAssigned(true);
 								 System.out.println("Virtual Task # "+ (j+1) + " is Assigned");		 
 							 }	
 						 }		 
@@ -1191,11 +1185,11 @@ public class TaskAssignment{
 			int i = 0;
 			int cont = 0;
 			while (i < numTask) {
-				if(TasksMissions.size() == 0 || TasksMissions.size() <= i) {
+				if (taskQueue.size() == 0 || taskQueue.size() <= i) {
 					break;
 				}
-				if (TasksMissions.get(i).getTaskIsAssigned()){
-					TasksMissions.remove(i);
+				if (taskQueue.get(i).getTaskIsAssigned()){
+					taskQueue.remove(i);
 					System.out.println("Task # "+ (cont+1) + " is removed ");
 				}else {
 					i = i+1;
@@ -1208,12 +1202,12 @@ public class TaskAssignment{
 			int i = 0;
 			int cont = 0;
 			while (i <= numRobot) {
-				if(TasksMissions.size() < numRobot) {
+				if (taskQueue.size() < numRobot) {
 					break;
 				}
 				
-				if (TasksMissions.get(i).getTaskIsAssigned() ) {
-					TasksMissions.remove(i);
+				if (taskQueue.get(i).getTaskIsAssigned() ) {
+					taskQueue.remove(i);
 					System.out.println("Task # "+ (cont+1) + " is removed ");
 					
 				}else {
@@ -1223,7 +1217,7 @@ public class TaskAssignment{
 				
 			}
 		}
-		 System.out.println("Remaining task: "+ TasksMissions.size());
+		 System.out.println("Remaining task: "+ taskQueue.size());
 		//Remove all path from the path set
 		pathsToTargetGoal.removeAll(pathsToTargetGoal);
 		return true;
@@ -1248,7 +1242,7 @@ public class TaskAssignment{
 	 * B*alpha + (1-alpha)*F
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 */
-	public void startTaskAssignment(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public void startTaskAssignment(double alpha, AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
 		numRobot = coordinator.getIdleRobots().length;
@@ -1268,19 +1262,19 @@ public class TaskAssignment{
 			public void run() {
 				while (true) {
 					System.out.println("Thread Running");
-					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
 						MPSolver solverOnline = buildOptimizationProblemWithBNormalized(coordinator);
 						double [][] assignmentMatrix = solveOptimizationProblem(solverOnline,coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
 							for (int j = 0; j < assignmentMatrix[0].length; j++) {
 									System.out.println("x"+"["+(i+1)+","+(j+1)+"]"+" is "+ assignmentMatrix[i][j]);
-									if(assignmentMatrix[i][j] == 1) {
+									if (assignmentMatrix[i][j] == 1) {
 										System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1));
 									}
 							} 
 						}
 						TaskAllocation(assignmentMatrix,coordinator);
-						System.out.print("Task to be completed "+ TasksMissions.size());
+						System.out.print("Task to be completed "+ taskQueue.size());
 						solverOnline.clear();
 					}
 
@@ -1333,18 +1327,18 @@ public class TaskAssignment{
 			public void run() {
 				while (true) {
 					System.out.println("Thread Running");
-					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
 						double [][] assignmentMatrix = solveOptimizationProblemGreedyAlgorithm(coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
 							for (int j = 0; j < assignmentMatrix[0].length; j++) {
 									System.out.println("x"+"["+(i+1)+","+(j+1)+"]"+" is "+ assignmentMatrix[i][j]);
-									if(assignmentMatrix[i][j] == 1) {
+									if (assignmentMatrix[i][j] == 1) {
 										System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1));
 									}
 							} 
 						}
 						TaskAllocation(assignmentMatrix,coordinator);
-						System.out.print("Task to be completed "+ TasksMissions.size());
+						System.out.print("Task to be completed "+ taskQueue.size());
 					}
 					//Sleep a little...
 					if (CONTROL_PERIOD_Task > 0) {
@@ -1397,18 +1391,18 @@ public class TaskAssignment{
 			public void run() {
 				while (true) {
 					System.out.println("Thread Running");
-					if (!TasksMissions.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
 						double [][] assignmentMatrix = solveOptimizationProblemExactAlgorithm(coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
 							for (int j = 0; j < assignmentMatrix[0].length; j++) {
 									System.out.println("x"+"["+(i+1)+","+(j+1)+"]"+" is "+ assignmentMatrix[i][j]);
-									if(assignmentMatrix[i][j] == 1) {
+									if (assignmentMatrix[i][j] == 1) {
 										System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1));
 									}
 							} 
 						}
 						TaskAllocation(assignmentMatrix,coordinator);
-						System.out.print("Task to be completed "+ TasksMissions.size());
+						System.out.print("Task to be completed "+ taskQueue.size());
 					}
 
 					//Sleep a little...

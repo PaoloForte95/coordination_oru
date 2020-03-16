@@ -267,16 +267,16 @@ public class BrowserVisualization implements FleetVisualization {
 	
 	}
 	
-	public void displayTask(Pose StartPose,Pose GoalPose,int ID,String color) {
+	public void displayTask(Pose start, Pose goal, int id, String color) {
 		if(color == null) {
 			color = "yellow";
 		}
-		String name1 = "TS"+ID;
-		String name2 = "TG"+ID;
-		Geometry circle0 = createCircle(StartPose, 1);
-		Geometry circle1 = createCircle(StartPose, 1);
-		Geometry circle2 = createCircle(GoalPose, 1);
-		Geometry circle3 = createCircle(GoalPose, 1);
+		String name1 = "TS"+id;
+		String name2 = "TG"+id;
+		Geometry circle0 = createCircle(start, 1);
+		Geometry circle1 = createCircle(start, 1);
+		Geometry circle2 = createCircle(goal, 1);
+		Geometry circle3 = createCircle(goal, 1);
 		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, color, -1, true, null) + "}";
 		String jsonString1 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name1, circle1, "#ffffff", -1, true, null) + "}";
 		String jsonString2 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name2, circle2, color, -1, true, null) + "}";
@@ -285,6 +285,10 @@ public class BrowserVisualization implements FleetVisualization {
 		enqueueMessage(jsonString1);
 		enqueueMessage(jsonString2);
 		enqueueMessage(jsonString3);
+	}
+
+	public void displayTask(Pose start, Pose goal, int id) {
+		displayTask(start, goal, id, "yellow");
 	}
 
 	@Override
