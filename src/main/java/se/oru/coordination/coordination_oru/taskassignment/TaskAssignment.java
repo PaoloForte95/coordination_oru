@@ -511,7 +511,6 @@ public class TaskAssignment{
 			rsp.setStart(rr.getPose());
 			rsp.setGoals(taskQueue.get(task).getStartPose(),taskQueue.get(task).getGoalPose());
 			rsp.setFootprint(tec.getFootprint(robot));
-			System.out.print("PAth" +" robot>> "+robot +" task>>" + (task+1));
 			if (!rsp.plan() ) {
 				//the path to reach target end not exits
 				pathsToTargetGoal.add(null);
@@ -577,21 +576,36 @@ public class TaskAssignment{
 	 */
 	private double[][] evaluatePAll(AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
 		//Evaluate the path length for the actual couple of task and ID
-		double pathLength = MaxPathLength;
+		
 		//Initialize the sum of max paths lengths and time to do it for each robot
 		//This cost are used then for normalizing cost
 		double sumPathsLength = 0;
 		double sumArrivalTime = 0;
 		//Initialize PAll
+		
 		double [][] PAll = new double[numRobotAug][numTaskAug];
 		for (int robot = 0; robot < numRobotAug; robot++) {
 			double maxPathLength = 1;
+			double pathLength = MaxPathLength;
 			for (int task = 0; task < numTaskAug; task++ ) {
-				//Evaluate path Length 
-				pathLength = evaluatePathLength(robot+1,task,rsp,tec);
-				if ( pathLength > maxPathLength) {
-					maxPathLength = pathLength;
-				}
+				//Evaluate path Length
+				boolean typesAreEqual = false;
+				 if (task < numTask && robot < numRobot ) {
+				 typesAreEqual = taskQueue.get(task).isCompatible(tec.getRobot(robot+1));
+				 }
+				 else {
+					 //Considering a dummy robot or  a dummy task -> they don't have type
+					 typesAreEqual = true;
+				 }
+				 if(typesAreEqual) { // only if robot and typoe have the same types
+					 pathLength = evaluatePathLength(robot+1,task,rsp,tec);
+						if ( pathLength > maxPathLength) {
+							maxPathLength = pathLength;
+						}
+				 }else {
+					 pathsToTargetGoal.add(null);
+				 }
+				
 				PAll[robot][task] = pathLength;
 			}//For Task
 			//Sum the max path length for each robot
@@ -823,25 +837,16 @@ public class TaskAssignment{
 		
 	    MPObjective objective = optimizationProblem.objective();
     	 for (int i = 0; i < numRobotAug; i++) {
-//    		 int robotType = 0;
-//    		 if ( i < numRobot) {
-//    			 //robotType = tec.getRobotType(i+1);
-//    			 robotType = tec.getRobot(i+1).getRobotType();
-//    		 }
+    		 boolean typesAreEqual = false;
 			 for (int j = 0; j < numTaskAug; j++) {
-//				 int taskType = 0;
-//				 //Considering the case of Dummy Task
-//				 if (j < numTask ) {
-//					 taskType = taskQueue.get(j).getTaskType();
-//					 ///dummy robot -> the type is taken from task
-//					 if (i >= numRobot) {
-//						 robotType = taskType;
-//					 }
-//				 }else {
-//					 //dummy task -> the type is taken from robot
-//					 taskType = robotType;
-//				 }
-				 if (taskQueue.get(j).isCompatible(tec.getRobot(i+1))) {
+				 if (j < numTask && i < numRobot ) {
+					 typesAreEqual = taskQueue.get(j).isCompatible(tec.getRobot(i+1));
+				 }
+				 else {
+					 //Considering a dummy robot or  a dummy task -> they don't have type
+					 typesAreEqual = true;
+					}
+				 if (typesAreEqual) {
 //				 if (robotType == taskType ) {
 					 //robotType == 0 is for only virtual robot
 					//Set the coefficient of the objective function with the normalized path length
@@ -855,7 +860,6 @@ public class TaskAssignment{
 					}
 				 }else { //robotType != taskType
 					//the decision variable is set to 0 -> this allocation is not valid
-					 pathsToTargetGoal.add(null);
 					 MPConstraint c2 = optimizationProblem.makeConstraint(0,0);
 					 c2.setCoefficient(decisionVariable[i][j],1); 
 				 } 
@@ -897,41 +901,18 @@ public class TaskAssignment{
     	double[][] PAll = evaluatePAll(defaultMotionPlanner,tec);
     	
     	 for (int i = 0; i < numRobotAug; i++) {
-//    		 int robotType = 0;
-//    		 if ( i < numRobot) {
-//    			 robotType = tec.getRobotType(i+1);
-//    		 }
 			 for (int j = 0; j < numTaskAug; j++) {
-//				 int taskType = 0;
-//				//Considering the case of Dummy Task
-//				 if (j < numTask ) {
-//					 taskType = taskQueue.get(j).getTaskType();
-//					 ///dummy robot -> the type is taken from task
-//					 if (i >= numRobot) {
-//						 robotType = taskType;
-//					 }
-//				 }else {
-//					 //dummy task -> the type is taken from robot
-//					 taskType = robotType;
-//				 }
-//				 if (robotType == taskType) {
-				 if (taskQueue.get(j).isCompatible(tec.getRobot(i+1))) {
-					 double pathLength  =  PAll[i][j];
-					 if ( pathLength != MaxPathLength) {
-						 //Set the coefficient of the objective function with the normalized path length
-						 objective.setCoefficient(decisionVariable[i][j], pathLength); 
-					 }else {
-						//the path to reach the task not exists
-						//the decision variable is set to 0 -> this allocation is not valid
-						MPConstraint c3 = optimizationProblem.makeConstraint(0,0);
-						c3.setCoefficient(decisionVariable[i][j],1); 
-					 }
-				 }else { //robotType != taskType
-					//the decision variable is set to 0 -> this allocation is not valid
-					 pathsToTargetGoal.add(null);
-					 MPConstraint c2 = optimizationProblem.makeConstraint(0,0);
-					 c2.setCoefficient(decisionVariable[i][j],1); 
-				 } 
+			 double pathLength  =  PAll[i][j];
+			 if ( pathLength != MaxPathLength) {
+				 //Set the coefficient of the objective function with the normalized path length
+				 objective.setCoefficient(decisionVariable[i][j], pathLength); 
+			 }else { // if the path does not exists or the robot type is different from the task type 
+				//the path to reach the task not exists
+				//the decision variable is set to 0 -> this allocation is not valid
+				MPConstraint c3 = optimizationProblem.makeConstraint(0,0);
+				c3.setCoefficient(decisionVariable[i][j],1); 
+			 }
+		 
 			 }			 
 		 }
 		//Define the problem as a minimization problem
@@ -1172,14 +1153,13 @@ public class TaskAssignment{
 						 }	 
 					 } else { //numTask > numRobot
 						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
-							 //taskQueue.get(j).setTaskIsAssigned(false);
 							 if (j <numTask) {
 								 System.out.println("Task # "+ (j+1) + " is not Assigned");
 								 
 							 }
-						 }else{// the virtual task is assigned to a real robot
+						 }else{// the real task is assigned to a real robot
 							 if (j < numTask) {
-								 //taskQueue.get(j).setTaskIsAssigned(true);
+								 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
 								 taskQueue.get(j).assignRobot(i+1);
 								 System.out.println("Virtual Task # "+ (j+1) + " is Assigned");		 
 							 }	
