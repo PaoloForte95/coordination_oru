@@ -103,10 +103,10 @@ public class TaskAssignment{
 	protected int CONTROL_PERIOD_Task = 15000;
 	public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
 	
-	protected BrowserVisualization viz = null;
+	protected FleetVisualization viz = null;
 	
 	
-	public void setBrowserVisualization(BrowserVisualization viz) {
+	public void setBrowserVisualization(FleetVisualization viz) {
 		this.viz = viz;
 	}
 	
@@ -403,15 +403,13 @@ public class TaskAssignment{
 	 * @return 2D Matrix of Decision Variable of the input problem
 	 */
 	private MPVariable [][] tranformArray(MPSolver optimizationProblem) {
-		int numRobot = numRobotAug;
-		int numTasks = numTaskAug;
 		//Take the vector of Decision Variable from the Optimization Problem
 		MPVariable [] array1D = optimizationProblem.variables();
-		MPVariable [][] decisionVariable = new MPVariable [numRobot][numTasks];
+		MPVariable [][] decisionVariable = new MPVariable [numRobotAug][numTaskAug];
 		//Store them in a 2D Matrix
-	    for (int i = 0; i < numRobot; i++) {
-			 for (int j = 0; j < numTasks; j++) {
-				 decisionVariable[i][j] = array1D[i*numTasks+j];
+	    for (int i = 0; i < numRobotAug; i++) {
+			 for (int j = 0; j < numTaskAug; j++) {
+				 decisionVariable[i][j] = array1D[i*numTaskAug+j];
 			 }
 	    }
 		return decisionVariable;
@@ -941,10 +939,8 @@ public class TaskAssignment{
 	 */
 	
 	public double [][] solveOptimizationProblem(MPSolver optimizationProblem,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
-		int numTasks = numTaskAug;
-		int numRobot = numRobotAug;
 		//Initialize the optimal assignment and the cost associated to it
-		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
+		double [][] optimalAssignmentMatrix = new double[numRobotAug][numTaskAug];
 		double objectiveOptimalValue = 100000000;
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
@@ -952,7 +948,7 @@ public class TaskAssignment{
 			//Evaluate an optimal assignment that minimize only the B function
 			resultStatus = optimizationProblem.solve();
 			//Evaluate the Assignment Matrix
-			double [][] AssignmentMatrix = saveAssignmentMatrix(numRobot,numTasks,optimizationProblem);
+			double [][] AssignmentMatrix = saveAssignmentMatrix(numRobotAug,numTaskAug,optimizationProblem);
 			//Initialize cost of objective value
 			double objectiveFunctionValue = 0;
 			double costValue = 0; // -> is the cost of B function non normalized
@@ -960,16 +956,15 @@ public class TaskAssignment{
 			double costofAssignment = 0;
 			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
-			for (int i = 0; i < numRobot; i++) {
-				for(int j = 0;j < numTasks; j++) {
+			for (int i = 0; i < numRobotAug; i++) {
+				for(int j = 0;j < numTaskAug; j++) {
 					if ( AssignmentMatrix[i][j] > 0) {
 						if (alpha != 1) {
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
 							
 						}
-						System.out.print("Cost F>>"+costF);
-						double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTasks+j]);
+						double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
 						double costB = pathValue/sumMaxPathsLength;
 						costValue = costValue + pathValue; // is the same value of objective function but non normalized
 						costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
