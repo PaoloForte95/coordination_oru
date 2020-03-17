@@ -290,6 +290,20 @@ public class BrowserVisualization implements FleetVisualization {
 	public void displayTask(Pose start, Pose goal, int id) {
 		displayTask(start, goal, id, "yellow");
 	}
+	
+	
+	@Override
+	public void removeTask(int taskId) {
+		String jsonString = "{ \"operation\" : \"removeGeometry\","
+				+ "\"data\" : "
+				+ "{ \"name\" : \""+ "TS"+taskId +"\" }}";
+		
+		String jsonString1 = "{ \"operation\" : \"removeGeometry\","
+				+ "\"data\" : "
+				+ "{ \"name\" : \""+ "TG"+taskId +"\" }}";
+		enqueueMessage(jsonString);
+		enqueueMessage(jsonString1);
+	}
 
 	@Override
 	public void removeEnvelope(TrajectoryEnvelope te) {
