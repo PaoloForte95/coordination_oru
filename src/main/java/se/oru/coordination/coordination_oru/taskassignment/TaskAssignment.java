@@ -90,6 +90,9 @@ public class TaskAssignment{
 	//Motion planner and Coordinator Parameters
 	protected AbstractTrajectoryEnvelopeCoordinator coordinator;
 	protected AbstractMotionPlanner defaultMotionPlanner = null;
+	
+	
+
 	protected ArrayList <PoseSteering[]> pathsToTargetGoal = new ArrayList <PoseSteering[]>();
 	protected ArrayList <SpatialEnvelope> pathsDrivingRobot = new ArrayList <SpatialEnvelope>();
 	//FleetMaster Interface Parameters
@@ -106,8 +109,48 @@ public class TaskAssignment{
 	protected FleetVisualization viz = null;
 	
 	
+	
+	
+	
 	public void setFleetVisualization(FleetVisualization viz) {
 		this.viz = viz;
+	}
+	
+	
+	
+	
+	public  double [][] checkTargetGoals (double [][] PAll){
+		for (int j= 0; j< PAll[0].length ; j++) {
+			boolean targetEndCanBeReach = false;
+			for (int i = 0; i < PAll.length; i++) {
+				if(PAll[i][j] != MaxPathLength) {
+					targetEndCanBeReach = true;
+				}
+				
+			}
+			//no robot can reach the target end -> need to introduce a dummy task and robot 
+			if(!targetEndCanBeReach) {
+				dummyRobot += 1 ;
+				dummyTask += 1 ;
+				numRobotAug += 1;
+				numTaskAug += 1;
+	
+			}	
+		}
+		
+		double [][] PAllAug = new double [numRobotAug][numTaskAug];
+		for(int i = 0;i < numRobotAug; i++) {
+			for(int j=0; j<  numTaskAug;j++) {
+				if(i < PAll.length && j< PAll[0].length) {
+					PAllAug[i][j] = PAll[i][j];
+				}else {
+					PAllAug[i][j] = 1;
+					pathsToTargetGoal.add(i*numTaskAug + j, null);
+			
+				}	
+			}
+		}
+		return PAllAug;
 	}
 	
 	
@@ -509,7 +552,9 @@ public class TaskAssignment{
 			rsp.setStart(rr.getPose());
 			rsp.setGoals(taskQueue.get(task).getStartPose(),taskQueue.get(task).getGoalPose());
 			rsp.setFootprint(tec.getFootprint(robot));
+		
 			if (!rsp.plan() ) {
+				System.out.println("Robot" + robot +" cannot reach the Target End of Task " + (task+1));
 				//the path to reach target end not exits
 				pathsToTargetGoal.add(null);
 				//Infinity cost is returned 
@@ -603,20 +648,21 @@ public class TaskAssignment{
 				 }else {
 					 pathsToTargetGoal.add(null);
 				 }
-				
 				PAll[robot][task] = pathLength;
 			}//For Task
 			//Sum the max path length for each robot
+			
 			sumPathsLength += maxPathLength;
 			//Sum the arrival time for the max path length
 			sumArrivalTime += computeArrivalTime(tec,maxPathLength);
 		}
+		double [][] PAllAug =  checkTargetGoals(PAll);
 		//Save the sum of max paths length to normalize path length cost
 		this.sumMaxPathsLength = sumPathsLength;
 		//Save the sum of arrival time considering max paths length to normalize delay cost
 		this.sumArrivalTime = sumArrivalTime;
 		//Return the cost of path length
-		return PAll;
+		return PAllAug;
 		}
 	
 	/**
@@ -895,13 +941,14 @@ public class TaskAssignment{
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
+		double[][] PAll = evaluatePAll(defaultMotionPlanner,tec);
 		//Build the solver and an objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem); 
 	    /////////////////////////////////
 	    //START OBJECTIVE FUNCTION		
 	    MPObjective objective = optimizationProblem.objective();
-    	double[][] PAll = evaluatePAll(defaultMotionPlanner,tec);
+    	
     	
     	 for (int i = 0; i < numRobotAug; i++) {
 			 for (int j = 0; j < numTaskAug; j++) {
@@ -1155,8 +1202,10 @@ public class TaskAssignment{
 							 if (j < numTask) {
 								 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
 								 taskQueue.get(j).assignRobot(i+1);
-								 System.out.println("Virtual Task # "+ (j+1) + " is Assigned");		 
-							 }	
+								 System.out.println("Task # "+ (j+1) + " is Assigned");		 
+							 }else {
+								 System.out.println("Virtual Task # "+ (j+1) + " is Assigned");
+							 }
 						 }		 
 					 }
 				 } 
@@ -1184,7 +1233,7 @@ public class TaskAssignment{
 			int i = 0;
 			int cont = 0;
 			while (i <= numRobot) {
-				if (taskQueue.size() < numRobot) {
+				if (taskQueue.size() < numRobot-1) {
 					break;
 				}
 				
