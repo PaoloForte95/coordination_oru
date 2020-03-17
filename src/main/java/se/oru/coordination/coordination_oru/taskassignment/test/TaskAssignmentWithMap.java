@@ -154,18 +154,19 @@ public class TaskAssignmentWithMap {
 
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 1;
+		double alpha = 0.6;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
 		assignmentProblem.addTask(task4);
 		assignmentProblem.addTask(task5);
-		assignmentProblem.setBrowserVisualization(viz);
+		assignmentProblem.setFleetVisualization(viz);
 		
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
+	
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
 		assignmentProblem.startTaskAssignment(alpha, tec);

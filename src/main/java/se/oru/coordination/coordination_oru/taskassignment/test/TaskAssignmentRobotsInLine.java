@@ -144,7 +144,7 @@ public class TaskAssignmentRobotsInLine {
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 1;
+		double alpha = 0.6;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
@@ -155,6 +155,7 @@ public class TaskAssignmentRobotsInLine {
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
+		assignmentProblem.setFleetVisualization(viz);
 		
 		assignmentProblem.startTaskAssignment(alpha, tec);
 		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);

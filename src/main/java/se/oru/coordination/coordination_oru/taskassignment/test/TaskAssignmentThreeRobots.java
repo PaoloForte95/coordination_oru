@@ -167,6 +167,7 @@ public class TaskAssignmentThreeRobots {
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
+		assignmentProblem.setFleetVisualization(viz);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
