@@ -1292,14 +1292,16 @@ public class TaskAssignment{
 		else {// NumTask > NumRobot 
 			int i = 0;
 			int cont = 0;
+			int assignRobot = 0;
 			while (i <= numRobot) {
-				if (taskQueue.size() < numRobot) {
+				if (taskQueue.size() <= i) {
 					break;
 				}
 				
 				if (taskQueue.get(i).isTaskAssigned() ) {
 					taskQueue.remove(i);
 					System.out.println("Task # "+ (cont+1) + " is removed ");
+					assignRobot += 1;
 					
 				}else {
 					i = i+1;
