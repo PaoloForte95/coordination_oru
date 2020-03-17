@@ -106,7 +106,7 @@ public class TaskAssignment{
 	protected FleetVisualization viz = null;
 	
 	
-	public void setBrowserVisualization(FleetVisualization viz) {
+	public void setFleetVisualization(FleetVisualization viz) {
 		this.viz = viz;
 	}
 	
