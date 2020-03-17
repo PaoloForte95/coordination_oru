@@ -1,5 +1,12 @@
 package se.oru.coordination.coordination_oru.taskassignment;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -618,8 +625,9 @@ public class TaskAssignment{
 	 * @return The PAll matrix
 	 */
 	private double[][] evaluatePAll(AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
-		//Evaluate the path length for the actual couple of task and ID
 		
+		
+		//Evaluate the path length for the actual couple of task and ID
 		//Initialize the sum of max paths lengths and time to do it for each robot
 		//This cost are used then for normalizing cost
 		double sumPathsLength = 0;
@@ -629,8 +637,8 @@ public class TaskAssignment{
 		double [][] PAll = new double[numRobotAug][numTaskAug];
 		for (int robot = 0; robot < numRobotAug; robot++) {
 			double maxPathLength = 1;
-			double pathLength = MaxPathLength;
 			for (int task = 0; task < numTaskAug; task++ ) {
+				double pathLength = MaxPathLength;
 				//Evaluate path Length
 				boolean typesAreEqual = false;
 				 if (task < numTask && robot < numRobot ) {
@@ -662,6 +670,22 @@ public class TaskAssignment{
 		//Save the sum of arrival time considering max paths length to normalize delay cost
 		this.sumArrivalTime = sumArrivalTime;
 		//Return the cost of path length
+		//Take time to understand how much time require this function
+		long timeInitial = Calendar.getInstance().getTimeInMillis();
+		long timeFinal = Calendar.getInstance().getTimeInMillis();
+		long timeRequired = timeFinal- timeInitial;
+		try {
+				File fout = new File("requiredTime.txt");
+				FileOutputStream fos = new FileOutputStream(fout);
+				BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+				bw.append(timeRequired+" Time to evaluate Pall ");
+				bw.close();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		 
 		return PAllAug;
 		}
 	
@@ -677,6 +701,7 @@ public class TaskAssignment{
 	 * @return The cost associated to the delay on completion of task j for robot i due to interference with other robot
 	 */
 	private double evaluatePathDelay(int robot ,int task,double [][] assignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
+		
 		//Evaluate the delay time on completion time for the actual couple of task and ID
 		//Initialize the time delay 
 		double delay = 0;
@@ -709,7 +734,7 @@ public class TaskAssignment{
 									if(delayCriticalSection < 0 ) {
 										delay += 0;
 									}else if(delayCriticalSection == Double.POSITIVE_INFINITY) {
-										delay += 100;
+										delay += 10000;
 									}else {
 										delay += delayCriticalSection;
 									}
@@ -986,6 +1011,18 @@ public class TaskAssignment{
 	 */
 	
 	public double [][] solveOptimizationProblem(MPSolver optimizationProblem,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+		BufferedWriter bw = null;
+		try {
+			File fout = new File("requiredTime2.txt");
+			FileOutputStream fos = new FileOutputStream(fout);
+			bw = new BufferedWriter(new OutputStreamWriter(fos));
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 		//Initialize the optimal assignment and the cost associated to it
 		double [][] optimalAssignmentMatrix = new double[numRobotAug][numTaskAug];
 		double objectiveOptimalValue = 100000000;
@@ -1003,13 +1040,15 @@ public class TaskAssignment{
 			double costofAssignment = 0;
 			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
+			
+			//Take time to understand how much time require this function
+			long timeInitial = Calendar.getInstance().getTimeInMillis();
 			for (int i = 0; i < numRobotAug; i++) {
 				for(int j = 0;j < numTaskAug; j++) {
 					if ( AssignmentMatrix[i][j] > 0) {
 						if (alpha != 1) {
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
-							
 						}
 						double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
 						double costB = pathValue/sumMaxPathsLength;
@@ -1023,6 +1062,20 @@ public class TaskAssignment{
 					}				
 				}		
 			}
+			long timeFinal = Calendar.getInstance().getTimeInMillis();
+			long timeRequired = timeFinal- timeInitial;
+			try {
+				//File fout = new File("requiredTime2.txt");
+				//FileOutputStream fos = new FileOutputStream(fout);
+				//BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+				bw.write(timeRequired+" Time to compute F Function ");
+				bw.newLine();
+				//bw.close();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			objectiveFunctionValue = costofAssignment;
 			//Compare actual solution and optimal solution finds so far
 			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
@@ -1035,6 +1088,13 @@ public class TaskAssignment{
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
 
+		}
+		try {
+			bw.close();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		//Return the Optimal Assignment Matrix 
 		return  optimalAssignmentMatrix;    
@@ -1178,16 +1238,16 @@ public class TaskAssignment{
 				 if (AssignmentMatrix[i][j] > 0) {
 					 if (i < numRobot) { //Considering only real Robot
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
-						 
-						 if (pss != null) {					
+						 //For Dispatch mission
+						 if (j < numTask && pss != null) {
 							 tec.addMissions(new Mission(IDsIdleRobots[i],pss));
-						 }		
+						 }	
 					 }
 					
 					 if (numRobot >= numTask ) { //All tasks are assigned 
 						 if (j < numTask && i < numRobot) { // considering only true task
 							 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
-							 //taskQueue.get(j).setTaskIsAssigned(true);
+	
 							 taskQueue.get(j).assignRobot(i+1);
 							 System.out.println("Task # "+ (j+1) + " is Assigned");
 		
@@ -1195,7 +1255,7 @@ public class TaskAssignment{
 					 } else { //numTask > numRobot
 						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
 							 if (j <numTask) {
-								 System.out.println("Task # "+ (j+1) + " is not Assigned");
+								 System.out.println("Task # "+ (j+1) + " is not Assigned to a real robot");
 								 
 							 }
 						 }else{// the real task is assigned to a real robot
@@ -1233,7 +1293,7 @@ public class TaskAssignment{
 			int i = 0;
 			int cont = 0;
 			while (i <= numRobot) {
-				if (taskQueue.size() < numRobot-1) {
+				if (taskQueue.size() < numRobot) {
 					break;
 				}
 				
