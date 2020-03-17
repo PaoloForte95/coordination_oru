@@ -625,7 +625,8 @@ public class TaskAssignment{
 	 * @return The PAll matrix
 	 */
 	private double[][] evaluatePAll(AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
-		
+		//Take time to understand how much time require this function
+		long timeInitial = Calendar.getInstance().getTimeInMillis();
 		
 		//Evaluate the path length for the actual couple of task and ID
 		//Initialize the sum of max paths lengths and time to do it for each robot
@@ -670,8 +671,7 @@ public class TaskAssignment{
 		//Save the sum of arrival time considering max paths length to normalize delay cost
 		this.sumArrivalTime = sumArrivalTime;
 		//Return the cost of path length
-		//Take time to understand how much time require this function
-		long timeInitial = Calendar.getInstance().getTimeInMillis();
+		
 		long timeFinal = Calendar.getInstance().getTimeInMillis();
 		long timeRequired = timeFinal- timeInitial;
 		try {
