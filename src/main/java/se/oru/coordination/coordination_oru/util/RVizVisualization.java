@@ -711,4 +711,16 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 		return 0;
 	}
 
+	@Override
+	public void displayTask(Pose start, Pose goal, int id, String color) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void removeTask(int taskId) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

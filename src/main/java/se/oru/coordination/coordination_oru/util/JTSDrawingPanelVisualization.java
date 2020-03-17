@@ -10,6 +10,7 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.metacsp.multi.spatial.DE9IM.GeometricShapeDomain;
+import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 import org.metacsp.utility.UI.JTSDrawingPanel;
 
@@ -18,6 +19,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.util.AffineTransformation;
 
 import se.oru.coordination.coordination_oru.RobotReport;
 import se.oru.coordination.coordination_oru.TrajectoryEnvelopeCoordinator;
@@ -206,6 +208,40 @@ public class JTSDrawingPanelVisualization implements FleetVisualization {
 	public int periodicEnvelopeRefreshInMillis() {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	@Override
+	public void displayTask(Pose start, Pose goal, int id, String color) {
+		String name1 = "TS"+id;
+		String name2 = "TG"+id;
+		Geometry circle0 = createCircle(start, 1);
+		Geometry circle1 = createCircle(goal, 1);
+		panel.addGeometry(name1, circle0, false, true, false, "#FF0000");
+		panel.addGeometry(name2, circle1, false, true, false, "#FF0000");
+		
+	}
+	
+	private Geometry createCircle(Pose pose, double radius) {		
+		GeometryFactory gf = new GeometryFactory();
+		Coordinate[] coords = new Coordinate[7];
+		for(int i =0; i <= 2*Math.PI;i += Math.PI/2) {
+			coords[i] = new Coordinate(radius*Math.cos(i),radius*Math.sin(i));
+			
+		}
+		coords[6]  = new Coordinate(1,0);
+		Polygon circle = gf.createPolygon(coords);
+		AffineTransformation at = new AffineTransformation();
+		at.scale(1, 1);
+		at.rotate(pose.getTheta());
+		at.translate(pose.getX(), pose.getY());
+		Geometry ret = at.transform(circle);
+		return ret;
+	}
+	
+	@Override
+	public void removeTask(int taskId) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
