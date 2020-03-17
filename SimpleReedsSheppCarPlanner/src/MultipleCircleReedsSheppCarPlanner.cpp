@@ -76,10 +76,11 @@ extern "C" bool plan_multiple_circles(const char* mapFilename, double mapResolut
   ss.setup();
   ss.print();
   
-  // attempt to solve the problem within 30 seconds of planning time
-  ob::PlannerStatus solved = ss.solve(30.0);
+  // attempt to solve the problem within 10 seconds of planning time
+  //ob::PlannerStatus solved = ss.solve(30.0);
+  ob::PlannerStatus solved = ss.solve(10.0);
   
-  if (solved) {
+  if (solved == ob::PlannerStatus::StatusType::EXACT_SOLUTION) {
     std::cout << "Found solution:" << std::endl;
     ss.simplifySolution();
     og::PathGeometric pth = ss.getSolutionPath();
@@ -100,10 +101,10 @@ extern "C" bool plan_multiple_circles(const char* mapFilename, double mapResolut
       (*path)[i].y = reals[1];
       (*path)[i].theta = reals[2];
     }
-    return 1;
+    return true;
   }
   std::cout << "No solution found" << std::endl;
-  return 0;
+  return false;
 }
 
 extern "C" bool plan_multiple_circles_nomap(double* xCoords, double* yCoords, int numCoords, double startX, double startY, double startTheta, double goalX, double goalY, double goalTheta, PathPose** path, int* pathLength, double distanceBetweenPathPoints, double turningRadius) {
@@ -159,7 +160,7 @@ extern "C" bool plan_multiple_circles_nomap(double* xCoords, double* yCoords, in
   // attempt to solve the problem within 30 seconds of planning time
   ob::PlannerStatus solved = ss.solve(30.0);
   
-  if (solved) {
+  if (solved == ob::PlannerStatus::StatusType::EXACT_SOLUTION) {
     std::cout << "Found solution:" << std::endl;
     ss.simplifySolution();
     og::PathGeometric pth = ss.getSolutionPath();
@@ -180,8 +181,8 @@ extern "C" bool plan_multiple_circles_nomap(double* xCoords, double* yCoords, in
       (*path)[i].y = reals[1];
       (*path)[i].theta = reals[2];
     }
-    return 1;
+    return false;
   }
   std::cout << "No solution found" << std::endl;
-  return 0;
+  return true;
 }
