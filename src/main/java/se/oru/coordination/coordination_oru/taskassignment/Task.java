@@ -75,6 +75,7 @@ public class Task {
 	}
 	
 	public void setPaths(PoseSteering[] ... newPaths) {
+		if (this.paths == null) this.paths = new ArrayList<PoseSteering[]>();
 		for (int i = 0; i < newPaths.length-1; i++) {
 			if (!(newPaths[i][newPaths[i].length-1].equals(newPaths[i+1][0]))) throw new Error("Teletransport not supported yet!");
 			this.paths.add(newPaths[i]);
