@@ -116,15 +116,9 @@ public class TaskAssignment{
 	protected FleetVisualization viz = null;
 	
 	
-	
-	
-	
 	public void setFleetVisualization(FleetVisualization viz) {
 		this.viz = viz;
 	}
-	
-	
-	
 	
 	public  double [][] checkTargetGoals (double [][] PAll){
 		for (int j= 0; j< PAll[0].length ; j++) {
@@ -1240,15 +1234,27 @@ public class TaskAssignment{
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
 						 //For Dispatch mission
 						 if (j < numTask && pss != null) {
-							 tec.addMissions(new Mission(IDsIdleRobots[i],pss));
-						 }	
+							 taskQueue.get(j).assignRobot(i+1);
+							 taskQueue.get(j).setPaths(pss);
+							 Mission[] robotMissions = taskQueue.get(j).getMissions();
+							 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
+							 //tec.addMissions(new Mission(IDsIdleRobots[i],pss));
+							 System.out.println("Task # "+ (j+1) + " is Assigned");
+							 
+							 tec.addMissions(robotMissions);
+						 }else {
+							 System.out.println("Virtual Task # "+ (j+1) + " is Assigned to a real robot");
+						 }
+					 }else{
+						 System.out.println("Task # "+ (j+1) + " is not Assigned to a real robot");
+						 
 					 }
-					
+					/*
 					 if (numRobot >= numTask ) { //All tasks are assigned 
 						 if (j < numTask && i < numRobot) { // considering only true task
 							 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
-							 taskQueue.get(j).assignRobot(i+1);
-							 System.out.println("Task # "+ (j+1) + " is Assigned");
+							 //taskQueue.get(j).assignRobot(i+1);
+							 //System.out.println("Task # "+ (j+1) + " is Assigned");
 		
 						 }	 
 					 } else { //numTask > numRobot
@@ -1260,11 +1266,12 @@ public class TaskAssignment{
 						 }else{// the real task is assigned to a real robot
 							 if (j < numTask) {
 								 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
-								 taskQueue.get(j).assignRobot(i+1);
+								 //taskQueue.get(j).assignRobot(i+1);
 								 System.out.println("Task # "+ (j+1) + " is Assigned");		 
 							 }
 						 }		 
 					 }
+					 */
 				 } 
 			 }
 		 }
