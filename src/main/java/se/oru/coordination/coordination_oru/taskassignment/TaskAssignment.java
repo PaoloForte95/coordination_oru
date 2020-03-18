@@ -85,8 +85,6 @@ public class TaskAssignment{
 	//Path and arrival Time Parameters
 	//Infinity cost if path to reach a goal note exists
 	protected double MaxPathLength = 10000000;
-	//This is the max path length for an Assignment 
-	protected double MaxPathForAssignment = 1;
 	//This is the sum of max path length for each robot
 	protected double sumMaxPathsLength = 1;
 	//This is the sum of arrival time considering max path length for each robot
@@ -1030,7 +1028,6 @@ public class TaskAssignment{
 			//Initialize cost of objective value
 			double objectiveFunctionValue = 0;
 			double costValue = 0; // -> is the cost of B function non normalized
-			MaxPathForAssignment = 1/sumMaxPathsLength;
 			double costofAssignment = 0;
 			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
@@ -1048,11 +1045,8 @@ public class TaskAssignment{
 						double costB = pathValue/sumMaxPathsLength;
 						costValue = costValue + pathValue; // is the same value of objective function but non normalized
 						costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
-						//Save the max path length for each Assignment
-						if (pathValue > MaxPathForAssignment){
-							MaxPathForAssignment = pathValue;
-							
-						}
+						
+						
 					}				
 				}		
 			}
@@ -1111,22 +1105,21 @@ public class TaskAssignment{
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
-		int numTasks = numTaskAug;
-		int numRobot = numRobotAug;
 		//Consider possibility to have dummy Robot or Tasks
+		double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
 		//Build the optimization Problem without the objective function
-		MPSolver optimizationProblem = buildOptimizationProblem(numRobot,numTasks);
+		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		//Initialize the optimal assignment and the cost associated to it
-		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
+		double [][] optimalAssignmentMatrix = new double[numRobotAug][numTaskAug];
 		double objectiveOptimalValue = 100000000;
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
-		double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
+		
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 			//Evaluate a feasible assignment
 			resultStatus = optimizationProblem.solve();
 			//Evaluate the Assignment Matrix
-			double [][] AssignmentMatrix = saveAssignmentMatrix(numRobot,numTasks,optimizationProblem);
+			double [][] AssignmentMatrix = saveAssignmentMatrix(numRobotAug,numTaskAug,optimizationProblem);
 			//Initialize cost of objective value
 			double objectiveFunctionValue = 0;
 			double costBFunction = 0;
@@ -1174,10 +1167,8 @@ public class TaskAssignment{
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
-		int numTasks = numTaskAug;
-		int numRobot = numRobotAug;
 		double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
-		double [][] optimalAssignmentMatrix = new double[numRobot][numTasks];
+		double [][] optimalAssignmentMatrix = new double[numRobotAug][numTaskAug];
 		//Initialize optimal indexes 
 		int iOtt = 0;
 		int jOtt = 0;
@@ -1221,14 +1212,12 @@ public class TaskAssignment{
 	 * robot is defined
 	 */
 	public boolean TaskAllocation(double [][] AssignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
-		int robotIDs = AssignmentMatrix.length;
-		int numTasks = AssignmentMatrix[0].length;	
 		System.out.println("Number of Robot : " + numRobot);
 		System.out.println("Number of Task : " + numTask);
 		System.out.println("Number of dummy Robot : " + dummyRobot);
 		System.out.println("Number of dummy Task : " + dummyTask);
-		for (int i = 0; i < robotIDs; i++) {
-			 for (int j = 0; j < numTasks; j++) {
+		for (int i = 0; i < AssignmentMatrix.length; i++) {
+			 for (int j = 0; j < AssignmentMatrix[0].length; j++) {
 				 if (AssignmentMatrix[i][j] > 0) {
 					 if (i < numRobot) { //Considering only real Robot
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
