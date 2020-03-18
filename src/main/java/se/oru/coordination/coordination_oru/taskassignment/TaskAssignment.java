@@ -1247,7 +1247,6 @@ public class TaskAssignment{
 					 if (numRobot >= numTask ) { //All tasks are assigned 
 						 if (j < numTask && i < numRobot) { // considering only true task
 							 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
-	
 							 taskQueue.get(j).assignRobot(i+1);
 							 System.out.println("Task # "+ (j+1) + " is Assigned");
 		
@@ -1263,8 +1262,6 @@ public class TaskAssignment{
 								 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
 								 taskQueue.get(j).assignRobot(i+1);
 								 System.out.println("Task # "+ (j+1) + " is Assigned");		 
-							 }else {
-								 System.out.println("Virtual Task # "+ (j+1) + " is Assigned");
 							 }
 						 }		 
 					 }
@@ -1272,6 +1269,22 @@ public class TaskAssignment{
 			 }
 		 }
 		//Remove Assigned Tasks from the set	
+		int i = 0;
+		int cont = 0;
+		while (i < Math.min(numRobot, numTask)) {
+			if (taskQueue.size() == 0 || taskQueue.size() <= i) {
+				break;
+			}
+			if (taskQueue.get(i).isTaskAssigned()){
+				taskQueue.remove(i);
+				System.out.println("Task # "+ (cont+1) + " is removed ");
+			}else {
+				i = i+1;
+			}
+			cont +=1;	
+			
+		}
+		/*
 		if (numRobot >= numTask){
 			int i = 0;
 			int cont = 0;
@@ -1292,7 +1305,6 @@ public class TaskAssignment{
 		else {// NumTask > NumRobot 
 			int i = 0;
 			int cont = 0;
-			int assignRobot = 0;
 			while (i <= numRobot) {
 				if (taskQueue.size() <= i) {
 					break;
@@ -1301,7 +1313,7 @@ public class TaskAssignment{
 				if (taskQueue.get(i).isTaskAssigned() ) {
 					taskQueue.remove(i);
 					System.out.println("Task # "+ (cont+1) + " is removed ");
-					assignRobot += 1;
+	
 					
 				}else {
 					i = i+1;
@@ -1310,6 +1322,7 @@ public class TaskAssignment{
 				
 			}
 		}
+		*/
 		 System.out.println("Remaining task: "+ taskQueue.size());
 		//Remove all path from the path set
 		pathsToTargetGoal.removeAll(pathsToTargetGoal);
