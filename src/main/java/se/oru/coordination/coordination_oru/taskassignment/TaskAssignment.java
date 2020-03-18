@@ -97,7 +97,13 @@ public class TaskAssignment{
 	protected AbstractMotionPlanner defaultMotionPlanner = null;
 	
 	
-
+	//Time required by function parameters
+	protected long timeRequiretoEvaluatePaths;
+	protected long timeRequiretofillInPall;
+	protected long timeRequiretoComputeCriticalSection;
+	protected long timeRequiretoComputePathsDelay;
+	
+	protected ArrayList <PoseSteering[]> pathsToTargetStart = new ArrayList <PoseSteering[]>();
 	protected ArrayList <PoseSteering[]> pathsToTargetGoal = new ArrayList <PoseSteering[]>();
 	protected ArrayList <SpatialEnvelope> pathsDrivingRobot = new ArrayList <SpatialEnvelope>();
 	//FleetMaster Interface Parameters
@@ -617,8 +623,9 @@ public class TaskAssignment{
 	 * @return The PAll matrix
 	 */
 	private double[][] evaluatePAll(AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
-		//Take time to understand how much time require this function
-		long timeInitial = Calendar.getInstance().getTimeInMillis();
+		
+		
+		long timeInitial2 = 0;
 		
 		//Evaluate the path length for the actual couple of task and ID
 		//Initialize the sum of max paths lengths and time to do it for each robot
@@ -626,12 +633,20 @@ public class TaskAssignment{
 		double sumPathsLength = 0;
 		double sumArrivalTime = 0;
 		//Initialize PAll
-		
 		double [][] PAll = new double[numRobotAug][numTaskAug];
+		
+		
+		
+		
 		for (int robot = 0; robot < numRobotAug; robot++) {
 			double maxPathLength = 1;
 			for (int task = 0; task < numTaskAug; task++ ) {
+					
+				//Take time to understand how much time require this function
+				long timeInitial = Calendar.getInstance().getTimeInMillis();
 				double pathLength = MaxPathLength;
+				
+				
 				//Evaluate path Length
 				boolean typesAreEqual = false;
 				 if (task < numTask && robot < numRobot ) {
@@ -643,13 +658,22 @@ public class TaskAssignment{
 				 }
 				 if(typesAreEqual) { // only if robot and typoe have the same types
 					 pathLength = evaluatePathLength(robot+1,task,rsp,tec);
+					 //Take time to evaluate the path
+					 timeInitial2 = Calendar.getInstance().getTimeInMillis();
+					 long timeFinal = Calendar.getInstance().getTimeInMillis();
+					 long timeRequired = timeFinal- timeInitial;
+					 timeRequiretoEvaluatePaths = timeRequiretoEvaluatePaths + timeRequired;
 						if ( pathLength > maxPathLength) {
 							maxPathLength = pathLength;
 						}
 				 }else {
 					 pathsToTargetGoal.add(null);
 				 }
-				PAll[robot][task] = pathLength;
+				 PAll[robot][task] = pathLength;
+				//Take the time to fill in the PAll Matrix
+				long timeFinal2 = Calendar.getInstance().getTimeInMillis();
+				long timeRequired2 = timeFinal2- timeInitial2;
+				timeRequiretofillInPall = timeRequiretofillInPall + timeRequired2;
 			}//For Task
 			//Sum the max path length for each robot
 			
@@ -664,19 +688,7 @@ public class TaskAssignment{
 		this.sumArrivalTime = sumArrivalTime;
 		//Return the cost of path length
 		
-		long timeFinal = Calendar.getInstance().getTimeInMillis();
-		long timeRequired = timeFinal- timeInitial;
-		try {
-				File fout = new File("requiredTime.txt");
-				FileOutputStream fos = new FileOutputStream(fout);
-				BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-				bw.append(timeRequired+" Time to evaluate Pall ");
-				bw.close();
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		
 		 
 		return PAllAug;
 		}
@@ -693,7 +705,8 @@ public class TaskAssignment{
 	 * @return The cost associated to the delay on completion of task j for robot i due to interference with other robot
 	 */
 	private double evaluatePathDelay(int robot ,int task,double [][] assignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
-		
+		long timeInitial2 = 0;
+
 		//Evaluate the delay time on completion time for the actual couple of task and ID
 		//Initialize the time delay 
 		double delay = 0;
@@ -717,8 +730,15 @@ public class TaskAssignment{
 							if (pss2 != null) {//is == null if robotType is different to Task type
 								//Evaluate the Spatial Envelope of this second Robot
 								SpatialEnvelope se2 = TrajectoryEnvelope.createSpatialEnvelope(pss2,tec.getFootprint(m+1));
+								long timeInitial = Calendar.getInstance().getTimeInMillis();
 								//Compute the Critical Section between this 2 robot
 								CriticalSection [] css = AbstractTrajectoryEnvelopeCoordinator.getCriticalSections(se1, se2,true, Math.min(tec.getFootprintPolygon(robot).getArea(),tec.getFootprintPolygon(m+1).getArea()));
+								 //Evaluate the time to compute critical Section
+								long timeFinal = Calendar.getInstance().getTimeInMillis();
+								 long timeRequired = timeFinal- timeInitial;
+								 timeRequiretoComputeCriticalSection = timeRequiretoComputeCriticalSection + timeRequired;
+			
+								 timeInitial2 = Calendar.getInstance().getTimeInMillis();
 								//Compute the delay due to precedence constraint in Critical Section
 								for (int g = 0; g < css.length; g++) {
 									Pair<Double, Double> a1 = estimateTimeToCompletionDelays(pss1.hashCode(),pss1,te1TCDelays,pss2.hashCode(),pss2,te2TCDelays, css[g]);
@@ -742,6 +762,9 @@ public class TaskAssignment{
 								delay +=  a1.getFirst();
 							}
 					    }
+					    long timeFinal2 = Calendar.getInstance().getTimeInMillis();
+						long timeRequired2 = timeFinal2- timeInitial2;
+						timeRequiretoComputePathsDelay = timeRequiretoComputePathsDelay + timeRequired2;
 					}
 				}	
 			}
@@ -754,6 +777,23 @@ public class TaskAssignment{
 		//return the delay for the i-th robot and the j-th task due to interference with other robots
 		return delay;
 		}
+	
+	
+	
+	
+	
+	private double [][] evaluateFFunction(double [][] assignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
+		double [][]functionF =new double [numRobotAug][numTaskAug];
+		for (int i = 0; i < numRobotAug; i++) {
+			for(int j = 0;j < numTaskAug; j++) {
+				if ( assignmentMatrix[i][j] > 0) {
+						functionF[i][j] = evaluatePathDelay(i+1,j,assignmentMatrix,tec)/sumArrivalTime;
+					
+				}				
+			}		
+		}
+		return functionF;
+	}
 		
 	/**
 	 * Evaluate an approximation of  max delay considering all missions due to precedence constraints. The max delay is computed 
@@ -1005,7 +1045,7 @@ public class TaskAssignment{
 	public double [][] solveOptimizationProblem(MPSolver optimizationProblem,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
 		BufferedWriter bw = null;
 		try {
-			File fout = new File("requiredTime2.txt");
+			File fout = new File("requiredTime.txt");
 			FileOutputStream fos = new FileOutputStream(fout);
 			bw = new BufferedWriter(new OutputStreamWriter(fos));
 			
@@ -1033,7 +1073,6 @@ public class TaskAssignment{
 			//Evaluate the cost of F Function for this Assignment
 			
 			//Take time to understand how much time require this function
-			long timeInitial = Calendar.getInstance().getTimeInMillis();
 			for (int i = 0; i < numRobotAug; i++) {
 				for(int j = 0;j < numTaskAug; j++) {
 					if ( AssignmentMatrix[i][j] > 0) {
@@ -1050,15 +1089,17 @@ public class TaskAssignment{
 					}				
 				}		
 			}
-			long timeFinal = Calendar.getInstance().getTimeInMillis();
-			long timeRequired = timeFinal- timeInitial;
 			try {
-				//File fout = new File("requiredTime2.txt");
-				//FileOutputStream fos = new FileOutputStream(fout);
-				//BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-				bw.write(timeRequired+" Time to compute F Function ");
+				bw.append(timeRequiretoEvaluatePaths+" Time evaluate Paths ");
 				bw.newLine();
-				//bw.close();
+				bw.append(timeRequiretofillInPall+" Time to fill in PAll ");
+				bw.newLine();
+				bw.append(timeRequiretoComputeCriticalSection+" Time to compute Critical Section ");
+				bw.newLine();
+				bw.append(timeRequiretoComputePathsDelay+" Time to compute Paths delay ");
+				bw.newLine();
+				timeRequiretoComputeCriticalSection = 0;
+				timeRequiretoComputePathsDelay = 0;
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -1238,29 +1279,6 @@ public class TaskAssignment{
 						 System.out.println("Task # "+ (j+1) + " is not Assigned to a real robot");
 						 
 					 }
-					/*
-					 if (numRobot >= numTask ) { //All tasks are assigned 
-						 if (j < numTask && i < numRobot) { // considering only true task
-							 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
-							 //taskQueue.get(j).assignRobot(i+1);
-							 //System.out.println("Task # "+ (j+1) + " is Assigned");
-		
-						 }	 
-					 } else { //numTask > numRobot
-						 if ( i >= numRobot) { //Only virtual robot -> the task is stored
-							 if (j <numTask) {
-								 System.out.println("Task # "+ (j+1) + " is not Assigned to a real robot");
-								 
-							 }
-						 }else{// the real task is assigned to a real robot
-							 if (j < numTask) {
-								 viz.displayTask(taskQueue.get(j).getStartPose(), taskQueue.get(j).getGoalPose(), (j+1), "red");
-								 //taskQueue.get(j).assignRobot(i+1);
-								 System.out.println("Task # "+ (j+1) + " is Assigned");		 
-							 }
-						 }		 
-					 }
-					 */
 				 } 
 			 }
 		 }
@@ -1280,45 +1298,6 @@ public class TaskAssignment{
 			cont +=1;	
 			
 		}
-		/*
-		if (numRobot >= numTask){
-			int i = 0;
-			int cont = 0;
-			while (i < numTask) {
-				if (taskQueue.size() == 0 || taskQueue.size() <= i) {
-					break;
-				}
-				if (taskQueue.get(i).isTaskAssigned()){
-					taskQueue.remove(i);
-					System.out.println("Task # "+ (cont+1) + " is removed ");
-				}else {
-					i = i+1;
-				}
-				cont +=1;	
-				
-			}
-		}
-		else {// NumTask > NumRobot 
-			int i = 0;
-			int cont = 0;
-			while (i <= numRobot) {
-				if (taskQueue.size() <= i) {
-					break;
-				}
-				
-				if (taskQueue.get(i).isTaskAssigned() ) {
-					taskQueue.remove(i);
-					System.out.println("Task # "+ (cont+1) + " is removed ");
-	
-					
-				}else {
-					i = i+1;
-				}
-				cont +=1;	
-				
-			}
-		}
-		*/
 		 System.out.println("Remaining task: "+ taskQueue.size());
 		//Remove all path from the path set
 		pathsToTargetGoal.removeAll(pathsToTargetGoal);
