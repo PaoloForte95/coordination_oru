@@ -2,10 +2,12 @@ package se.oru.coordination.coordination_oru.taskassignment;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -583,37 +585,7 @@ public class TaskAssignment{
 			pathsToTargetGoal.add(pss);
 			//Take the Path Length
 			pathLength = Missions.getPathLength(pss);
-		/*
-			rsp.setStart(rr.getPose());
-			rsp.setGoals(taskQueue.get(task).getStartPose());
-			rsp.setFootprint(tec.getFootprint(robot));
 		
-			if (!rsp.plan() ) {
-				System.out.println("Robot" + robot +" cannot reach the Target End of Task " + (task+1));
-				//the path to reach target end not exits
-	
-				//Infinity cost is returned 
-	
-			}
-			pss = rsp.getPath();
-			
-			
-			pathsToTargetStart.add(pss);
-			rsp.setStart(taskQueue.get(task).getStartPose());
-			rsp.setGoals(taskQueue.get(task).getGoalPose());
-			rsp.setFootprint(tec.getFootprint(robot));
-		
-			if (!rsp.plan() ) {
-				System.out.println("Robot" + robot +" cannot reach the Target End of Task " + (task+1));
-				//the path to reach target end not exits
-	
-				//Infinity cost is returned 
-	
-			}
-			pss = rsp.getPath();
-			pathsToTargetStart.add(pss);
-		*/
-			
 			
 		} else { //There also virtual robot and task are considered 
 			//There are considered real robot and dummy task
@@ -662,6 +634,15 @@ public class TaskAssignment{
 	 */
 	private double[][] evaluatePAll(AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
 		
+		PrintStream fileStream1 = null;
+		PrintStream fileStream2 = null;
+		try {
+			fileStream1 = new PrintStream(new File("PathPlanner.txt"));
+			fileStream2 = new PrintStream(new File("PAll.txt"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		long timeInitial2 = 0;
 		
@@ -697,11 +678,14 @@ public class TaskAssignment{
 				 if(typesAreEqual) { // only if robot and typoe have the same types
 					 pathLength = evaluatePathLength(robot+1,task,rsp,tec);
 					 //Take time to evaluate the path
-					 timeInitial2 = Calendar.getInstance().getTimeInMillis();
+					 
 					 long timeFinal = Calendar.getInstance().getTimeInMillis();
 					 long timeRequired = timeFinal- timeInitial;
 					 timeRequiretoEvaluatePaths = timeRequiretoEvaluatePaths + timeRequired;
-						if ( pathLength > maxPathLength) {
+					 fileStream1.println(timeRequired+"");
+					 timeInitial2 = Calendar.getInstance().getTimeInMillis();
+						
+					if ( pathLength > maxPathLength) {
 							maxPathLength = pathLength;
 						}
 				 }else {
@@ -712,6 +696,7 @@ public class TaskAssignment{
 				long timeFinal2 = Calendar.getInstance().getTimeInMillis();
 				long timeRequired2 = timeFinal2- timeInitial2;
 				timeRequiretofillInPall = timeRequiretofillInPall + timeRequired2;
+				fileStream2.println(timeRequired2+"");
 			}//For Task
 			//Sum the max path length for each robot
 			
@@ -743,8 +728,21 @@ public class TaskAssignment{
 	 * @return The cost associated to the delay on completion of task j for robot i due to interference with other robot
 	 */
 	private double evaluatePathDelay(int robot ,int task,double [][] assignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
+		
+
+		PrintStream fileStream1 = null;
+		PrintStream fileStream2 = null;
+		try {
+			fileStream1 = new PrintStream(new FileOutputStream("CriticalSections.txt",true));
+			fileStream2 = new PrintStream(new FileOutputStream("PathDelay.txt",true));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		long timeInitial2 = 0;
 
+		
 		//Evaluate the delay time on completion time for the actual couple of task and ID
 		//Initialize the time delay 
 		double delay = 0;
@@ -771,11 +769,14 @@ public class TaskAssignment{
 								long timeInitial = Calendar.getInstance().getTimeInMillis();
 								//Compute the Critical Section between this 2 robot
 								CriticalSection [] css = AbstractTrajectoryEnvelopeCoordinator.getCriticalSections(se1, se2,true, Math.min(tec.getFootprintPolygon(robot).getArea(),tec.getFootprintPolygon(m+1).getArea()));
-								 //Evaluate the time to compute critical Section
+								
+								
+								//Evaluate the time to compute critical Section
 								long timeFinal = Calendar.getInstance().getTimeInMillis();
 								 long timeRequired = timeFinal- timeInitial;
 								 timeRequiretoComputeCriticalSection = timeRequiretoComputeCriticalSection + timeRequired;
-			
+								 fileStream1.println(timeRequired+"");
+								 
 								 timeInitial2 = Calendar.getInstance().getTimeInMillis();
 								//Compute the delay due to precedence constraint in Critical Section
 								for (int g = 0; g < css.length; g++) {
@@ -800,9 +801,11 @@ public class TaskAssignment{
 								delay +=  a1.getFirst();
 							}
 					    }
+					    
 					    long timeFinal2 = Calendar.getInstance().getTimeInMillis();
 						long timeRequired2 = timeFinal2- timeInitial2;
 						timeRequiretoComputePathsDelay = timeRequiretoComputePathsDelay + timeRequired2;
+						fileStream2.println(timeRequired2+"");
 					}
 				}	
 			}
@@ -1081,17 +1084,15 @@ public class TaskAssignment{
 	 */
 	
 	public double [][] solveOptimizationProblem(MPSolver optimizationProblem,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
-		BufferedWriter bw = null;
+		
+		
+		PrintStream fileStream = null;
 		try {
-			File fout = new File("requiredTime.txt");
-			FileOutputStream fos = new FileOutputStream(fout);
-			bw = new BufferedWriter(new OutputStreamWriter(fos));
-			
-		} catch (IOException e) {
+			fileStream = new PrintStream(new File("RequiredTime.txt"));
+		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 		
 		//Initialize the optimal assignment and the cost associated to it
 		double [][] optimalAssignmentMatrix = new double[numRobotAug][numTaskAug];
@@ -1127,22 +1128,13 @@ public class TaskAssignment{
 					}				
 				}		
 			}
-			try {
-				bw.append(timeRequiretoEvaluatePaths+"");
-				bw.newLine();
-				bw.append(timeRequiretofillInPall+"");
-				bw.newLine();
-				bw.append(timeRequiretoComputeCriticalSection+"");
-				bw.newLine();
-				bw.append(timeRequiretoComputePathsDelay+"");
-				bw.newLine();
-				timeRequiretoComputeCriticalSection = 0;
-				timeRequiretoComputePathsDelay = 0;
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			fileStream.println(timeRequiretoEvaluatePaths+"");
+			fileStream.println(timeRequiretofillInPall+"");
+			fileStream.println(timeRequiretoComputeCriticalSection+"");
+			fileStream.println(timeRequiretoComputePathsDelay+"");
+			
+			
+			
 			objectiveFunctionValue = costofAssignment;
 			//Compare actual solution and optimal solution finds so far
 			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
@@ -1156,13 +1148,7 @@ public class TaskAssignment{
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
 
 		}
-		try {
-			bw.close();
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
 		//Return the Optimal Assignment Matrix 
 		return  optimalAssignmentMatrix;    
 	}
@@ -1295,6 +1281,8 @@ public class TaskAssignment{
 		System.out.println("Number of Task : " + numTask);
 		System.out.println("Number of dummy Robot : " + dummyRobot);
 		System.out.println("Number of dummy Task : " + dummyTask);
+		System.out.println("Total Number of Robot : " + numRobotAug);
+		System.out.println("Total Number of Task : " + numTaskAug);
 		for (int i = 0; i < AssignmentMatrix.length; i++) {
 			 for (int j = 0; j < AssignmentMatrix[0].length; j++) {
 				 if (AssignmentMatrix[i][j] > 0) {
