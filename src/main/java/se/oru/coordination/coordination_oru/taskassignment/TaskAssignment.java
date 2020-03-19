@@ -13,6 +13,7 @@ import java.util.Calendar;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 
@@ -70,6 +71,9 @@ import com.google.ortools.sat.*;
 import se.oru.coordination.coordination_oru.taskassignment.Task;
 
 
+
+
+
 public class TaskAssignment{
 	//Optimization Problem Parameters
 	protected int numRobot;
@@ -103,7 +107,7 @@ public class TaskAssignment{
 	protected long timeRequiretoComputeCriticalSection;
 	protected long timeRequiretoComputePathsDelay;
 	
-	protected ArrayList <PoseSteering[]> pathsToTargetStart = new ArrayList <PoseSteering[]>();
+	protected ArrayList<PoseSteering> pathsToTargetStart = new ArrayList <PoseSteering>();
 	protected ArrayList <PoseSteering[]> pathsToTargetGoal = new ArrayList <PoseSteering[]>();
 	protected ArrayList <SpatialEnvelope> pathsDrivingRobot = new ArrayList <SpatialEnvelope>();
 	//FleetMaster Interface Parameters
@@ -118,6 +122,9 @@ public class TaskAssignment{
 	public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
 	
 	protected FleetVisualization viz = null;
+	
+	
+	
 	
 	
 	public void setFleetVisualization(FleetVisualization viz) {
@@ -566,16 +573,47 @@ public class TaskAssignment{
 				return pathLength;
 			}
 			
-			System.out.print("No path");
 			//If the path exists
 			//Take the Pose Steering representing the path
 			PoseSteering[] pss = rsp.getPath();
+			
 			//Add the path to the FleetMaster Interface -> this is necessary for F function
 			addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
 			//Save the path to Task in the path set
 			pathsToTargetGoal.add(pss);
 			//Take the Path Length
 			pathLength = Missions.getPathLength(pss);
+		/*
+			rsp.setStart(rr.getPose());
+			rsp.setGoals(taskQueue.get(task).getStartPose());
+			rsp.setFootprint(tec.getFootprint(robot));
+		
+			if (!rsp.plan() ) {
+				System.out.println("Robot" + robot +" cannot reach the Target End of Task " + (task+1));
+				//the path to reach target end not exits
+	
+				//Infinity cost is returned 
+	
+			}
+			pss = rsp.getPath();
+			
+			
+			pathsToTargetStart.add(pss);
+			rsp.setStart(taskQueue.get(task).getStartPose());
+			rsp.setGoals(taskQueue.get(task).getGoalPose());
+			rsp.setFootprint(tec.getFootprint(robot));
+		
+			if (!rsp.plan() ) {
+				System.out.println("Robot" + robot +" cannot reach the Target End of Task " + (task+1));
+				//the path to reach target end not exits
+	
+				//Infinity cost is returned 
+	
+			}
+			pss = rsp.getPath();
+			pathsToTargetStart.add(pss);
+		*/
+			
 			
 		} else { //There also virtual robot and task are considered 
 			//There are considered real robot and dummy task
@@ -1090,13 +1128,13 @@ public class TaskAssignment{
 				}		
 			}
 			try {
-				bw.append(timeRequiretoEvaluatePaths+" Time evaluate Paths ");
+				bw.append(timeRequiretoEvaluatePaths+"");
 				bw.newLine();
-				bw.append(timeRequiretofillInPall+" Time to fill in PAll ");
+				bw.append(timeRequiretofillInPall+"");
 				bw.newLine();
-				bw.append(timeRequiretoComputeCriticalSection+" Time to compute Critical Section ");
+				bw.append(timeRequiretoComputeCriticalSection+"");
 				bw.newLine();
-				bw.append(timeRequiretoComputePathsDelay+" Time to compute Paths delay ");
+				bw.append(timeRequiretoComputePathsDelay+"");
 				bw.newLine();
 				timeRequiretoComputeCriticalSection = 0;
 				timeRequiretoComputePathsDelay = 0;
