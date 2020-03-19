@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
 import org.sat4j.sat.SolverController;
@@ -77,7 +78,8 @@ public class Task {
 	public void setPaths(PoseSteering[] ... newPaths) {
 		if (this.paths == null) this.paths = new ArrayList<PoseSteering[]>();
 		for (int i = 0; i < newPaths.length-1; i++) {
-			if (!(newPaths[i][newPaths[i].length-1].equals(newPaths[i+1][0]))) throw new Error("Teletransport not supported yet!");
+			//if (!(newPaths[i][newPaths[i].length-1].equals(newPaths[i+1][0]))) throw new Error("Teletransport not supported yet!");
+			if (!(ArrayUtils.isEquals(newPaths[i][newPaths[i].length-1].getPose().toString(),newPaths[i+1][0].getPose().toString()))) throw new Error("Teletransport not supported yet!");
 			this.paths.add(newPaths[i]);
 		}
 		this.paths.add(newPaths[newPaths.length-1]);
