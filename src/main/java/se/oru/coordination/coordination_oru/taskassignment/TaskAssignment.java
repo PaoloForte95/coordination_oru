@@ -127,13 +127,22 @@ public class TaskAssignment{
 	
 	
 	
-	
+	/**
+	 * Set the Fleet Visualization 
+	 * @param viz -> Visualization to use 
+	 */
 	
 	public void setFleetVisualization(FleetVisualization viz) {
 		this.viz = viz;
 	}
 	
-	public  double [][] checkTargetGoals (double [][] PAll){
+	/**
+	 * Check if a goal can be reached by at least one robot of the Fleet 
+	 * @param PAll -> Initial PAll
+	 * @return PAll incremented a task cannot be reach by any robot
+	 */
+	
+	private  double [][] checkTargetGoals (double [][] PAll){
 		for (int j= 0; j< PAll[0].length ; j++) {
 			boolean targetEndCanBeReach = false;
 			for (int i = 0; i < PAll.length; i++) {
@@ -655,8 +664,6 @@ public class TaskAssignment{
 		double [][] PAll = new double[numRobotAug][numTaskAug];
 		
 		
-		
-		
 		for (int robot = 0; robot < numRobotAug; robot++) {
 			double maxPathLength = 1;
 			for (int task = 0; task < numTaskAug; task++ ) {
@@ -820,21 +827,6 @@ public class TaskAssignment{
 		}
 	
 	
-	
-	
-	
-	private double [][] evaluateFFunction(double [][] assignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
-		double [][]functionF =new double [numRobotAug][numTaskAug];
-		for (int i = 0; i < numRobotAug; i++) {
-			for(int j = 0;j < numTaskAug; j++) {
-				if ( assignmentMatrix[i][j] > 0) {
-						functionF[i][j] = evaluatePathDelay(i+1,j,assignmentMatrix,tec)/sumArrivalTime;
-					
-				}				
-			}		
-		}
-		return functionF;
-	}
 		
 	/**
 	 * Evaluate an approximation of  max delay considering all missions due to precedence constraints. The max delay is computed 
@@ -924,10 +916,10 @@ public class TaskAssignment{
 		MPSolver optimizationProblem = new MPSolver(
 				"TaskAssignment", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
 		//START DECISION VARIABLE VARIABLE
-		MPVariable [][] Decision_Variable = new MPVariable[numRobot][numTasks]  ;
+		MPVariable [][] decisionVariable = new MPVariable[numRobot][numTasks]  ;
 		for (int i = 0; i < numRobot; i++) {
 			 for (int j = 0; j < numTasks; j++) {
-				 Decision_Variable[i][j] = optimizationProblem.makeBoolVar("x"+"["+i+","+j+"]");
+				 decisionVariable[i][j] = optimizationProblem.makeBoolVar("x"+"["+i+","+j+"]");
 			 }
 		}
 		//END DECISION VARIABLE
@@ -939,7 +931,7 @@ public class TaskAssignment{
 			 MPConstraint c0 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY, 1);
 			 for (int j = 0; j < numTasks; j++) {
 				 //Build the constraint
-				 c0.setCoefficient(Decision_Variable[i][j], 1); 
+				 c0.setCoefficient(decisionVariable[i][j], 1); 
 			 }
 		 }
 		//Each task can be performed only by a robot
@@ -948,7 +940,7 @@ public class TaskAssignment{
 			 MPConstraint c0 = optimizationProblem.makeConstraint(1, 1); 
 			 for (int i = 0; i < numTasks; i++) {
 				//Build the constraint
-				c0.setCoefficient(Decision_Variable[i][j], 1); 		
+				c0.setCoefficient(decisionVariable[i][j], 1); 		
 			 }
 		 }
 	
