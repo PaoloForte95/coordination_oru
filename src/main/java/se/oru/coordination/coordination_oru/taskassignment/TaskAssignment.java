@@ -1264,7 +1264,6 @@ public class TaskAssignment{
 		boolean [] TasksMissionsAllocates = new boolean [numTaskAug];
 		for (int i = 0; i < numRobotAug ; i++) {
 			double costBFunction = 0;
-//			int robotType = 0;
 			double OptimalValueBFunction = 100000000;
 			boolean typesAreEqual = false;
 			for(int j=0;j < numTaskAug ; j++) {
@@ -1315,10 +1314,21 @@ public class TaskAssignment{
 		for (int i = 0; i < AssignmentMatrix.length; i++) {
 			 for (int j = 0; j < AssignmentMatrix[0].length; j++) {
 				 if (AssignmentMatrix[i][j] > 0) {
-					 if (i < numRobot) { //Considering only real Robot
+					 if (i < IDsIdleRobots.length) { //Considering only real Robot
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
+						 
+						defaultMotionPlanner.setStart(tec.getRobotReport(i+1).getPose());
+						defaultMotionPlanner.setGoals(taskQueue.get(j).getStartPose());
+						defaultMotionPlanner.plan();
+						PoseSteering[] pssProva = defaultMotionPlanner.getPath();
+						
+						defaultMotionPlanner.setStart(taskQueue.get(j).getStartPose());
+						defaultMotionPlanner.setGoals(taskQueue.get(j).getGoalPose());
+						defaultMotionPlanner.plan();
+						PoseSteering[] pssProva2 = defaultMotionPlanner.getPath();
+						
 						 //For Dispatch mission
-						 if (j < numTask && pss != null) {
+						 if (j < taskQueue.size() && pss != null) {
 							 taskQueue.get(j).assignRobot(i+1);
 							 taskQueue.get(j).setPaths(pss);
 							 Mission[] robotMissions = taskQueue.get(j).getMissions();
@@ -1340,7 +1350,7 @@ public class TaskAssignment{
 		//Remove Assigned Tasks from the set	
 		int i = 0;
 		int cont = 0;
-		while (i < Math.min(numRobot, numTask)) {
+		while (i < Math.min(IDsIdleRobots.length, taskQueue.size())) {
 			if (taskQueue.size() == 0 || taskQueue.size() <= i) {
 				break;
 			}
