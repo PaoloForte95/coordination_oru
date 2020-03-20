@@ -969,7 +969,7 @@ public class TaskAssignment{
 		numRobot = tec.getIdleRobots().length;
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
-		dummyRobotorTask(this.numRobot,numTask,tec);
+		dummyRobotorTask(numRobot,numTask,tec);
 		//Build the solver and an objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem); 
@@ -1077,10 +1077,11 @@ public class TaskAssignment{
 	
 	public double [][] solveOptimizationProblem(MPSolver optimizationProblem,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
 		
-		
 		PrintStream fileStream = null;
 		try {
 			fileStream = new PrintStream(new File("RequiredTime.txt"));
+			PrintStream fileStream1 = new PrintStream(new File("CriticalSections.txt"));
+			PrintStream fileStream2 = new PrintStream(new File("PathDelay.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1156,6 +1157,17 @@ public class TaskAssignment{
 	 */
 
 	public double [][] solveOptimizationProblemExactAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+		
+		PrintStream fileStream = null;
+		try {
+			fileStream = new PrintStream(new File("RequiredTime.txt"));
+			PrintStream fileStream1 = new PrintStream(new File("CriticalSections.txt"));
+			PrintStream fileStream2 = new PrintStream(new File("PathDelay.txt"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		numTask = taskQueue.size();
 		//Get free robots
 		numRobot = tec.getIdleRobots().length;
@@ -1192,6 +1204,13 @@ public class TaskAssignment{
 					}
 				}
 			}
+			
+			
+			fileStream.println(timeRequiretoEvaluatePaths+"");
+			fileStream.println(timeRequiretofillInPall+"");
+			fileStream.println(timeRequiretoComputeCriticalSection+"");
+			fileStream.println(timeRequiretoComputePathsDelay+"");
+			
 			objectiveFunctionValue = alpha * costBFunction + (1-alpha)*costFFunction;
 			//Compare actual solution and optimal solution finds so far
 			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
@@ -1218,6 +1237,18 @@ public class TaskAssignment{
 	 */
 
 	public double [][] solveOptimizationProblemGreedyAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
+		
+		PrintStream fileStream = null;
+		try {
+			fileStream = new PrintStream(new File("RequiredTime.txt"));
+			PrintStream fileStream1 = new PrintStream(new File("CriticalSections.txt"));
+			PrintStream fileStream2 = new PrintStream(new File("PathDelay.txt"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 		numTask = taskQueue.size();
 		//Get free robots
 		numRobot = tec.getIdleRobots().length;
@@ -1253,6 +1284,12 @@ public class TaskAssignment{
 						}
 				 }
 			}
+			
+			fileStream.println(timeRequiretoEvaluatePaths+"");
+			fileStream.println(timeRequiretofillInPall+"");
+			fileStream.println(timeRequiretoComputeCriticalSection+"");
+			fileStream.println(timeRequiretoComputePathsDelay+"");
+			
 			optimalAssignmentMatrix[iOtt][jOtt] = 1;
 			//the task is already assigned
 			TasksMissionsAllocates[jOtt] = true;
