@@ -163,6 +163,9 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 		this.robots.put(robot.getRobotID(), robot);
 		placeRobot(robot.getRobotID(),robot.getStartingPosition());
 		setFootprint(robot.getRobotID(),robot.getFootprint());
+		if(robot.getMotionPlanner() != null) {
+			this.motionPlanners.put(robot.getRobotID(), robot.getMotionPlanner());
+		}
 	}
 
 	public Robot getRobot(int robotID) {

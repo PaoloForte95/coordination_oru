@@ -68,7 +68,7 @@ public class Robot {
 	 protected Coordinate[] footprint;
 	 protected ForwardModel fm = null;
 	 protected Pose startingPosition;
-	
+	 protected AbstractMotionPlanner MotionPlanner = null;
 	 
 	 /**
 		 * The default footprint used for robots if none is specified.
@@ -154,6 +154,15 @@ public class Robot {
 		 this.fm= fm;
 	 }
 	 
+	 
+	 public void setMotionPlanner(AbstractMotionPlanner MotionPlanner) {
+		 this.MotionPlanner= MotionPlanner;
+	 }
+	 
+	 
+	 public AbstractMotionPlanner getMotionPlanner() {
+		 return this.MotionPlanner;
+	 }
 }
 
 
