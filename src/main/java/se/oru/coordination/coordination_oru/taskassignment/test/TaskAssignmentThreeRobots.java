@@ -1,5 +1,6 @@
 package se.oru.coordination.coordination_oru.taskassignment.test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -99,14 +100,16 @@ public class TaskAssignmentThreeRobots {
 		tec.setVisualization(viz);
 		tec.setUseInternalCriticalPoints(false);
 
-		
+		String yamlFile = "maps/map-empty.yaml";
 		//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
 		ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
 		rsp.setRadius(0.2);
 		rsp.setFootprint(footprint1,footprint2,footprint3,footprint4);
 		rsp.setTurningRadius(4.0);
 		rsp.setDistanceBetweenPathPoints(0.5);
-		
+		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
+		double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
+		rsp.setMapResolution(res);
 		
 	   
 		Pose startPoseRobot1 = new Pose(4.0,6.0,0.0);
@@ -151,19 +154,16 @@ public class TaskAssignmentThreeRobots {
 		Task task4 = new Task(startPoseGoal4,endPoseGoal4,1);
 		Task task5 = new Task(startPoseGoal5,endPoseGoal5,1);
 		
-		viz.displayTask(startPoseGoal1, goalPoseRobot1,1);
-		//viz.displayTask(startPoseGoal2, goalPoseRobot2,2);
-		//viz.displayTask(startPoseGoal3, goalPoseRobot3,3);
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 1;
+		double alpha = 0.6;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
-		assignmentProblem.addTask(task4);
-		assignmentProblem.addTask(task5);
+		//assignmentProblem.addTask(task4);
+		//assignmentProblem.addTask(task5);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);

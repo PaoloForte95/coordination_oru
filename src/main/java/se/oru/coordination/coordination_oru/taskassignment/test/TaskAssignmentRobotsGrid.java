@@ -1,8 +1,10 @@
 package se.oru.coordination.coordination_oru.taskassignment.test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -99,32 +101,36 @@ public class TaskAssignmentRobotsGrid {
 		tec.setVisualization(viz);
 		tec.setUseInternalCriticalPoints(false);
 
-		
+		String yamlFile = "maps/map-empty.yaml";
 		//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
 		ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
 		rsp.setRadius(0.2);
 		rsp.setFootprint(footprint1,footprint2,footprint3,footprint4);
 		rsp.setTurningRadius(4.0);
 		rsp.setDistanceBetweenPathPoints(0.5);
-		
-		
+		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
+		Random rand = new Random();
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		double delta = 0;
-		for(int i = 1; i<= 8; i++) {
+		for(int i = 1; i<= 4; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
-			Robot robot = new Robot(i, startPoseRobot);
+			int robotType = rand.nextInt(2)+1;
+			System.out.println("provaRobot >> "+ robotType);
+			Robot robot = new Robot(i,robotType, startPoseRobot);
 			tec.addRobot(robot);
 			Pose startPoseGoal = new Pose(15.0,(6.0 + delta),0.0);
 			Pose goalPoseRobot = new Pose(30.0 ,(6.0 + delta) ,0.0);
-			Task task = new Task(startPoseGoal,goalPoseRobot,1);
+			int taskType = rand.nextInt(2)+1;
+			System.out.println("provaTask >> "+ taskType);
+			Task task = new Task(startPoseGoal,goalPoseRobot,taskType);
 			assignmentProblem.addTask(task);
 			delta += 6.0;
 		}
 		
 	
 		//Solve the problem to find some feasible solution
-		double alpha = 1;
+		double alpha = 0.6;
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
