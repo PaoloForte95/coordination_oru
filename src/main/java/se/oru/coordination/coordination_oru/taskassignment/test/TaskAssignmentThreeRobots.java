@@ -141,9 +141,9 @@ public class TaskAssignmentThreeRobots {
 		Pose goalPoseRobot3 = new Pose(21.0,3.0,-Math.PI/2);
 		
 		
-		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
-		Task task2 = new Task(startPoseGoal2,goalPoseRobot2,1);
-		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
+		Task task1 = new Task(100,startPoseGoal1,goalPoseRobot1,1);
+		Task task2 = new Task(100,startPoseGoal2,goalPoseRobot2,1);
+		Task task3 = new Task(100,startPoseGoal3,goalPoseRobot3,1);
 
 		Pose startPoseGoal4 = new Pose(8.0,16.0,-Math.PI/2);
 		Pose startPoseGoal5 = new Pose(-5.0,-5.0,Math.PI/2);
@@ -162,13 +162,15 @@ public class TaskAssignmentThreeRobots {
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
-		//assignmentProblem.addTask(task4);
-		//assignmentProblem.addTask(task5);
+		assignmentProblem.addTask(task4);
+		assignmentProblem.addTask(task5);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
 		assignmentProblem.setFleetVisualization(viz);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
+		assignmentProblem.setCoordinator(tec);
+		assignmentProblem.setLinearWeigth(alpha);
 		
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
 		double [][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);

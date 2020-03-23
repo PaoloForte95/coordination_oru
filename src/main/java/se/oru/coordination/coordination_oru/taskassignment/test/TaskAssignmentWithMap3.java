@@ -154,7 +154,7 @@ public class TaskAssignmentWithMap3 {
 
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 0.6;
+		double alpha = 1.0;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
