@@ -199,16 +199,6 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	 * @return
 	 */
 	
-	public Integer[] getIdleRobots(int numRobots) {
-		ArrayList<Integer> IdleRobots = new ArrayList<Integer>();
-		for(int i = 0; i < numRobots ; i++) {
-			if(!isDriving(i+1)) {
-				IdleRobots.add(i);
-			}
-		}
-		return IdleRobots.toArray(new Integer[IdleRobots.size()]);
-	}
-	
 	public Integer[] getIdleRobots() {
 		ArrayList<Integer> IdleRobots = new ArrayList<Integer>();
 		int i = 1;
