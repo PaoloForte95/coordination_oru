@@ -43,29 +43,64 @@ public class Task {
 	protected int decidedRobotID = -1;
 	protected List<PoseSteering[]> paths = null;
 	protected Set<Integer> robotTypes = null;
+	protected double deadline = -1;
 	
-
+	
+	
 	/**
  	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
 	 * robot can perform this task
-	 * @param StartPose
-	 * @param GoalPose
-	 * @param robotTypes
+	 * @param deadline -> deadline of Task 
+	 * @param StartPose -> Task Starting Position
+	 * @param GoalPose -> Task Ending Position
+	 * @param robotTypes -> robot type that can execute this task
 	 */
 	public Task (Pose StartPose, Pose GoalPose, int ... robotTypes) {
-		this(new PoseSteering(StartPose, 0.0), new PoseSteering(GoalPose, 0.0), robotTypes);
+		this(-1,new PoseSteering(StartPose, 0.0), new PoseSteering(GoalPose, 0.0),robotTypes);
 	}
 
 	/**
  	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
 	 * robot can perform this task
-	 * @param StartPose
-	 * @param GoalPose
-	 * @param robotTypes
+	 * @param deadline -> deadline of Task 
+	 * @param StartPose -> Task Starting Position
+	 * @param GoalPose -> Task Ending Position
+	 * @param robotTypes -> robot type that can execute this task
+	 */
+	public Task (double deadline,Pose StartPose, Pose GoalPose, int ... robotTypes) {
+		this(deadline,new PoseSteering(StartPose, 0.0), new PoseSteering(GoalPose, 0.0),robotTypes);
+	}
+
+	
+	/**
+ 	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
+	 * robot can perform this task
+	  * @param StartPose -> Task Starting Position
+	 * @param GoalPose -> Task Ending Position
+	 * @param deadline -> deadline of Task
+	 * @param robotTypes -> robot type that can execute this task
 	 */
 	public Task (PoseSteering StartPose, PoseSteering GoalPose, int ... robotTypes) {
 		this.StartPoint = StartPose;
 		this.GoalPoint = GoalPose;
+
+		if (robotTypes.length == 0) throw new Error("Need to specifiy at least one robot type!");
+		this.robotTypes = new HashSet<Integer>();
+		for (int rt : robotTypes) this.robotTypes.add(rt);
+	}
+	
+	/**
+ 	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
+	 * robot can perform this task
+	  * @param StartPose -> Task Starting Position
+	 * @param GoalPose -> Task Ending Position
+	 * @param deadline -> deadline of Task
+	 * @param robotTypes -> robot type that can execute this task
+	 */
+	public Task (double deadline, PoseSteering StartPose, PoseSteering GoalPose, int ... robotTypes) {
+		this.StartPoint = StartPose;
+		this.GoalPoint = GoalPose;
+		this.deadline = deadline;
 		if (robotTypes.length == 0) throw new Error("Need to specifiy at least one robot type!");
 		this.robotTypes = new HashSet<Integer>();
 		for (int rt : robotTypes) this.robotTypes.add(rt);
@@ -116,6 +151,20 @@ public class Task {
 		//return this.taskIsAssigned;
 	}
 
+	public boolean isDeadlineSpecified() {
+		return this.deadline != -1;
+		//return this.taskIsAssigned;
+	}
+	
+	
+	public void setDeadline(double deadline) {
+		this.deadline = deadline;
+	}
+	
+	public double getDeadline() {
+		return this.deadline;
+	}
+	
 	
 	public void getInfo() {
 		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint + "\n Robot Types ->"+ this.robotTypes
