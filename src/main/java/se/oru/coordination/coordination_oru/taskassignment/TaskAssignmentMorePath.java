@@ -66,6 +66,10 @@ public class TaskAssignmentMorePath {
 		protected int maxNumPaths=3;
 		protected double linearWeight = 1;
 		protected ArrayList <Task> taskQueue = new ArrayList <Task>();
+		//Parameters of weights in Optimization Problem
+		protected double pathLengthWeigth = 1;
+		protected double arrivalTimeWeigth = 1;
+		protected double tardinessWeigth = 1;
 		//Number of Idle Robots
 		protected Integer[] IDsIdleRobots;
 		//Path and arrival Time Parameters
@@ -78,6 +82,9 @@ public class TaskAssignmentMorePath {
 		//Parameters of mininum Velocity and Acceleration considering all robots
 		protected double minMaxVel;
 		protected double minMaxAcc;
+		//This is the sum of all tardiness 
+		protected double sumTardiness = 1;
+		
 		//Motion planner and Coordinator Parameters
 		protected AbstractTrajectoryEnvelopeCoordinator coordinator;
 		protected AbstractMotionPlanner defaultMotionPlanner = null;
@@ -106,6 +113,59 @@ public class TaskAssignmentMorePath {
 		protected FleetVisualization viz = null;
 	
 	
+		/**
+		 * Set the path length weight  in Optimization Problem. THis must be a number between 0 and 1.
+		 * @param viz -> Visualization to use 
+		 */
+		
+		public void setPathLengthWeigth(double pathLengthWeigth) {
+			if(pathLengthWeigth > 1 || pathLengthWeigth < 0) {
+				throw new Error("This must be a number between 0 or 1!");
+			}
+			this.pathLengthWeigth = pathLengthWeigth;
+		}
+		
+		
+
+		/**
+		 * Set the arrival time weight  in Optimization Problem. THis must be a number between 0 and 1.
+		 * Note that this is used only if alpha is equal to 1 , since the arrival time is already consider in cost 
+		 * of F function
+		 * @param viz -> Visualization to use 
+		 */
+		
+		public void setArrivalTimeWeigth(double arrivalTimeWeigth) {
+			if(arrivalTimeWeigth > 1 || arrivalTimeWeigth < 0) {
+				throw new Error("This must be a number between 0 or 1!");
+			}
+			this.arrivalTimeWeigth = arrivalTimeWeigth;
+		}
+		
+		/**
+		 * Set the tardiness weight  in Optimization Problem. THis must be a number between 0 and 1. This is used only if 
+		 * in task is specified the deadline.
+		 * @param viz -> Visualization to use 
+		 */
+		
+		public void setTardinessWeigth(double tardinessWeigth) {
+			if(tardinessWeigth > 1 || tardinessWeigth < 0) {
+				throw new Error("This must be a number between 0 or 1!");
+			}
+			this.tardinessWeigth = tardinessWeigth;
+		}
+		
+		
+		
+		/**
+		 * Set the linear weight used in Optimization Problem
+		 * @param viz -> Visualization to use 
+		 */
+		
+		public void setLinearWeigth(double linearWeigth) {
+			this.linearWeight = linearWeigth;
+		}	
+		
+		
 	/**
 	 * Set the Fleet Visualization 
 	 * @param viz -> Visualization to use 
@@ -686,7 +746,7 @@ public class TaskAssignmentMorePath {
 						timeRequiretoEvaluatePaths = timeRequiretoEvaluatePaths + timeRequired;
 						fileStream1.println(timeRequired+"");
 						timeInitial2 = Calendar.getInstance().getTimeInMillis();
-						if ( pathLength > maxPathLength) {
+						if ( pathLength > maxPathLength && pathLength != this.MaxPathLength) {
 								maxPathLength = pathLength;
 							}
 						}
@@ -706,7 +766,7 @@ public class TaskAssignmentMorePath {
 			
 			sumPathsLength += maxPathLength;
 			//Sum the arrival time for the max path length
-			sumArrivalTime += computeArrivalTime(tec,maxPathLength);
+			sumArrivalTime += computeArrivalTime(maxPathLength);
 		}
 		double [][][] PAllAug =  checkTargetGoals(PAll);
 		//Save the sum of max paths length to normalize path length cost
@@ -838,11 +898,100 @@ public class TaskAssignmentMorePath {
 	 * @param pathLength -> The max path for each robot
 	 * @return The time to drive the path
 	 */
-	private double computeArrivalTime(AbstractTrajectoryEnvelopeCoordinator tec,double pathLength){
+	private double computeArrivalTime(double pathLength){
 		//Compute the arrival time of this path, considering a robot alone with a velocity trapezoidal model
 		double arrivalTime = pathLength/this.minMaxVel + minMaxVel/minMaxAcc;
 		//Return the arrival time 
 		return arrivalTime;
+	}
+	
+	/**
+	 * Compute the arrival for all robots in fleet to all possible tasks
+	 * @param pathLength -> The max path for each robot
+	 * @return The time to drive the path
+	 */
+	private double [][][] computeArrivalTimeFleet(double[][][]PAll){
+		//Compute the arrival time of this path, considering a robot alone with a velocity trapezoidal model
+		double [][][] arrivalTimeMatrix = new double [numRobotAug][numTaskAug][maxNumPaths];
+		for (int i = 0 ; i < IDsIdleRobots.length; i++) {
+			for (int j = 0 ; j < taskQueue.size(); j++) {
+				 for(int path = 0;path < maxNumPaths; path++) {
+					 double arrivalTime = PAll[i][j][path]/this.minMaxVel + minMaxVel/minMaxAcc;
+						arrivalTimeMatrix[i][j][path] = arrivalTime;
+				 }
+				
+			}
+		}
+		
+		//Return the arrival time 
+		return arrivalTimeMatrix;
+	}
+	
+	/**
+	 * Evaluate the tardiness in completion of a task . The tardiness is the defined as the further time required to complete a task
+	 * after the deadline 
+	 * @param pathLength -> path length
+	 * @param task -> the task j-th
+	 * @return
+	 */
+	
+	private double[][][] computeTardiness(double [][][]PAll) {
+		double tardiness = 0;
+		
+		double [][][] tardinessMatrix = new double [numRobotAug][numTaskAug][maxNumPaths];
+		for (int i = 0 ; i < IDsIdleRobots.length; i++) {
+			for (int j = 0 ; j < taskQueue.size(); j++) {
+				for(int path = 0;path < maxNumPaths; path++) {
+					if (taskQueue.get(j).isDeadlineSpecified()) { // Compute tardiness only if specified in task constructor
+						double deadline = taskQueue.get(j).getDeadline();  //Expressed in seconds
+						double completionTime = computeArrivalTime(PAll[i][j][path]);
+						tardiness = Math.max(0, (completionTime-deadline));
+						tardinessMatrix[i][j][path] = tardiness;
+						sumTardiness += tardiness;
+					}	
+				}
+				
+			}
+		}
+		return tardinessMatrix;
+	}
+
+	/**
+	 * Evaluate the overall B function, that is the function that consider interference free costs
+	 * Costs considered:
+	 * 1) Path Length
+	 * 2) Tardiness
+	 * Each cost is already normalized;
+	 * @param PAll
+	 * @return
+	 */
+	private double [][][] evaluateBFunction(double [][][]PAll){
+		double [][][] tardinessMatrix = computeTardiness(PAll);
+		double [][][] BFunction = new double [numRobotAug][numTaskAug][maxNumPaths];
+		if(linearWeight == 1) {
+			double [][][] arrivalTimeMatrix = computeArrivalTimeFleet(PAll);
+			for (int i = 0 ; i < numRobotAug; i++) {
+				for (int j = 0 ; j < numTaskAug; j++) {
+					for(int path = 0;path < maxNumPaths; path++) {
+						BFunction[i][j][path] = pathLengthWeigth*PAll[i][j][path]/sumMaxPathsLength+ tardinessWeigth*tardinessMatrix[i][j][path]/sumTardiness + arrivalTimeWeigth*arrivalTimeMatrix[i][j][path]/sumArrivalTime;
+					}
+					
+				}
+			}
+		}
+		else {
+			for (int i = 0 ; i < numRobotAug; i++) {
+				for (int j = 0 ; j < numTaskAug; j++) {
+					for(int path = 0;path < maxNumPaths; path++) {
+						BFunction[i][j][path] = pathLengthWeigth*PAll[i][j][path]/sumMaxPathsLength+ tardinessWeigth*tardinessMatrix[i][j][path]/sumTardiness;
+					}
+
+	
+				}
+			}
+		}
+		
+		return BFunction;
 	}
 	
 	/**
@@ -1049,6 +1198,7 @@ public class TaskAssignmentMorePath {
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
 		double[][][] PAll = evaluatePAll(defaultMotionPlanner,tec);
+		double[][][] BFunction = evaluateBFunction(PAll);
 		//Build the solver and an objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPVariable [][][] decisionVariable = tranformArray(optimizationProblem); 
