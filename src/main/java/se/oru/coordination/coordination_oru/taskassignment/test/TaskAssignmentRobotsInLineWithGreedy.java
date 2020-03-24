@@ -113,14 +113,14 @@ public class TaskAssignmentRobotsInLineWithGreedy {
 		Pose startPoseRobot3 = new Pose(12.0,6.0,0.0);
 	
 
-		Robot robot1 = new Robot(1, startPoseRobot1);
-		Robot robot2 = new Robot(2, startPoseRobot2);
-		Robot robot3 = new Robot(3, startPoseRobot3);
+		Robot robot1 = new Robot(1);
+		Robot robot2 = new Robot(2);
+		Robot robot3 = new Robot(3);
 		
 		
-		tec.addRobot(robot1);
-		tec.addRobot(robot2);
-		tec.addRobot(robot3);
+		tec.addRobot(robot1, startPoseRobot1);
+		tec.addRobot(robot2, startPoseRobot2);
+		tec.addRobot(robot3, startPoseRobot3);
 	
 		
 		Pose startPoseGoal1 = new Pose(24.0,6.0,0.0);

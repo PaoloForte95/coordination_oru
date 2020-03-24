@@ -118,17 +118,17 @@ public class TaskAssignmentWithMap {
 		Pose startPoseRobot4 = new Pose(8.0,30.0,Math.PI/2);
 		Pose startPoseRobot5 = new Pose(4.0,12.0,Math.PI/2);
 
-		Robot robot1 = new Robot(1, 1 ,startPoseRobot1);
-		Robot robot2 = new Robot(2, 1 ,startPoseRobot2);
-		Robot robot3 = new Robot(3, 1 ,startPoseRobot3);
-		Robot robot4 = new Robot(4, 1 ,startPoseRobot4);
-		Robot robot5 = new Robot(5, 1 ,startPoseRobot5);
+		Robot robot1 = new Robot(1, 1 );
+		Robot robot2 = new Robot(2, 1 );
+		Robot robot3 = new Robot(3, 1 );
+		Robot robot4 = new Robot(4, 1 );
+		Robot robot5 = new Robot(5, 1 );
 		
-		tec.addRobot(robot1);
-		tec.addRobot(robot2);
-		tec.addRobot(robot3);
-		tec.addRobot(robot4);
-		tec.addRobot(robot5);
+		tec.addRobot(robot1,startPoseRobot1);
+		tec.addRobot(robot2,startPoseRobot2);
+		tec.addRobot(robot3,startPoseRobot3);
+		tec.addRobot(robot4,startPoseRobot4);
+		tec.addRobot(robot5,startPoseRobot5);
 		
 		Pose startPoseGoal1 = new Pose(28.0,5.0,0.0);
 		Pose startPoseGoal2 = new Pose(22.0,15.0,0.0);

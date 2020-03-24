@@ -118,19 +118,19 @@ public class TaskAssignmentThreeRobots {
 		Pose startPoseRobot4 = new Pose(16.0,30.0,-Math.PI/2);
 		Pose startPoseRobot5 = new Pose(-5.0,-5.0,Math.PI/2);
 
-		Robot robot1 = new Robot(1, 1, startPoseRobot1);
-		Robot robot2 = new Robot(2, 1, startPoseRobot2);
-		Robot robot3 = new Robot(3, 1, startPoseRobot3);
-		Robot robot4 = new Robot(4, 1, startPoseRobot4);
-		Robot robot5 = new Robot(5, 1, startPoseRobot5);
+		Robot robot1 = new Robot(1, 1);
+		Robot robot2 = new Robot(2, 1);
+		Robot robot3 = new Robot(3, 1);
+		Robot robot4 = new Robot(4, 1);
+		Robot robot5 = new Robot(5, 1);
 		
 
 		
-		tec.addRobot(robot1);
-		tec.addRobot(robot2);
-		tec.addRobot(robot3);
-		//tec.addRobot(robot4);
-		//tec.addRobot(robot5);
+		tec.addRobot(robot1,startPoseRobot1);
+		tec.addRobot(robot2,startPoseRobot2);
+		tec.addRobot(robot3,startPoseRobot3);
+		//tec.addRobot(robot4, startPoseRobot4);
+		//tec.addRobot(robot5, startPoseRobot5);
 
 	
 		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
@@ -171,7 +171,7 @@ public class TaskAssignmentThreeRobots {
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setCoordinator(tec);
 		assignmentProblem.setLinearWeigth(alpha);
-		
+		assignmentProblem.setCostFunctionsWeigth(0.8, 0.1, 0.1);
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
 		double [][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);
 		//double [][] assignmentMatrix = assignmentProblem.solveOptimizationProblemGreedyAlgorithm(tec,alpha);

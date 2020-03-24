@@ -117,8 +117,8 @@ public class TaskAssignmentRobotsGrid {
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;
 			System.out.println("provaRobot >> "+ robotType);
-			Robot robot = new Robot(i,robotType, startPoseRobot);
-			tec.addRobot(robot);
+			Robot robot = new Robot(i,robotType);
+			tec.addRobot(robot,startPoseRobot);
 			Pose startPoseGoal = new Pose(15.0,(6.0 + delta),0.0);
 			Pose goalPoseRobot = new Pose(30.0 ,(6.0 + delta) ,0.0);
 			int taskType = rand.nextInt(2)+1;
