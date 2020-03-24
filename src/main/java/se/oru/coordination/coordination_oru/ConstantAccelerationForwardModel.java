@@ -109,4 +109,16 @@ public class ConstantAccelerationForwardModel implements ForwardModel {
 		return bounds;
 	}
 
+
+	@Override
+	public double getVel() {
+		return this.maxVel;
+	}
+
+
+	@Override
+	public double getAcc() {
+		return this.maxAccel;
+	}
+
 }

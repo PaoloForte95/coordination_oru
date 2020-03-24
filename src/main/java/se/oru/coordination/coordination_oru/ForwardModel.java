@@ -4,6 +4,10 @@ import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 
 public interface ForwardModel {
 	
+	public double getVel();
+	
+	public double getAcc();
+	
 	public boolean canStop(TrajectoryEnvelope te, RobotReport currentState, int targetPathIndex, boolean useVelocity);
 	
 	public default int getEarliestStoppingPathIndex(TrajectoryEnvelope te, RobotReport currentState) {
