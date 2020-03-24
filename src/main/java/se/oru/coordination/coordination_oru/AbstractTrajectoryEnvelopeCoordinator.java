@@ -138,30 +138,17 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	//State knowledge
 	protected HashMap<Integer,Boolean> isDriving = new HashMap<Integer, Boolean>();
 	
-	
-	/**
-	 * Add a robot with type and ForwardModel
-	 * @param robotID -> the ID of the robot
-	 * @param robotType -> Type of robot expressed as int
-	 * @param ForwardModel -> Forward Model of the Robot 
-	 */
-	
-//	public void addRobot(int robotID,int robotType,ForwardModel fm,Pose StartingPosition) {
-//		setForwardModel(robotID,fm);
-//		this.robotType.put(robotID, robotType); 
-//		placeRobot(robotID,StartingPosition);
-//	}
-	
+
 	/**
 	 * Add a robot with type and ForwardModel
 	 * @param robot -> The robot to add
 	 */
 	
-	public void addRobot(Robot robot) {
+	public void addRobot(Robot robot,Pose startingPosition) {
 		setForwardModel(robot.getRobotID(),robot.getForwardModel());
 		//this.robotType.put(robot.getRobotID(), robot.getRobotType());
 		this.robots.put(robot.getRobotID(), robot);
-		placeRobot(robot.getRobotID(),robot.getStartingPosition());
+		placeRobot(robot.getRobotID(),startingPosition);
 		setFootprint(robot.getRobotID(),robot.getFootprint());
 		if(robot.getMotionPlanner() != null) {
 			this.motionPlanners.put(robot.getRobotID(), robot.getMotionPlanner());
@@ -434,6 +421,16 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 					int numberOfAdditionalCoordinationPeriods) {
 				// TODO Auto-generated method stub
 				return null;
+			}
+			@Override
+			public double getVel() {
+				// TODO Auto-generated method stub
+				return 0;
+			}
+			@Override
+			public double getAcc() {
+				// TODO Auto-generated method stub
+				return 0;
 			}
 			
 		};
