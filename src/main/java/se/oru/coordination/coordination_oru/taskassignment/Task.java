@@ -44,6 +44,7 @@ public class Task {
 	protected List<PoseSteering[]> paths = null;
 	protected Set<Integer> robotTypes = null;
 	protected double deadline = -1;
+	protected double operationTime = 0;
 	
 	
 	
@@ -165,6 +166,13 @@ public class Task {
 		return this.deadline;
 	}
 	
+	public void setOperationTime(double operationTime) {
+		this.operationTime = operationTime;
+	}
+	
+	public double getOperationTime() {
+		return this.operationTime;
+	}
 	
 	public void getInfo() {
 		System.out.println("Starting Pose -> " +this.StartPoint + "\n Goal Pose ->"+ this.GoalPoint + "\n Robot Types ->"+ this.robotTypes
