@@ -67,8 +67,7 @@ public class Robot {
 	 protected int robotType;
 	 protected Coordinate[] footprint;
 	 protected ForwardModel fm = null;
-	 protected Pose startingPosition;
-	 protected AbstractMotionPlanner MotionPlanner = null;
+	 protected AbstractMotionPlanner motionPlanner = null;
 	 
 	 /**
 		 * The default footprint used for robots if none is specified.
@@ -89,14 +88,12 @@ public class Robot {
 		 * Create a new {@link Robot} 
 		 * @param robotID -> The ID of the Robot
 		 * @param robotType -> The type of the Robot
-		 * @param startingPosition -> The Starting Position of the Robot.
 		 * @param footprint -> The footprint of the robot. 
 		 * @param fm -> The forward model of the robot.
 		 */
-	 public Robot(int robotID, int robotType, Pose startingPosition,Coordinate[] footprint, ForwardModel fm) {
+	 public Robot(int robotID, int robotType,Coordinate[] footprint, ForwardModel fm) {
 		 this.robotID = robotID;
 		 this.robotType = robotType;
-		 this.startingPosition = startingPosition;
 		 this.footprint = footprint;
 		 this.fm = fm;
 		
@@ -106,8 +103,8 @@ public class Robot {
 	  * @param robotID ->  The ID of the Robot
 	  * @param startingPosition -> The Starting Position of the Robot.
 	  */
-	 public Robot(int robotID,Pose startingPosition) {
-		 this(robotID,1,startingPosition,DEFAULT_FOOTPRINT,DEFAULT_FORWARD_MODEL);
+	 public Robot(int robotID) {
+		 this(robotID,1,DEFAULT_FOOTPRINT,DEFAULT_FORWARD_MODEL);
 	 }
 	 
 	 /**
@@ -116,8 +113,8 @@ public class Robot {
 	  * @param RobotType -> The type of the Robot
 	  * @param startingPosition -> The Starting Position of the Robot.
 	  */
-	 public Robot(int robotID,int robotType,Pose startingPosition) {
-		 this(robotID,robotType,startingPosition,DEFAULT_FOOTPRINT,DEFAULT_FORWARD_MODEL);
+	 public Robot(int robotID,int robotType) {
+		 this(robotID,robotType,DEFAULT_FOOTPRINT,DEFAULT_FORWARD_MODEL);
 	 }
 	 
 
@@ -134,9 +131,6 @@ public class Robot {
 		 this.robotType= robotType;;
 	 }
 	 
-	 public Pose getStartingPosition() {
-		 return this.startingPosition;
-	 }
 
 	 public  Coordinate[] getFootprint() {
 		 return this.footprint;
@@ -156,12 +150,12 @@ public class Robot {
 	 
 	 
 	 public void setMotionPlanner(AbstractMotionPlanner MotionPlanner) {
-		 this.MotionPlanner= MotionPlanner;
+		 this.motionPlanner= MotionPlanner;
 	 }
 	 
 	 
 	 public AbstractMotionPlanner getMotionPlanner() {
-		 return this.MotionPlanner;
+		 return this.motionPlanner;
 	 }
 }
 
