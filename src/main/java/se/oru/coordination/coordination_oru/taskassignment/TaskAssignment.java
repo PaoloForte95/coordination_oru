@@ -87,8 +87,8 @@ public class TaskAssignment{
 	protected double linearWeight = 1;
 	//Parameters of weights in Optimization Problem
 	protected double pathLengthWeigth = 1;
-	protected double arrivalTimeWeigth = 1;
-	protected double tardinessWeigth = 1;
+	protected double arrivalTimeWeigth = 0;
+	protected double tardinessWeigth = 0;
 	
 	protected ArrayList <Task> taskQueue = new ArrayList <Task>();
 	//Number of Idle Robots
@@ -110,6 +110,7 @@ public class TaskAssignment{
 	//Motion planner and Coordinator Parameters
 	protected AbstractTrajectoryEnvelopeCoordinator coordinator;
 	protected AbstractMotionPlanner defaultMotionPlanner = null;
+	protected HashMap<Integer,AbstractMotionPlanner> motionPlanners = new HashMap<Integer, AbstractMotionPlanner>();
 	
 	
 	//Time required by function parameters
@@ -135,48 +136,47 @@ public class TaskAssignment{
 	protected FleetVisualization viz = null;
 	
 	
+	/**
+	 * Set a motion planner to be used for re-planning for a specific
+	 * robot.
+	 * @param robotID The robot for which the given motion planner should be used.
+	 * @param mp The motion planner that will be called for re-planning.
+	 */
+	public void setMotionPlanner(int robotID, AbstractMotionPlanner mp) {
+		this.motionPlanners.put(robotID, mp);
+	}
+	
 	
 	/**
-	 * Set the path length weight  in Optimization Problem. THis must be a number between 0 and 1.
-	 * @param viz -> Visualization to use 
+	 * Get the motion planner used for re-planning for a specific robot.
+	 * @param robotID The ID of a robot.
+	 * @return The motion planner used for re-planning for the given robot.
+	 */
+	public AbstractMotionPlanner getMotionPlanner(int robotID) {
+		return this.motionPlanners.get(robotID);
+	}
+
+	
+	
+	/**
+	 * Set the weights of cost functions  in Optimization Problem. THese must be numbers between 0 and 1.
+	 * @param The path length weight;
+	 * @param The arrival time weight;
+	 * @param The tardiness weight
 	 */
 	
-	public void setPathLengthWeigth(double pathLengthWeigth) {
-		if(pathLengthWeigth > 1 || pathLengthWeigth < 0) {
-			throw new Error("This must be a number between 0 or 1!");
+	public void setCostFunctionsWeigth(double pathLengthWeigth,double arrivalTimeWeigth,double tardinessWeigth) {
+		if(pathLengthWeigth <0|| arrivalTimeWeigth < 0 ||  tardinessWeigth < 0) {
+			throw new Error("Weights cannot be  numbers less than 0!");
+		}
+		double sumWeight = pathLengthWeigth +arrivalTimeWeigth + tardinessWeigth;
+		if(sumWeight != 1 || sumWeight < 0 ) {
+			throw new Error("Weights sum must be equal to 1!");
 		}
 		this.pathLengthWeigth = pathLengthWeigth;
-	}
-	
-	
-
-	/**
-	 * Set the arrival time weight  in Optimization Problem. THis must be a number between 0 and 1.
-	 * Note that this is used only if alpha is equal to 1 , since the arrival time is already consider in cost 
-	 * of F function
-	 * @param viz -> Visualization to use 
-	 */
-	
-	public void setArrivalTimeWeigth(double arrivalTimeWeigth) {
-		if(arrivalTimeWeigth > 1 || arrivalTimeWeigth < 0) {
-			throw new Error("This must be a number between 0 or 1!");
-		}
 		this.arrivalTimeWeigth = arrivalTimeWeigth;
-	}
-	
-	/**
-	 * Set the tardiness weight  in Optimization Problem. THis must be a number between 0 and 1. This is used only if 
-	 * in task is specified the deadline.
-	 * @param viz -> Visualization to use 
-	 */
-	
-	public void setTardinessWeigth(double tardinessWeigth) {
-		if(tardinessWeigth > 1 || tardinessWeigth < 0) {
-			throw new Error("This must be a number between 0 or 1!");
-		}
 		this.tardinessWeigth = tardinessWeigth;
 	}
-	
 	
 	
 	/**
@@ -641,7 +641,7 @@ public class TaskAssignment{
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 * @return The cost associated to the path length for the couple of robot and task given as input
 	 */
-	private double evaluatePathLength(int robot , int task, AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
+	private double evaluatePathLength(int robot , int task, AbstractTrajectoryEnvelopeCoordinator tec){
 		//Evaluate the path length for the actual couple of task and ID
 		//Initialize the path length to infinity
 		double pathLength = MaxPathLength;
@@ -654,6 +654,10 @@ public class TaskAssignment{
 				throw new Error("RobotReport not found for Robot" + robot + ".");
 			}
 			//Evaluate the path from the Robot Starting Pose to Task End Pose
+			AbstractMotionPlanner rsp = getMotionPlanner(robot);
+			if(rsp == null) { // if there is not  a specific motion planner for the robot
+				rsp = getDefaultMotionPlanner();
+			}
 			rsp.setStart(rr.getPose());
 			rsp.setGoals(taskQueue.get(task).getStartPose(),taskQueue.get(task).getGoalPose());
 			rsp.setFootprint(tec.getFootprint(robot));
@@ -723,7 +727,7 @@ public class TaskAssignment{
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 * @return The PAll matrix
 	 */
-	private double[][] evaluatePAll(AbstractMotionPlanner rsp, AbstractTrajectoryEnvelopeCoordinator tec){
+	private double[][] evaluatePAll(AbstractTrajectoryEnvelopeCoordinator tec){
 		
 		PrintStream fileStream1 = null;
 		PrintStream fileStream2 = null;
@@ -765,7 +769,7 @@ public class TaskAssignment{
 					 typesAreEqual = true;
 				 }
 				 if(typesAreEqual) { // only if robot and typoe have the same types
-					 pathLength = evaluatePathLength(robot+1,task,rsp,tec);
+					 pathLength = evaluatePathLength(robot+1,task,tec);
 					 //Take time to evaluate the path
 					 
 					 long timeFinal = Calendar.getInstance().getTimeInMillis();
@@ -791,7 +795,7 @@ public class TaskAssignment{
 			
 			sumPathsLength += maxPathLength;
 			//Sum the arrival time for the max path length
-			sumArrivalTime += computeArrivalTime(maxPathLength);
+			sumArrivalTime += computeArrivalTime(maxPathLength,this.minMaxVel,this.minMaxAcc);
 		}
 		double [][] PAllAug =  checkTargetGoals(PAll);
 		//Save the sum of max paths length to normalize path length cost
@@ -915,9 +919,9 @@ public class TaskAssignment{
 	 * @param pathLength -> The max path for each robot
 	 * @return The time to drive the path
 	 */
-	private double computeArrivalTime(double pathLength){
+	private double computeArrivalTime(double pathLength,double vel,double acc){
 		//Compute the arrival time of this path, considering a robot alone with a velocity trapezoidal model
-		double arrivalTime = pathLength/this.minMaxVel + minMaxVel/minMaxAcc;
+		double arrivalTime = pathLength/vel + vel/acc;
 		//Return the arrival time 
 		return arrivalTime;
 	}
@@ -928,12 +932,14 @@ public class TaskAssignment{
 	 * @param pathLength -> The max path for each robot
 	 * @return The time to drive the path
 	 */
-	private double [][] computeArrivalTimeFleet(double[][]PAll){
+	private double [][] computeArrivalTimeFleet(double[][]PAll,AbstractTrajectoryEnvelopeCoordinator tec){
 		//Compute the arrival time of this path, considering a robot alone with a velocity trapezoidal model
 		double [][] arrivalTimeMatrix = new double [numRobotAug][numTaskAug];
 		for (int i = 0 ; i < IDsIdleRobots.length; i++) {
 			for (int j = 0 ; j < taskQueue.size(); j++) {
-				double arrivalTime = PAll[i][j]/this.minMaxVel + minMaxVel/minMaxAcc;
+				double vel = tec.getRobot(i+1).getForwardModel().getVel();
+				double acc = tec.getRobot(i+1).getForwardModel().getVel();
+				double arrivalTime = computeArrivalTime(PAll[i][j],vel,acc);
 				arrivalTimeMatrix[i][j] = arrivalTime;
 			}
 		}
@@ -950,7 +956,7 @@ public class TaskAssignment{
 	 * @return
 	 */
 	
-	private double[][] computeTardiness(double [][]PAll) {
+	private double[][] computeTardiness(double [][]PAll,AbstractTrajectoryEnvelopeCoordinator tec) {
 		double tardiness = 0;
 		
 		double [][] tardinessMatrix = new double [numRobotAug][numTaskAug];
@@ -958,7 +964,9 @@ public class TaskAssignment{
 			for (int j = 0 ; j < taskQueue.size(); j++) {
 				if (taskQueue.get(j).isDeadlineSpecified()) { // Compute tardiness only if specified in task constructor
 					double deadline = taskQueue.get(j).getDeadline();  //Expressed in seconds
-					double completionTime = computeArrivalTime(PAll[i][j]);
+					double vel = tec.getRobot(i+1).getForwardModel().getVel();
+					double acc = tec.getRobot(i+1).getForwardModel().getVel();
+					double completionTime = computeArrivalTime(PAll[i][j],vel,acc) + taskQueue.get(j).getOperationTime();
 					tardiness = Math.max(0, (completionTime-deadline));
 					
 					tardinessMatrix[i][j] = tardiness;
@@ -978,11 +986,11 @@ public class TaskAssignment{
 	 * @param PAll
 	 * @return
 	 */
-	private double [][] evaluateBFunction(double [][]PAll){
-		double [][] tardinessMatrix = computeTardiness(PAll);
+	private double [][] evaluateBFunction(double [][]PAll,AbstractTrajectoryEnvelopeCoordinator tec){
+		double [][] tardinessMatrix = computeTardiness(PAll,tec);
 		double [][] BFunction = new double [numRobotAug][numTaskAug];
 		if(linearWeight == 1) {
-			double [][] arrivalTimeMatrix = computeArrivalTimeFleet(PAll);
+			double [][] arrivalTimeMatrix = computeArrivalTimeFleet(PAll,tec);
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					BFunction[i][j] = pathLengthWeigth*PAll[i][j]/sumMaxPathsLength+ tardinessWeigth*tardinessMatrix[i][j]/sumTardiness + arrivalTimeWeigth*arrivalTimeMatrix[i][j]/sumArrivalTime;
@@ -1146,7 +1154,7 @@ public class TaskAssignment{
 					}
 				 if (typesAreEqual) {
 					//Set the coefficient of the objective function with the normalized path length
-					double pathLength  = evaluatePathLength(i+1,j,defaultMotionPlanner,tec);
+					double pathLength  = evaluatePathLength(i+1,j,tec);
 					if ( pathLength != MaxPathLength) {
 						objective.setCoefficient(decisionVariable[i][j], pathLength); 
 					}else {//the path to reach the task not exists
@@ -1188,8 +1196,8 @@ public class TaskAssignment{
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
-		double[][] PAll = evaluatePAll(defaultMotionPlanner,tec);
-		double[][] BFunction = evaluateBFunction(PAll);
+		double[][] PAll = evaluatePAll(tec);
+		double[][] BFunction = evaluateBFunction(PAll,tec);
 		//Build the solver and an objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem); 
@@ -1336,8 +1344,8 @@ public class TaskAssignment{
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
 		//Consider possibility to have dummy Robot or Tasks
-		double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
-		double [][] BFunction = evaluateBFunction(PAll);
+		double [][] PAll = evaluatePAll(tec);
+		double [][] BFunction = evaluateBFunction(PAll,tec);
 		//Build the optimization Problem without the objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		//Initialize the optimal assignment and the cost associated to it
@@ -1418,8 +1426,8 @@ public class TaskAssignment{
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
-		double [][] PAll = evaluatePAll(defaultMotionPlanner, tec);
-		double [][] BFunction = evaluateBFunction(PAll);
+		double [][] PAll = evaluatePAll(tec);
+		double [][] BFunction = evaluateBFunction(PAll,tec);
 		double [][] optimalAssignmentMatrix = new double[numRobotAug][numTaskAug];
 		//Initialize optimal indexes 
 		int iOtt = 0;
