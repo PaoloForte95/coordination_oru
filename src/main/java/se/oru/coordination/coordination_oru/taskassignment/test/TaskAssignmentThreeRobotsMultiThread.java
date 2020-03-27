@@ -167,7 +167,7 @@ public class TaskAssignmentThreeRobotsMultiThread {
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 0.6;
+		double alpha = 0.5;
 		//TaskAssignment assignmentProblem = new TaskAssignment();
 		TaskAssignmentMultiThread assignmentProblem = new TaskAssignmentMultiThread();
 		assignmentProblem.addTask(task1);

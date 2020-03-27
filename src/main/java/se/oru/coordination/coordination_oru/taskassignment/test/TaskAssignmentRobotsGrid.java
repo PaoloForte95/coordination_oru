@@ -112,7 +112,7 @@ public class TaskAssignmentRobotsGrid {
 		Random rand = new Random();
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		double delta = 0;
-		for(int i = 1; i<= 8; i++) {
+		for(int i = 1; i<= 9; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;
