@@ -159,9 +159,7 @@ public class TaskAssignmentWithMap2 {
 		Task task4 = new Task(startPoseGoal4,endPoseGoal4,1);
 		Task task5 = new Task(startPoseGoal5,endPoseGoal5,1);
 		
-		//viz.displayTask(startPoseGoal1, goalPoseRobot1,1);
-		//viz.displayTask(startPoseGoal2, goalPoseRobot2,2);
-		//viz.displayTask(startPoseGoal3, goalPoseRobot3,3);
+	
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution

@@ -127,46 +127,38 @@ public class TaskAssignmentThreeRobotsOnline {
 		tec.addRobot(robot1, startPoseRobot1);
 		tec.addRobot(robot2, startPoseRobot2);
 		tec.addRobot(robot3, startPoseRobot3);
-		//tec.addRobot(robot4, startPoseRobot4);
-		//tec.addRobot(robot5, startPoseRobot5);
+		tec.addRobot(robot4, startPoseRobot4);
+		tec.addRobot(robot5, startPoseRobot5);
 	
 
 		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
 		Pose startPoseGoal2 = new Pose(25.0,7.0,0.0);
 		Pose startPoseGoal3 = new Pose(4.0,8.0,0.0);
 		Pose startPoseGoal4 = new Pose(8.0,16.0,-Math.PI/2);
-		Pose startPoseGoal5 = new Pose(-7.0,-7.0,Math.PI/2);
+		Pose startPoseGoal5 = new Pose(25.0,16.0,Math.PI/2);
 		
 		
-		Pose goalPoseRobot1 = new Pose(16.0,15.0,Math.PI/4);
-		Pose goalPoseRobot2 = new Pose(27.0,3.0,-Math.PI/4);
-		Pose goalPoseRobot3 = new Pose(21.0,3.0,-Math.PI/2);
-		Pose endPoseGoal4 = new Pose(12.0,20.0,-Math.PI/2);
-		Pose endPoseGoal5 = new Pose(-15.0,-8.0,Math.PI/2);
+		Pose goalPoseGoal1 = new Pose(16.0,15.0,Math.PI/4);
+		Pose goalPoseGoal2 = new Pose(27.0,3.0,-Math.PI/4);
+		Pose goalPoseGoal3 = new Pose(21.0,3.0,-Math.PI/2);
+		Pose goalPoseGoal4 = new Pose(12.0,20.0,-Math.PI/2);
+		Pose goalPoseGoal5 = new Pose(32.0,25.0,Math.PI/2);
 		
 		
-		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
-		Task task2 = new Task(startPoseGoal2,goalPoseRobot2,1);
-		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
+		Task task1 = new Task(startPoseGoal1,goalPoseGoal1,1);
+		Task task2 = new Task(startPoseGoal2,goalPoseGoal2,1);
+		Task task3 = new Task(startPoseGoal3,goalPoseGoal3,1);
 
-		Task task4 = new Task(startPoseGoal4,endPoseGoal4,1);
-		Task task5 = new Task(startPoseGoal5,endPoseGoal5,1);
+		Task task4 = new Task(startPoseGoal4,goalPoseGoal4,1);
+		Task task5 = new Task(startPoseGoal5,goalPoseGoal5,1);
 
 		
-		viz.displayTask(startPoseGoal1, goalPoseRobot1,1);
-		//viz.displayTask(startPoseGoal2, goalPoseRobot2,2);
-		//viz.displayTask(startPoseGoal3, goalPoseRobot3,3);
-		//viz.displayTask(startPoseGoal4, endPoseGoal4,4);
-		//viz.displayTask(startPoseGoal5, endPoseGoal5,5);
 		
 		double alpha = 1;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
-		assignmentProblem.addTask(task3);
-		
-		
-		
+		assignmentProblem.addTask(task3);	
 		assignmentProblem.addTask(task4);
 		assignmentProblem.addTask(task5);
 		

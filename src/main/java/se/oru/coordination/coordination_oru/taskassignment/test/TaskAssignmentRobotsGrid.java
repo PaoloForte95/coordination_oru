@@ -112,18 +112,18 @@ public class TaskAssignmentRobotsGrid {
 		Random rand = new Random();
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		double delta = 0;
-		for(int i = 1; i<= 4; i++) {
+		for(int i = 1; i<= 8; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;
 			System.out.println("provaRobot >> "+ robotType);
-			Robot robot = new Robot(i,robotType);
+			Robot robot = new Robot(i,1);
 			tec.addRobot(robot,startPoseRobot);
 			Pose startPoseGoal = new Pose(15.0,(6.0 + delta),0.0);
 			Pose goalPoseRobot = new Pose(30.0 ,(6.0 + delta) ,0.0);
 			int taskType = rand.nextInt(2)+1;
 			System.out.println("provaTask >> "+ taskType);
-			Task task = new Task(startPoseGoal,goalPoseRobot,taskType);
+			Task task = new Task(startPoseGoal,goalPoseRobot,1);
 			assignmentProblem.addTask(task);
 			delta += 6.0;
 		}

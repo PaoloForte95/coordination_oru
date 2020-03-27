@@ -32,8 +32,7 @@ import se.oru.coordination.coordination_oru.util.Missions;
 
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
-
-
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentMultiThread;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -116,7 +115,7 @@ public class TaskAssignmentThreeRobots {
 		Pose startPoseRobot2 = new Pose(6.0,16.0,-Math.PI/4);
 		Pose startPoseRobot3 = new Pose(9.0,6.0,Math.PI/2);
 		Pose startPoseRobot4 = new Pose(16.0,30.0,-Math.PI/2);
-		Pose startPoseRobot5 = new Pose(-5.0,-5.0,Math.PI/2);
+		Pose startPoseRobot5 = new Pose(5.0,20.0,Math.PI/2);
 
 		Robot robot1 = new Robot(1, 1);
 		Robot robot2 = new Robot(2, 1);
@@ -124,7 +123,7 @@ public class TaskAssignmentThreeRobots {
 		Robot robot4 = new Robot(4, 1);
 		Robot robot5 = new Robot(5, 1);
 		
-
+		
 		
 		tec.addRobot(robot1,startPoseRobot1);
 		tec.addRobot(robot2,startPoseRobot2);
@@ -136,42 +135,43 @@ public class TaskAssignmentThreeRobots {
 		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
 		Pose startPoseGoal2 = new Pose(25.0,7.0,0.0);
 		Pose startPoseGoal3 = new Pose(4.0,8.0,0.0);
-		Pose goalPoseRobot1 = new Pose(16.0,15.0,Math.PI/4);
-		Pose goalPoseRobot2 = new Pose(25.0,3.0,-Math.PI/4);
-		Pose goalPoseRobot3 = new Pose(21.0,3.0,-Math.PI/2);
-		
-		
-		Task task1 = new Task(100,startPoseGoal1,goalPoseRobot1,1);
-		Task task2 = new Task(100,startPoseGoal2,goalPoseRobot2,1);
-		Task task3 = new Task(100,startPoseGoal3,goalPoseRobot3,1);
-
 		Pose startPoseGoal4 = new Pose(8.0,16.0,-Math.PI/2);
-		Pose startPoseGoal5 = new Pose(-5.0,-5.0,Math.PI/2);
-		Pose endPoseGoal4 = new Pose(12.0,20.0,-Math.PI/2);
-		Pose endPoseGoal5 = new Pose(-15.0,-8.0,Math.PI/2);
+		Pose startPoseGoal5 = new Pose(25.0,16.0,Math.PI/2);
+
+		Pose goalPoseGoal1 = new Pose(16.0,15.0,Math.PI/4);
+		Pose goalPoseGoal2 = new Pose(27.0,3.0,-Math.PI/4);
+		Pose goalPoseGoal3 = new Pose(21.0,3.0,-Math.PI/2);
+		Pose goalPoseGoal4 = new Pose(12.0,20.0,-Math.PI/2);
+		Pose goalPoseGoal5 = new Pose(32.0,25.0,Math.PI/2);
 		
 		
-		Task task4 = new Task(startPoseGoal4,endPoseGoal4,1);
-		Task task5 = new Task(startPoseGoal5,endPoseGoal5,1);
+
+		
+		Task task1 = new Task(startPoseGoal1,goalPoseGoal1,1);
+		Task task2 = new Task(startPoseGoal2,goalPoseGoal2,1);
+		Task task3 = new Task(startPoseGoal3,goalPoseGoal3,1);
+
+		Task task4 = new Task(startPoseGoal4,goalPoseGoal4,1);
+		Task task5 = new Task(startPoseGoal5,goalPoseGoal5,1);
 		
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 0.6;
+		double alpha = 1.0;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
-		assignmentProblem.addTask(task4);
-		assignmentProblem.addTask(task5);
+		//assignmentProblem.addTask(task4);
+		//assignmentProblem.addTask(task5);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
 		assignmentProblem.setFleetVisualization(viz);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setCoordinator(tec);
-		assignmentProblem.setLinearWeigth(alpha);
-		assignmentProblem.setCostFunctionsWeigth(0.8, 0.1, 0.1);
+		assignmentProblem.setLinearWeight(alpha);
+		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
 		double [][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);
 		//double [][] assignmentMatrix = assignmentProblem.solveOptimizationProblemGreedyAlgorithm(tec,alpha);
