@@ -66,11 +66,12 @@ public class TaskAssignmentMorePath {
 		protected int numTaskAug;
 		protected int maxNumPaths=3;
 		protected double linearWeight = 1;
+		protected double [][][] costValuesMatrix;
 		protected ArrayList <Task> taskQueue = new ArrayList <Task>();
 		//Parameters of weights in Optimization Problem
-		protected double pathLengthWeigth = 1;
-		protected double arrivalTimeWeigth = 1;
-		protected double tardinessWeigth = 1;
+		protected double pathLengthWeight = 1;
+		protected double arrivalTimeWeight = 0;
+		protected double tardinessWeight = 0;
 		//Number of Idle Robots
 		protected Integer[] IDsIdleRobots;
 		//Path and arrival Time Parameters
@@ -144,17 +145,17 @@ public class TaskAssignmentMorePath {
 		 * @param The tardiness weight
 		 */
 		
-		public void setCostFunctionsWeigth(double pathLengthWeigth,double arrivalTimeWeigth,double tardinessWeigth) {
-			if(pathLengthWeigth <0|| arrivalTimeWeigth < 0 ||  tardinessWeigth < 0) {
+		public void setCostFunctionsWeight(double pathLengthWeight,double arrivalTimeWeight,double tardinessWeight) {
+			if(pathLengthWeight <0|| arrivalTimeWeight < 0 ||  tardinessWeight < 0) {
 				throw new Error("Weights cannot be  numbers less than 0!");
 			}
-			double sumWeight = pathLengthWeigth +arrivalTimeWeigth + tardinessWeigth;
+			double sumWeight = pathLengthWeight +arrivalTimeWeight + tardinessWeight;
 			if(sumWeight != 1 || sumWeight < 0 ) {
 				throw new Error("Weights sum must be equal to 1!");
 			}
-			this.pathLengthWeigth = pathLengthWeigth;
-			this.arrivalTimeWeigth = arrivalTimeWeigth;
-			this.tardinessWeigth = tardinessWeigth;
+			this.pathLengthWeight = pathLengthWeight;
+			this.arrivalTimeWeight = arrivalTimeWeight;
+			this.tardinessWeight = tardinessWeight;
 		}
 		
 		
@@ -164,8 +165,8 @@ public class TaskAssignmentMorePath {
 		 * @param viz -> Visualization to use 
 		 */
 		
-		public void setLinearWeigth(double linearWeigth) {
-			this.linearWeight = linearWeigth;
+		public void setLinearWeight(double linearWeight) {
+			this.linearWeight = linearWeight;
 		}	
 		
 		
@@ -975,12 +976,14 @@ public class TaskAssignmentMorePath {
 	private double [][][] evaluateBFunction(double [][][]PAll,AbstractTrajectoryEnvelopeCoordinator tec){
 		double [][][] tardinessMatrix = computeTardiness(PAll,tec);
 		double [][][] BFunction = new double [numRobotAug][numTaskAug][maxNumPaths];
+		costValuesMatrix = new double [numRobotAug][numTaskAug][maxNumPaths];
 		if(linearWeight == 1) {
 			double [][][] arrivalTimeMatrix = computeArrivalTimeFleet(PAll,tec);
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					for(int path = 0;path < maxNumPaths; path++) {
-						BFunction[i][j][path] = pathLengthWeigth*PAll[i][j][path]/sumMaxPathsLength+ tardinessWeigth*tardinessMatrix[i][j][path]/sumTardiness + arrivalTimeWeigth*arrivalTimeMatrix[i][j][path]/sumArrivalTime;
+						BFunction[i][j][path] = pathLengthWeight*PAll[i][j][path]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j][path]/sumTardiness + arrivalTimeWeight*arrivalTimeMatrix[i][j][path]/sumArrivalTime;
+						costValuesMatrix[i][j][path] = pathLengthWeight*PAll[i][j][path]+ tardinessWeight*tardinessMatrix[i][j][path] + arrivalTimeWeight*arrivalTimeMatrix[i][j][path];
 					}
 					
 				}
@@ -990,7 +993,8 @@ public class TaskAssignmentMorePath {
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					for(int path = 0;path < maxNumPaths; path++) {
-						BFunction[i][j][path] = pathLengthWeigth*PAll[i][j][path]/sumMaxPathsLength+ tardinessWeigth*tardinessMatrix[i][j][path]/sumTardiness;
+						BFunction[i][j][path] = pathLengthWeight*PAll[i][j][path]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j][path]/sumTardiness;
+						costValuesMatrix[i][j][path] = pathLengthWeight*PAll[i][j][path]+ tardinessWeight*tardinessMatrix[i][j][path];
 					}
 
 	
@@ -1275,6 +1279,8 @@ public class TaskAssignmentMorePath {
 			double costofAssignment = 0;
 			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
+			timeRequiretoComputeCriticalSection = 0;
+			timeRequiretoComputePathsDelay = 0;
 			
 			//Take time to understand how much time require this function
 			for (int i = 0; i < numRobotAug; i++) {
@@ -1285,8 +1291,8 @@ public class TaskAssignmentMorePath {
 								//Evaluate cost of F function only if alpha is not equal to 1
 								costF = evaluatePathDelay(i+1,j,s,AssignmentMatrix,tec)/sumArrivalTime;
 							}
-							double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
-							double costB = pathValue/sumMaxPathsLength;
+							double pathValue = costValuesMatrix[i][j][s];
+							double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
 							costValue = costValue + pathValue; // is the same value of objective function but non normalized
 							costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
 							

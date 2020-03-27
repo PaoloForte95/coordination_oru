@@ -91,6 +91,7 @@ public class TaskAssignmentMultiThread{
 	protected int numRobotAug;
 	protected int numTaskAug;
 	protected double linearWeight = 1;
+	protected double [][] costValuesMatrix;
 	//Parameters of weights in Optimization Problem
 	protected double pathLengthWeight = 1;
 	protected double arrivalTimeWeight = 0;
@@ -1190,11 +1191,13 @@ public class TaskAssignmentMultiThread{
 	private double [][] evaluateBFunction(double [][]PAll,AbstractTrajectoryEnvelopeCoordinator tec){
 		double [][] tardinessMatrix = computeTardiness(PAll,tec);
 		double [][] BFunction = new double [numRobotAug][numTaskAug];
+		costValuesMatrix = new double [numRobotAug][numTaskAug];
 		if(linearWeight == 1) {
 			double [][] arrivalTimeMatrix = computeArrivalTimeFleet(PAll,tec);
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j]/sumTardiness + arrivalTimeWeight*arrivalTimeMatrix[i][j]/sumArrivalTime;
+					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]+ tardinessWeight*tardinessMatrix[i][j] + arrivalTimeWeight*arrivalTimeMatrix[i][j];
 				}
 			}
 		}
@@ -1202,6 +1205,7 @@ public class TaskAssignmentMultiThread{
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength + tardinessWeight*tardinessMatrix[i][j]/sumTardiness;
+					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]+ tardinessWeight*tardinessMatrix[i][j];
 	
 				}
 			}
@@ -1473,6 +1477,8 @@ public class TaskAssignmentMultiThread{
 			double costofAssignment = 0;
 			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
+			timeRequiretoComputeCriticalSection = 0;
+			timeRequiretoComputePathsDelay = 0;
 			
 			//Take time to understand how much time require this function
 			for (int i = 0; i < numRobotAug; i++) {
@@ -1482,10 +1488,8 @@ public class TaskAssignmentMultiThread{
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
 						}
-						double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
-						//double costB = pathValue/sumMaxPathsLength;
-						
-						double costB = pathValue;
+						double pathValue = costValuesMatrix[i][j];
+						double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
 						costValue = costValue + pathValue; // is the same value of objective function but non normalized
 						costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
 						

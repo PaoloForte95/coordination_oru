@@ -89,6 +89,8 @@ public class TaskAssignment{
 	protected double pathLengthWeight = 1;
 	protected double arrivalTimeWeight = 0;
 	protected double tardinessWeight = 0;
+	protected double [][] costValuesMatrix;
+	
 	
 	protected ArrayList <Task> taskQueue = new ArrayList <Task>();
 	//Number of Idle Robots
@@ -136,7 +138,7 @@ public class TaskAssignment{
 	protected FleetVisualization viz = null;
 	
 	
-	
+	protected int ll;
 	
 	/**
 	 * Set a motion planner to be used for re-planning for a specific
@@ -911,6 +913,7 @@ public class TaskAssignment{
 				return delay;
 			}
 		}
+		
 		//return the delay for the i-th robot and the j-th task due to interference with other robots
 		return delay;
 		}
@@ -992,11 +995,13 @@ public class TaskAssignment{
 	private double [][] evaluateBFunction(double [][]PAll,AbstractTrajectoryEnvelopeCoordinator tec){
 		double [][] tardinessMatrix = computeTardiness(PAll,tec);
 		double [][] BFunction = new double [numRobotAug][numTaskAug];
+		costValuesMatrix = new double [numRobotAug][numTaskAug];
 		if(linearWeight == 1) {
 			double [][] arrivalTimeMatrix = computeArrivalTimeFleet(PAll,tec);
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j]/sumTardiness + arrivalTimeWeight*arrivalTimeMatrix[i][j]/sumArrivalTime;
+					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]+ tardinessWeight*tardinessMatrix[i][j] + arrivalTimeWeight*arrivalTimeMatrix[i][j];
 				}
 			}
 		}
@@ -1004,7 +1009,7 @@ public class TaskAssignment{
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength + tardinessWeight*tardinessMatrix[i][j]/sumTardiness;
-	
+					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]+ tardinessWeight*tardinessMatrix[i][j];
 				}
 			}
 		}
@@ -1249,9 +1254,10 @@ public class TaskAssignment{
 	public double [][] solveOptimizationProblem(MPSolver optimizationProblem,AbstractTrajectoryEnvelopeCoordinator tec,double alpha){
 		
 		PrintStream fileStream = null;
+		PrintStream fileStream1 = null;
 		try {
 			fileStream = new PrintStream(new File("RequiredTime.txt"));
-			PrintStream fileStream1 = new PrintStream(new File("CriticalSections.txt"));
+			fileStream1 = new PrintStream(new File("CriticalSections.txt"));
 			PrintStream fileStream2 = new PrintStream(new File("PathDelay.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -1263,6 +1269,7 @@ public class TaskAssignment{
 		double objectiveOptimalValue = 100000000;
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
+	
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 			//Evaluate an optimal assignment that minimize only the B function
 			resultStatus = optimizationProblem.solve();
@@ -1274,6 +1281,8 @@ public class TaskAssignment{
 			double costofAssignment = 0;
 			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
+			timeRequiretoComputeCriticalSection = 0;
+			timeRequiretoComputePathsDelay = 0;
 			
 			//Take time to understand how much time require this function
 			for (int i = 0; i < numRobotAug; i++) {
@@ -1283,9 +1292,9 @@ public class TaskAssignment{
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
 						}
-						double pathValue = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
+						double pathValue = costValuesMatrix[i][j];
 						//double costB = pathValue/sumMaxPathsLength;
-						double costB = pathValue;
+						double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);;
 						costValue = costValue + pathValue; // is the same value of objective function but non normalized
 						costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
 						
@@ -1293,9 +1302,12 @@ public class TaskAssignment{
 					}				
 				}		
 			}
+			
+			
 			fileStream.println(timeRequiretoEvaluatePaths+"");
 			fileStream.println(timeRequiretofillInPall+"");
 			fileStream.println(timeRequiretoComputeCriticalSection+"");
+	
 			fileStream.println(timeRequiretoComputePathsDelay+"");
 			
 			
@@ -1311,7 +1323,7 @@ public class TaskAssignment{
 			}
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
-
+		
 		}
 		
 		//Return the Optimal Assignment Matrix 
