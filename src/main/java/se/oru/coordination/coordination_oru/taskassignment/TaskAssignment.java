@@ -86,9 +86,9 @@ public class TaskAssignment{
 	protected int numTaskAug;
 	protected double linearWeight = 1;
 	//Parameters of weights in Optimization Problem
-	protected double pathLengthWeigth = 1;
-	protected double arrivalTimeWeigth = 0;
-	protected double tardinessWeigth = 0;
+	protected double pathLengthWeight = 1;
+	protected double arrivalTimeWeight = 0;
+	protected double tardinessWeight = 0;
 	
 	protected ArrayList <Task> taskQueue = new ArrayList <Task>();
 	//Number of Idle Robots
@@ -136,6 +136,8 @@ public class TaskAssignment{
 	protected FleetVisualization viz = null;
 	
 	
+	
+	
 	/**
 	 * Set a motion planner to be used for re-planning for a specific
 	 * robot.
@@ -165,17 +167,17 @@ public class TaskAssignment{
 	 * @param The tardiness weight
 	 */
 	
-	public void setCostFunctionsWeigth(double pathLengthWeigth,double arrivalTimeWeigth,double tardinessWeigth) {
-		if(pathLengthWeigth <0|| arrivalTimeWeigth < 0 ||  tardinessWeigth < 0) {
+	public void setCostFunctionsWeight(double pathLengthWeight,double arrivalTimeWeight,double tardinessWeight) {
+		if(pathLengthWeight <0|| arrivalTimeWeight < 0 ||  tardinessWeight < 0) {
 			throw new Error("Weights cannot be  numbers less than 0!");
 		}
-		double sumWeight = pathLengthWeigth +arrivalTimeWeigth + tardinessWeigth;
+		double sumWeight = pathLengthWeight +arrivalTimeWeight + tardinessWeight;
 		if(sumWeight != 1 || sumWeight < 0 ) {
 			throw new Error("Weights sum must be equal to 1!");
 		}
-		this.pathLengthWeigth = pathLengthWeigth;
-		this.arrivalTimeWeigth = arrivalTimeWeigth;
-		this.tardinessWeigth = tardinessWeigth;
+		this.pathLengthWeight = pathLengthWeight;
+		this.arrivalTimeWeight = arrivalTimeWeight;
+		this.tardinessWeight = tardinessWeight;
 	}
 	
 	
@@ -184,8 +186,8 @@ public class TaskAssignment{
 	 * @param viz -> Visualization to use 
 	 */
 	
-	public void setLinearWeigth(double linearWeigth) {
-		this.linearWeight = linearWeigth;
+	public void setLinearWeight(double linearWeight) {
+		this.linearWeight = linearWeight;
 	}
 	
 	/**
@@ -785,6 +787,7 @@ public class TaskAssignment{
 					 pathsToTargetGoal.add(null);
 				 }
 				 PAll[robot][task] = pathLength;
+				 
 				//Take the time to fill in the PAll Matrix
 				long timeFinal2 = Calendar.getInstance().getTimeInMillis();
 				long timeRequired2 = timeFinal2- timeInitial2;
@@ -993,14 +996,14 @@ public class TaskAssignment{
 			double [][] arrivalTimeMatrix = computeArrivalTimeFleet(PAll,tec);
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
-					BFunction[i][j] = pathLengthWeigth*PAll[i][j]/sumMaxPathsLength+ tardinessWeigth*tardinessMatrix[i][j]/sumTardiness + arrivalTimeWeigth*arrivalTimeMatrix[i][j]/sumArrivalTime;
+					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j]/sumTardiness + arrivalTimeWeight*arrivalTimeMatrix[i][j]/sumArrivalTime;
 				}
 			}
 		}
 		else {
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
-					BFunction[i][j] = pathLengthWeigth*PAll[i][j]/sumMaxPathsLength + tardinessWeigth*tardinessMatrix[i][j]/sumTardiness;
+					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength + tardinessWeight*tardinessMatrix[i][j]/sumTardiness;
 	
 				}
 			}
@@ -1488,18 +1491,7 @@ public class TaskAssignment{
 			 for (int j = 0; j < AssignmentMatrix[0].length; j++) {
 				 if (AssignmentMatrix[i][j] > 0) {
 					 if (i < IDsIdleRobots.length) { //Considering only real Robot
-						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);
-						 
-						defaultMotionPlanner.setStart(tec.getRobotReport(i+1).getPose());
-						defaultMotionPlanner.setGoals(taskQueue.get(j).getStartPose());
-						defaultMotionPlanner.plan();
-						PoseSteering[] pssProva = defaultMotionPlanner.getPath();
-						
-						defaultMotionPlanner.setStart(taskQueue.get(j).getStartPose());
-						defaultMotionPlanner.setGoals(taskQueue.get(j).getGoalPose());
-						defaultMotionPlanner.plan();
-						PoseSteering[] pssProva2 = defaultMotionPlanner.getPath();
-						
+						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);	
 						 //For Dispatch mission
 						 if (j < taskQueue.size() && pss != null) {
 							 taskQueue.get(j).assignRobot(i+1);
