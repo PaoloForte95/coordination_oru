@@ -906,7 +906,6 @@ public class TaskAssignmentMultiThread{
 		double sumArrivalTime = 0;
 	
 		
-		 //pathPlannerThread [] A2 = new  pathPlannerThread[numRobotAug*numTaskAug];
 		Thread [] A2 = new  Thread[numRobotAug*numTaskAug];
 		int cont = 0;
 		for(int l = 0; l < numRobotAug; l++) {
@@ -948,15 +947,13 @@ public class TaskAssignmentMultiThread{
 	 long timeRequired = timeFinal- timeInitial;
 	 timeRequiretoEvaluatePaths = timeRequiretoEvaluatePaths + timeRequired;
 	 fileStream1.println(timeRequired+"");
-	 for(int x= 0; x < costPaths2.size(); x++) {
+	 for(int x= 0; x < costPaths.size(); x++) {
 		 costAllPaths.add(costPaths.get(x));
-		 costAllPaths.add(costPaths2.get(x));
 		 pathsToTargetGoalTotal.add(pathsToTargetGoal.get(x));
-		 pathsToTargetGoalTotal.add(pathsToTargetGoal2.get(x));
-	 }
-	 if(costPaths2.size() != costPaths.size()) {
-		 costAllPaths.add(costPaths.get(costPaths.size()-1));
-		 pathsToTargetGoalTotal.add(pathsToTargetGoal.get(pathsToTargetGoal.size()-1));
+		 if(x < costPaths2.size()) {
+			 costAllPaths.add(costPaths2.get(x));
+			 pathsToTargetGoalTotal.add(pathsToTargetGoal2.get(x));
+		 }
 	 }
 		for (int robot = 0; robot < numRobotAug; robot++) {
 			double maxPathLength = 1;
@@ -978,7 +975,7 @@ public class TaskAssignmentMultiThread{
 				 }
 				 if(typesAreEqual) { // only if robot and typoe have the same types
 			
-					 pathLength =  costAllPaths.get(robot*numTask+task);
+					 pathLength =  costAllPaths.get(robot*numTaskAug+task);
 					 timeInitial2 = Calendar.getInstance().getTimeInMillis();
 						
 					if ( pathLength > maxPathLength && pathLength != this.MaxPathLength) {

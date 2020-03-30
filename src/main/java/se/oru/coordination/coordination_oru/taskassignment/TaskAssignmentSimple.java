@@ -607,7 +607,7 @@ public class TaskAssignmentSimple{
 		//Define a constraint for which the next optimal solutions considering only B must have a cost less than objectiveValue
     	for (int i = 0; i < numRobotAug; i++) {
     		for (int j = 0; j < numTaskAug; j++) {
-    			c3.setCoefficient(decisionVariable[i][j],1);
+    			c3.setCoefficient(decisionVariable[i][j],costValuesMatrix[i][j]);
     			}		
 		 }
     	//Return the updated Optimization Problem
@@ -1279,6 +1279,7 @@ public class TaskAssignmentSimple{
 			double objectiveFunctionValue = 0;
 			double costValue = 0; // -> is the cost of B function non normalized
 			double costofAssignment = 0;
+			double costofAssignmentForConstraint = 0;
 			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
 			timeRequiretoComputeCriticalSection = 0;
@@ -1291,14 +1292,17 @@ public class TaskAssignmentSimple{
 						if (alpha != 1) {
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
+							double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
+							costofAssignment = alpha*costB + (1-alpha)*costF + costofAssignment ;
+							costofAssignmentForConstraint = costB + costF + costofAssignmentForConstraint;
+							
 						}
-						double pathValue = costValuesMatrix[i][j];
-						//double costB = pathValue/sumMaxPathsLength;
-						double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);;
-						costValue = costValue + pathValue; // is the same value of objective function but non normalized
-						costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
-						
-						
+						else {
+							//In order to solve the case with more optimal solution with the same cost, the pow of each cost is considered
+							double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
+							costofAssignment = Math.pow(alpha*costB, 2) + costofAssignment ;
+							costofAssignmentForConstraint = alpha*costB + costofAssignmentForConstraint;
+						}
 					}				
 				}		
 			}
@@ -1310,17 +1314,17 @@ public class TaskAssignmentSimple{
 	
 			fileStream.println(timeRequiretoComputePathsDelay+"");
 			
-			
-			
-			objectiveFunctionValue = costofAssignment;
+	
 			//Compare actual solution and optimal solution finds so far
-			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
-				objectiveOptimalValue = objectiveFunctionValue;
+			if (costofAssignment < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
+				objectiveOptimalValue = costofAssignment;
 				optimalAssignmentMatrix = AssignmentMatrix;
-				//Add the constraint on cost for next solution
-				optimizationProblem = constraintOnCostSolution(optimizationProblem,costValue);
+				
+				
 				
 			}
+			//Add the constraint on cost for next solution
+			optimizationProblem = constraintOnCostSolution(optimizationProblem,costofAssignmentForConstraint);
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
 		
@@ -1566,11 +1570,11 @@ public class TaskAssignmentSimple{
 	 * B*alpha + (1-alpha)*F
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 */
-	public void startTaskAssignment(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public void startTaskAssignment(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
 		numRobot = coordinator.getIdleRobots().length;
-		linearWeight = alpha;
+
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallback();
 
