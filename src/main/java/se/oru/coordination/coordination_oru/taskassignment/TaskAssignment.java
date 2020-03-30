@@ -43,6 +43,8 @@ import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInte
 import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
 import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentMultiThread.pathPlannerThread;
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentMultiThread.pathPlannerThread2;
 import se.oru.coordination.coordination_oru.util.FleetVisualization;
 import se.oru.coordination.coordination_oru.util.Missions;
 import com.google.ortools.linearsolver.*;
@@ -91,7 +93,9 @@ public class TaskAssignment {
 		protected AbstractTrajectoryEnvelopeCoordinator coordinator;
 		protected AbstractMotionPlanner defaultMotionPlanner = null;
 		protected HashMap<Integer,AbstractMotionPlanner> motionPlanners = new HashMap<Integer, AbstractMotionPlanner>();
-		
+		protected AbstractMotionPlanner defaultMotionPlanner2 = null;
+		protected ArrayList <PoseSteering[]> pathsToTargetGoal2 = new ArrayList <PoseSteering[]>();
+		protected HashMap<Integer,AbstractMotionPlanner> motionPlanners2 = new HashMap<Integer, AbstractMotionPlanner>();
 		
 		//Time required by function parameters
 		protected long timeRequiretoEvaluatePaths;
@@ -111,8 +115,12 @@ public class TaskAssignment {
 		//Task Allocation Thread Parameters 
 		protected int CONTROL_PERIOD_Task = 15000;
 		public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
-		protected int numThreadToUse = 1; 
 		
+		protected int numThreadToUse = 1; 
+		protected ArrayList<Double> costPaths = new ArrayList<Double>();
+		protected ArrayList<Double> costPaths2 = new ArrayList<Double>();	
+		protected ArrayList<Double> costAllPaths = new ArrayList<Double>();
+		protected ArrayList <PoseSteering[]> pathsToTargetGoalTotal = new ArrayList <PoseSteering[]>();
 		
 		protected FleetVisualization viz = null;
 	
@@ -125,8 +133,20 @@ public class TaskAssignment {
 		 */
 		public void setMotionPlanner(int robotID, AbstractMotionPlanner mp) {
 			this.motionPlanners.put(robotID, mp);
+			this.motionPlanners2.put(robotID, mp);
 		}
 		
+		/**
+		 * Set the number of thread to use in order to evaluates paths
+		 * robot.
+		 * @param numThreadToUse -> number of threads to use
+		 */
+		public void setNumThreadToUse(int numThreadToUse) {
+			if(numThreadToUse < 0 || numThreadToUse > 2) {
+				throw new Error("Invalid number of threads");
+			}
+			this.numThreadToUse = numThreadToUse;
+		}
 		
 		/**
 		 * Get the motion planner used for re-planning for a specific robot.
@@ -136,6 +156,10 @@ public class TaskAssignment {
 		public AbstractMotionPlanner getMotionPlanner(int robotID) {
 			return this.motionPlanners.get(robotID);
 		}
+		
+		
+		
+		
 
 		/**
 		 * Set the Coordinator 
@@ -209,10 +233,12 @@ public class TaskAssignment {
 		for (int j= 0; j< PAll[0].length ; j++) {
 			boolean targetEndCanBeReach = false;
 			for (int i = 0; i < PAll.length; i++) {
-				for (int s =0; s < maxNumPaths; s++) {
+				for (int s = 0; s < maxNumPaths; s++) {
 					if(PAll[i][j][s] != MaxPathLength) {
 						targetEndCanBeReach = true;
+						
 					}
+					System.out.print(targetEndCanBeReach+ " task " + (j+1) + " robot>> " + (i+1));
 				}
 				
 				
@@ -235,7 +261,7 @@ public class TaskAssignment {
 						PAllAug[i][j][s] = PAll[i][j][s];
 					}else {
 						PAllAug[i][j][s] = 1;
-						pathsToTargetGoal.add(i*numTaskAug*maxNumPaths+j*numTaskAug+s, null);
+						pathsToTargetGoalTotal.add(i*numTaskAug*maxNumPaths+j*maxNumPaths+s, null);
 				
 					}
 				}
@@ -409,6 +435,14 @@ public class TaskAssignment {
 		this.defaultMotionPlanner = mp;
 	}
 	
+	
+	/**
+	 * Set a motion planner to be used for planning for all robots
+	 * @param mp The motion planner that will be called for planning
+	 */
+	public void setDefaultMotionPlanner2(AbstractMotionPlanner mp) {
+		this.defaultMotionPlanner2 = mp;
+	}
 	
 	/**
 	 * Get the motion planner to be used for planning for all robots.
@@ -596,7 +630,7 @@ public class TaskAssignment {
     	for (int i = 0; i < numRobotAug; i++) {
     		for (int j = 0; j < numTaskAug; j++) {
     			for(int s = 0;s < maxNumPaths; s++) {
-    				c3.setCoefficient(decisionVariable[i][j][s],1);
+    				c3.setCoefficient(decisionVariable[i][j][s],costValuesMatrix[i][j][s]);
     			}
     		}		
 		 }
@@ -628,6 +662,42 @@ public class TaskAssignment {
 		return assignmentMatrix;	
 	}
 	
+	
+	
+	class pathPlannerThread implements Runnable{
+		protected int i1,j1;
+		protected AbstractTrajectoryEnvelopeCoordinator tec;
+
+		pathPlannerThread(int robot,int task,AbstractTrajectoryEnvelopeCoordinator tec){
+			i1 = robot;
+			j1 = task;
+			this.tec = tec;
+		}
+		@Override
+		public void run () {
+			double pathLength1 = evaluatePathLength(i1,j1,tec);
+		}
+		
+		
+	}
+	
+	
+	class pathPlannerThread2 implements Runnable{
+		protected int i,j;
+		protected AbstractTrajectoryEnvelopeCoordinator tec;
+		pathPlannerThread2(int robot,int task,AbstractTrajectoryEnvelopeCoordinator tec){
+			i = robot;
+			j = task;
+			this.tec = tec;
+			
+		}
+		@Override
+		public void run () {	
+			double pathLength = evaluatePathLength2(i,j,tec);		
+		}	
+	}
+	
+	
 	/**
 	 * Evaluate the cost associated to the path length for the a couple of robot and task.
 	 * If a path between a couple of robot and task does not exists the cost is consider infinity.
@@ -639,6 +709,7 @@ public class TaskAssignment {
 	 * @return The cost associated to the path length for the couple of robot and task given as input
 	 */
 	private double evaluatePathLength(int robot , int task, AbstractTrajectoryEnvelopeCoordinator tec){
+		
 		//Evaluate the path length for the actual couple of task and ID
 		//Initialize the path length to infinity
 		double pathLength = MaxPathLength;
@@ -663,21 +734,23 @@ public class TaskAssignment {
 				System.out.println("Robot" + robot +" cannot reach the Target End of Task " + (task+1));
 				//the path to reach target end not exits
 				pathsToTargetGoal.add(null);
+				
 				//Infinity cost is returned 
+				costPaths.add(pathLength);
 				return pathLength;
 			}
 			
 			//If the path exists
 			//Take the Pose Steering representing the path
 			PoseSteering[] pss = rsp.getPath();
-			
 			//Add the path to the FleetMaster Interface -> this is necessary for F function
 			addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
 			//Save the path to Task in the path set
 			pathsToTargetGoal.add(pss);
+
 			//Take the Path Length
 			pathLength = Missions.getPathLength(pss);
-		
+	
 			
 		} else { //There also virtual robot and task are considered 
 			//There are considered real robot and dummy task
@@ -701,18 +774,122 @@ public class TaskAssignment {
 				pathsToTargetGoal.add(dummyTask);
 				//Consider a minimal pathLength
 				pathLength = 1;
+				costPaths.add(pathLength);
+		
 				return pathLength;
 			}
 			else { //There are considered dummy robot and real task
 				//dummy robot -> Consider a only virtual Robot 
+
+				
 				pathsToTargetGoal.add(null);
 				pathLength = 1;
+				costPaths.add(pathLength);
+
+				return pathLength;
+			}	
+		}	
+		
+		//Return the cost of path length
+		costPaths.add(pathLength);
+		return pathLength;
+	}
+	
+	/**
+	 * Evaluate the cost associated to the path length for the a couple of robot and task.
+	 * If a path between a couple of robot and task does not exists the cost is consider infinity.
+	 * @param robot -> The i-th Robot
+	 * @param task -> The j-th the Task
+	 * @param rsp -> The motion planner that will be called for planning for any
+	 * robot. 
+	 * @param tec -> An Abstract Trajectory Envelope Coordinator
+	 * @return The cost associated to the path length for the couple of robot and task given as input
+	 */
+	private double evaluatePathLength2(int robot , int task, AbstractTrajectoryEnvelopeCoordinator tec){
+		
+		//Evaluate the path length for the actual couple of task and ID
+		//Initialize the path length to infinity
+		double pathLength = MaxPathLength;
+		// Only for real robots and tasks
+		if (robot <= numRobot && task < numTask) {
+			//Take the state for the i-th Robot
+			RobotReport rr = tec.getRobotReport(IDsIdleRobots[robot-1]);
+			if (rr == null) {
+				metaCSPLogger.severe("RobotReport not found for Robot" + robot + ".");
+				throw new Error("RobotReport not found for Robot" + robot + ".");
+			}
+			//Evaluate the path from the Robot Starting Pose to Task End Pose
+			AbstractMotionPlanner rsp = this.motionPlanners2.get(robot);
+			if(rsp == null) { // if there is not  a specific motion planner for the robot
+				rsp = defaultMotionPlanner2;
+			}
+			rsp.setStart(rr.getPose());
+			rsp.setGoals(taskQueue.get(task).getStartPose(),taskQueue.get(task).getGoalPose());
+			rsp.setFootprint(tec.getFootprint(robot));
+		
+			if (!rsp.plan() ) {
+				System.out.println("Robot" + robot +" cannot reach the Target End of Task " + (task+1));
+				//the path to reach target end not exits
+				pathsToTargetGoal2.add(null);
+				//Infinity cost is returned
+				costPaths2.add(pathLength);
+				return pathLength;
+			}
+			
+			//If the path exists
+			//Take the Pose Steering representing the path
+			PoseSteering[] pss = rsp.getPath();
+			
+			//Add the path to the FleetMaster Interface -> this is necessary for F function
+			addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
+			//Save the path to Task in the path set
+			this.pathsToTargetGoal2.add(pss);
+			
+			//Take the Path Length
+
+			pathLength = Missions.getPathLength(pss);
+
+		} else { //There also virtual robot and task are considered 
+			//There are considered real robot and dummy task
+			if (numRobot >= numTask && robot <= numRobot){ //dummy task -> The Robot receive the task to stay in starting position
+				//The second condition is used in the special case in which we have that one robot cannot be 
+				//assigned to any tasks due to its type, so we must add a dummy robot and a dummy task, but we 
+				//Create the task to stay in robot starting position
+				PoseSteering[] dummyTask = new PoseSteering[1];
+				//Take the state for the i-th Robot
+				RobotReport rr = tec.getRobotReport(IDsIdleRobots[robot-1]);
+				if (rr == null) {
+					metaCSPLogger.severe("RobotReport not found for Robot" + robot + ".");
+					throw new Error("RobotReport not found for Robot" + robot + ".");
+				}
+				//take the starting position of the robot
+				dummyTask[0] = new PoseSteering(rr.getPose(),0);
+				//Add the path to the FleetMaster Interface -> so it can be considered as an obstacle from 
+				//the motion planner
+				addPath(robot, dummyTask.hashCode(), dummyTask, null, tec.getFootprint(robot));
+				//Save the path to Dummy Task 
+				pathsToTargetGoal2.add(dummyTask);
+				//Consider a minimal pathLength
+				pathLength = 1;
+				costPaths2.add(pathLength);
+	
+				return pathLength;
+			}
+			else { //There are considered dummy robot and real task
+				//dummy robot -> Consider a only virtual Robot 
+				pathsToTargetGoal2.add(null);
+				pathLength = 1;
+				costPaths2.add(pathLength);
+	
 				return pathLength;
 			}	
 		}	
 		//Return the cost of path length
+		costPaths2.add(pathLength);
 		return pathLength;
 	}
+	
+	
 	
 	/**
 	 * Evaluate the PAll matrix, that is a matrix that contains all path for each possible combination of robot
@@ -728,23 +905,85 @@ public class TaskAssignment {
 		PrintStream fileStream1 = null;
 		PrintStream fileStream2 = null;
 		try {
-			fileStream1 = new PrintStream(new File("PathPlannerMorePath.txt"));
-			fileStream2 = new PrintStream(new File("PAllMorePath.txt"));
+			fileStream1 = new PrintStream(new FileOutputStream("PathPlanner.txt",true));
+			fileStream2 = new PrintStream(new File("PAll.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		long timeInitial2 = 0;
+		
 		
 		//Evaluate the path length for the actual couple of task and ID
 		//Initialize the sum of max paths lengths and time to do it for each robot
 		//This cost are used then for normalizing cost
 		double sumPathsLength = 0;
 		double sumArrivalTime = 0;
-		//Initialize PAll
 		double [][][] PAll = new double[numRobotAug][numTaskAug][maxNumPaths];
+		long timeInitial2 = 0;
 		
+		//Initialize threads
+		Thread [] A2 = new  Thread[numRobotAug*numTaskAug*maxNumPaths];
+		int cont = 1;
+		for(int l = 0; l < numRobotAug; l++) {
+			 for (int n = 0; n < numTaskAug; n++) {
+				 for (int m = 0;m < maxNumPaths; m++) {
+					 if(cont == 1) {
+						 A2[l*numTaskAug*maxNumPaths+n*maxNumPaths + m] = new Thread(new  pathPlannerThread(l+1,n,tec));
+					 }else {
+						 A2[l*numTaskAug*maxNumPaths+n*maxNumPaths + m] = new Thread(new  pathPlannerThread2(l+1,n,tec));
+					 }
+					 cont += 1;
+					 if(cont > numThreadToUse) {
+						 cont = 1;
+					 }
+				 }
+				
+			 }
+		 }
+		
+		 
+		
+		long timeInitial = Calendar.getInstance().getTimeInMillis(); 
+		for(int kk=0; kk < A2.length-1; kk += numThreadToUse) {
+			for(int t = 0; t< numThreadToUse;t++) {
+				A2[kk+t].start();
+			}
+			try {
+				for(int t = 0; t< numThreadToUse;t++) {
+					A2[kk+t].join();
+				
+				}
+				//A2[kk+1].join();
+	
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}	
+		}
+		if(A2.length%2 != 0) {
+			A2[A2.length-1].start();
+			try {
+				
+				A2[A2.length-1].join();
+				//double value1 = A2[A2.length-1].getValue();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		long timeFinal = Calendar.getInstance().getTimeInMillis();
+		long timeRequired = timeFinal- timeInitial;
+		timeRequiretoEvaluatePaths = timeRequired;
+		fileStream1.println(timeRequired+"");
+	
+	 for(int x = 0; x < pathsToTargetGoal.size(); x++) {
+		 costAllPaths.add(costPaths.get(x));
+		 pathsToTargetGoalTotal.add(pathsToTargetGoal.get(x));
+		 if(x < costPaths2.size()) {
+			 costAllPaths.add(costPaths2.get(x));
+			 pathsToTargetGoalTotal.add(pathsToTargetGoal2.get(x));
+		 }
+	 }
 		
 		for (int robot = 0; robot < numRobotAug; robot++) {
 			double maxPathLength = 1;
@@ -763,15 +1002,9 @@ public class TaskAssignment {
 				 }
 				 for(int path = 0;path < maxNumPaths; path++) {
 					  if(typesAreEqual) { // only if robot and typoe have the same types
-						 
-						long timeInitial = Calendar.getInstance().getTimeInMillis();
-						pathLength = evaluatePathLength(robot+1,task,tec);
-						//Take time to evaluate the path
-						 
-						long timeFinal = Calendar.getInstance().getTimeInMillis();
-						long timeRequired = timeFinal- timeInitial;
-						timeRequiretoEvaluatePaths = timeRequiretoEvaluatePaths + timeRequired;
-						fileStream1.println(timeRequired+"");
+						//pathLength = evaluatePathLength(robot+1,task,tec);
+						pathLength =  costAllPaths.get(robot*numTaskAug*maxNumPaths+task*maxNumPaths+path);
+						
 						timeInitial2 = Calendar.getInstance().getTimeInMillis();
 						if ( pathLength > maxPathLength && pathLength != this.MaxPathLength) {
 								maxPathLength = pathLength;
@@ -779,7 +1012,7 @@ public class TaskAssignment {
 						}
 						 
 					 else {
-							 pathsToTargetGoal.add(null);
+						 pathsToTargetGoalTotal.add(robot*numTaskAug*maxNumPaths+task*maxNumPaths+path,null);
 					 }
 					PAll[robot][task][path] = pathLength;
 					//Take the time to fill in the PAll Matrix
@@ -843,7 +1076,7 @@ public class TaskAssignment {
 			// Only for real robots and tasks
 			if (task < numTask && robot <= numRobot) {
 				//Take the Pose steering relate to i-th robot and j-th task from path set
-				PoseSteering[] pss1 = pathsToTargetGoal.get((robot-1)*assignmentMatrix[0].length + task);	
+				PoseSteering[] pss1 = pathsToTargetGoalTotal.get((robot-1)*numTaskAug*maxNumPaths + task*maxNumPaths +pathID);	
 				//Initialize Array of delays for the two robots
 				TreeSet<IndexedDelay> te1TCDelays = new TreeSet<IndexedDelay>() ;
 				TreeSet<IndexedDelay> te2TCDelays = new TreeSet<IndexedDelay>() ;
@@ -853,9 +1086,9 @@ public class TaskAssignment {
 				for(int m = 0; m < assignmentMatrix.length; m++) {
 					for(int n = 0; n < assignmentMatrix[0].length; n++) {
 						 for(int s = 0;s < maxNumPaths; s++) {
-							 if (assignmentMatrix [m][n][s] > 0 && m+1 != robot && n != task && s != pathID && n < numTask && m < numRobot) {
+							 if (assignmentMatrix [m][n][s] > 0 && m+1 != robot && n != task  && n < numTask && m < numRobot) {
 									//Take the path of this second robot from path set
-									PoseSteering[] pss2 = pathsToTargetGoal.get((m)*assignmentMatrix[0].length  + n);
+									PoseSteering[] pss2 = pathsToTargetGoalTotal.get((m)*numTaskAug*maxNumPaths  + n*maxNumPaths+s);
 									if (pss2 != null) {//is == null if robotType is different to Task type
 										//Evaluate the Spatial Envelope of this second Robot
 										SpatialEnvelope se2 = TrajectoryEnvelope.createSpatialEnvelope(pss2,tec.getFootprint(m+1));
@@ -1275,13 +1508,17 @@ public class TaskAssignment {
 		
 		
 		PrintStream fileStream = null;
+		PrintStream fileStream1 = null;
 		try {
 			fileStream = new PrintStream(new File("RequiredTime.txt"));
+			fileStream1 = new PrintStream(new File("CriticalSections.txt"));
+			PrintStream fileStream2 = new PrintStream(new File("PathDelay.txt"));
+			PrintStream fileStream3 = new PrintStream(new File("PathPlanner.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		//Initialize the optimal assignment and the cost associated to it
 		double [][][] optimalAssignmentMatrix = new double[numRobotAug][numTaskAug][maxNumPaths];
 		double objectiveOptimalValue = 100000000;
@@ -1294,8 +1531,8 @@ public class TaskAssignment {
 			double [][][] AssignmentMatrix = saveAssignmentMatrix(numRobotAug,numTaskAug,optimizationProblem);
 			//Initialize cost of objective value
 			double objectiveFunctionValue = 0;
-			double costValue = 0; // -> is the cost of B function non normalized
 			double costofAssignment = 0;
+			double costofAssignmentForConstraint = 0;
 			double costF = 0;
 			//Evaluate the cost of F Function for this Assignment
 			timeRequiretoComputeCriticalSection = 0;
@@ -1308,12 +1545,18 @@ public class TaskAssignment {
 						if ( AssignmentMatrix[i][j][s] > 0) {
 							if (alpha != 1) {
 								//Evaluate cost of F function only if alpha is not equal to 1
+								double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
 								costF = evaluatePathDelay(i+1,j,s,AssignmentMatrix,tec)/sumArrivalTime;
+								costofAssignment = alpha*costB + (1-alpha)*costF + costofAssignment ;
+								costofAssignmentForConstraint = costB + costF + costofAssignmentForConstraint;
 							}
-							double pathValue = costValuesMatrix[i][j][s];
+							else {
+								
+							}
+	
 							double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
-							costValue = costValue + pathValue; // is the same value of objective function but non normalized
-							costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
+							costofAssignment = Math.pow(alpha*costB, 2) + costofAssignment ;
+							costofAssignmentForConstraint = alpha*costB + costofAssignmentForConstraint;
 							
 							
 						}
@@ -1328,15 +1571,13 @@ public class TaskAssignment {
 			
 			
 			
-			objectiveFunctionValue = costofAssignment;
 			//Compare actual solution and optimal solution finds so far
-			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
-				objectiveOptimalValue = objectiveFunctionValue;
-				optimalAssignmentMatrix = AssignmentMatrix;
-				//Add the constraint on cost for next solution
-				optimizationProblem = constraintOnCostSolution(optimizationProblem,costValue);
-				
+			if (costofAssignment < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
+				objectiveOptimalValue = costofAssignment;
+				optimalAssignmentMatrix = AssignmentMatrix;	
 			}
+			//Add the constraint on cost for next solution
+			optimizationProblem = constraintOnCostSolution(optimizationProblem,costofAssignmentForConstraint);
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
 
@@ -1492,7 +1733,7 @@ public class TaskAssignment {
 				 for(int s = 0; s < maxNumPaths; s++) {
 					 if (AssignmentMatrix[i][j][s] > 0) {
 						 if (i < numRobot) { //Considering only real Robot
-							 PoseSteering[] pss = pathsToTargetGoal.get(i*numTaskAug*maxNumPaths+j*maxNumPaths+s);
+							 PoseSteering[] pss = pathsToTargetGoalTotal.get(i*numTaskAug*maxNumPaths+j*maxNumPaths+s);
 							 //For Dispatch mission
 							 if (j < numTask && pss != null) {
 								 taskQueue.get(j).assignRobot(i+1);
@@ -1533,7 +1774,7 @@ public class TaskAssignment {
 		}
 		 System.out.println("Remaining task: "+ taskQueue.size());
 		//Remove all path from the path set
-		pathsToTargetGoal.removeAll(pathsToTargetGoal);
+		pathsToTargetGoalTotal.removeAll(pathsToTargetGoalTotal);
 		return true;
 	}//End Task Assignment Function
 	
@@ -1557,11 +1798,10 @@ public class TaskAssignment {
 	 * B*alpha + (1-alpha)*F
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 */
-	public void startTaskAssignment(double alpha, AbstractTrajectoryEnvelopeCoordinator tec) {
+	public void startTaskAssignment(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
 		numRobot = coordinator.getIdleRobots().length;
-		linearWeight = alpha;
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallback();
 
@@ -1625,11 +1865,11 @@ public class TaskAssignment {
 	 * B*alpha + (1-alpha)*F
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 */
-	public void startTaskAssignmentGreedyAlgorithm(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public void startTaskAssignmentGreedyAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
 		numRobot = coordinator.getIdleRobots().length;
-		linearWeight = alpha;
+	
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallbackGreedy();
 
@@ -1691,11 +1931,11 @@ public class TaskAssignment {
 	 * B*alpha + (1-alpha)*F
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 */
-	public void startTaskAssignmentExactAlgorithm(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public void startTaskAssignmentExactAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
 		numRobot = coordinator.getIdleRobots().length;
-		linearWeight = alpha;
+
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallbackExact();
 
