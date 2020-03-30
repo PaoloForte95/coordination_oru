@@ -32,8 +32,7 @@ import se.oru.coordination.coordination_oru.util.Missions;
 
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
-
-
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimple;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -110,7 +109,7 @@ public class TaskAssignmentWithMap2 {
 		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-corridors-vi.yaml"));
 		double res = Double.parseDouble(Missions.getProperty("resolution", "maps/map-corridors-vi.yaml"));
 		rsp.setMapResolution(res);
-		
+		rsp.setPlanningTimeInSecs(5);
 		
 		Pose startPoseRobot1 = new Pose(20.0,15.0,0.0);
 		Pose startPoseRobot2 = new Pose(12.0,28.0,0.0);
@@ -140,7 +139,7 @@ public class TaskAssignmentWithMap2 {
 		Pose startPoseGoal1 = new Pose(28.0,5.0,0.0);
 		Pose startPoseGoal2 = new Pose(22.0,15.0,0.0);
 		Pose startPoseGoal3 = new Pose(24.0,6.0,0.0);
-		Pose goalPoseRobot1 = new Pose(38.0,5.0,0.0);
+		Pose goalPoseRobot1 = new Pose(38.0,8.0,0.0);
 		Pose goalPoseRobot2 = new Pose(45.0,15.0,0.0);
 		Pose goalPoseRobot3 = new Pose(26.0,6.0,0.0);
 		
@@ -164,7 +163,7 @@ public class TaskAssignmentWithMap2 {
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
 		double alpha = 0.8;
-		TaskAssignment assignmentProblem = new TaskAssignment();
+		TaskAssignmentSimple assignmentProblem = new TaskAssignmentSimple();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
@@ -175,9 +174,11 @@ public class TaskAssignmentWithMap2 {
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
+		assignmentProblem.setLinearWeight(alpha);
+		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setFleetVisualization(viz);
-		assignmentProblem.startTaskAssignment(alpha, tec);
+		assignmentProblem.startTaskAssignment(tec);
 		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
 	}
 }

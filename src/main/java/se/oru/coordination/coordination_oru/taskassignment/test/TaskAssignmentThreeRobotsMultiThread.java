@@ -99,7 +99,7 @@ public class TaskAssignmentThreeRobotsMultiThread {
 		viz.setInitialTransform(20, 0, 0);
 		tec.setVisualization(viz);
 		tec.setUseInternalCriticalPoints(false);
-
+		
 		String yamlFile = "maps/map-empty.yaml";
 		//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
 		ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
@@ -138,8 +138,8 @@ public class TaskAssignmentThreeRobotsMultiThread {
 		tec.addRobot(robot1,startPoseRobot1);
 		tec.addRobot(robot2,startPoseRobot2);
 		tec.addRobot(robot3,startPoseRobot3);
-		tec.addRobot(robot4, startPoseRobot4);
-		tec.addRobot(robot5, startPoseRobot5);
+		//tec.addRobot(robot4, startPoseRobot4);
+		//tec.addRobot(robot5, startPoseRobot5);
 
 	
 		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
@@ -167,7 +167,7 @@ public class TaskAssignmentThreeRobotsMultiThread {
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 0.5;
+		double alpha = 0.8;
 		//TaskAssignment assignmentProblem = new TaskAssignment();
 		TaskAssignmentMultiThread assignmentProblem = new TaskAssignmentMultiThread();
 		assignmentProblem.addTask(task1);

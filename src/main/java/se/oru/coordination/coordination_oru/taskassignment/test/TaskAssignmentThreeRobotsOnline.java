@@ -169,7 +169,7 @@ public class TaskAssignmentThreeRobotsOnline {
 		assignmentProblem.setDefaultMotionPlanner(rsp);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
-		assignmentProblem.startTaskAssignment(alpha, tec);
+		assignmentProblem.startTaskAssignment(tec);
 		
 		
 		

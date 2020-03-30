@@ -150,6 +150,6 @@ public class TaskAssignmentRobotsInLineWithGreedy {
 		assignmentProblem.setDefaultMotionPlanner(rsp);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 
-		assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
+		assignmentProblem.startTaskAssignmentGreedyAlgorithm(tec);
 	}
 }

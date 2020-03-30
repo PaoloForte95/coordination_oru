@@ -157,7 +157,7 @@ public class TaskAssignmentRobotsInLine {
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setFleetVisualization(viz);
 		
-		assignmentProblem.startTaskAssignment(alpha, tec);
+		assignmentProblem.startTaskAssignment(tec);
 		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
 	}
 }

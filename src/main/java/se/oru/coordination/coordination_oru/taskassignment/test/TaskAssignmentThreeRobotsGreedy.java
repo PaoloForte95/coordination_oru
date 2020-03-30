@@ -171,6 +171,6 @@ public class TaskAssignmentThreeRobotsGreedy {
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
-		assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
+		assignmentProblem.startTaskAssignmentGreedyAlgorithm(tec);
 	}
 }

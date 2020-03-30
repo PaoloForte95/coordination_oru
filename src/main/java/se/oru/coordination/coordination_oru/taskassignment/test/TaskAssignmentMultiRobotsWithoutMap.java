@@ -33,6 +33,7 @@ import se.oru.coordination.coordination_oru.util.Missions;
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentMultiThread;
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimple;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -53,7 +54,7 @@ import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.sat.*;
 
 @DemoDescription(desc = "One-shot navigation of 3 robots coordinating on paths obtained with the ReedsSheppCarPlanner.")
-public class TaskAssignmentThreeRobots {
+public class TaskAssignmentMultiRobotsWithoutMap {
 	//load library used for optimization
 	 static {
 		    System.loadLibrary("jniortools");
@@ -109,6 +110,17 @@ public class TaskAssignmentThreeRobots {
 		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
 		double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
 		rsp.setMapResolution(res);
+		rsp.setPlanningTimeInSecs(2);
+		
+		
+		ReedsSheppCarPlanner rsp2 = new ReedsSheppCarPlanner();
+		rsp2.setRadius(0.2);
+		rsp2.setFootprint(footprint1,footprint2,footprint3,footprint4);
+		rsp2.setTurningRadius(4.0);
+		rsp2.setDistanceBetweenPathPoints(0.5);
+		rsp2.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
+		double res2 = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
+		rsp.setMapResolution(res2);
 		
 	   
 		Pose startPoseRobot1 = new Pose(4.0,6.0,0.0);
@@ -161,7 +173,8 @@ public class TaskAssignmentThreeRobots {
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 0.5;
+		double alpha = 0.7;
+		double numPaths = 1;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
@@ -174,19 +187,23 @@ public class TaskAssignmentThreeRobots {
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
+		assignmentProblem.setDefaultMotionPlanner2(rsp2);
 		assignmentProblem.setFleetVisualization(viz);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setCoordinator(tec);
 		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
+		assignmentProblem.setNumThreadToUse(2);
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
-		double [][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);
-		//double [][] assignmentMatrix = assignmentProblem.solveOptimizationProblemGreedyAlgorithm(tec,alpha);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);
+		
 		for (int i = 0; i < assignmentMatrix.length; i++) {
 			for (int j = 0; j < assignmentMatrix[0].length; j++) {
-				System.out.println("x"+"["+(i+1)+","+(j+1)+"]"+" is "+ assignmentMatrix[i][j]);
-				if(assignmentMatrix[i][j] == 1) {
-					System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1));
+				for(int s = 0; s < numPaths; s++) {
+					System.out.println("x"+"["+(i+1)+","+(j+1)+","+(s+1)+"]"+" is "+ assignmentMatrix[i][j][s]);
+					if(assignmentMatrix[i][j][s] == 1) {
+						System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1));
+					}
 				}
 			} 
 		}

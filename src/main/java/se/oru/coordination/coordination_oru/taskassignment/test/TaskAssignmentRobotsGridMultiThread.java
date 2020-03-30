@@ -122,7 +122,7 @@ public class TaskAssignmentRobotsGridMultiThread {
 		Random rand = new Random();
 		TaskAssignmentMultiThread assignmentProblem = new TaskAssignmentMultiThread();
 		double delta = 0;
-		for(int i = 1; i<= 10; i++) {
+		for(int i = 1; i<= 3; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;
