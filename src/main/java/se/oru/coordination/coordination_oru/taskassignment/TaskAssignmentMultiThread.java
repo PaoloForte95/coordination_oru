@@ -132,8 +132,7 @@ public class TaskAssignmentMultiThread{
 	protected long timeRequiretofillInPall;
 	protected long timeRequiretoComputeCriticalSection;
 	protected long timeRequiretoComputePathsDelay;
-	
-	protected ArrayList<PoseSteering> pathsToTargetStart = new ArrayList <PoseSteering>();
+
 	protected ArrayList <PoseSteering[]> pathsToTargetGoal = new ArrayList <PoseSteering[]>();
 	protected ArrayList <SpatialEnvelope> pathsDrivingRobot = new ArrayList <SpatialEnvelope>();
 	//FleetMaster Interface Parameters
@@ -150,9 +149,9 @@ public class TaskAssignmentMultiThread{
 	protected FleetVisualization viz = null;
 	
 	
-	protected ArrayList<Double> allPaths = new ArrayList<Double>();
-	protected ArrayList<Double> allPaths2 = new ArrayList<Double>();	
-	protected ArrayList<Double> allPathsTotal = new ArrayList<Double>();
+	protected ArrayList<Double> costPaths = new ArrayList<Double>();
+	protected ArrayList<Double> costPaths2 = new ArrayList<Double>();	
+	protected ArrayList<Double> costAllPaths = new ArrayList<Double>();
 	protected ArrayList <PoseSteering[]> pathsToTargetGoalTotal = new ArrayList <PoseSteering[]>();
 	
 	
@@ -626,13 +625,15 @@ public class TaskAssignmentMultiThread{
 		//Take the vector of Decision Variable from the input solver
 		MPVariable [][] decisionVariable = tranformArray(optimizationProblem);
 		//Initialize a Constraint
+		
 		MPConstraint c3 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY,objectiveValue);
 		//Define a constraint for which the next optimal solutions considering only B must have a cost less than objectiveValue
     	for (int i = 0; i < numRobotAug; i++) {
     		for (int j = 0; j < numTaskAug; j++) {
-    			c3.setCoefficient(decisionVariable[i][j],1);
+    			c3.setCoefficient(decisionVariable[i][j],costValuesMatrix[i][j]);
     			}		
 		 }
+ 
     	//Return the updated Optimization Problem
     	return optimizationProblem;
 	}
@@ -731,7 +732,7 @@ public class TaskAssignmentMultiThread{
 				pathsToTargetGoal.add(null);
 				
 				//Infinity cost is returned 
-				allPaths.add(pathLength);
+				costPaths.add(pathLength);
 				return pathLength;
 			}
 			
@@ -769,19 +770,19 @@ public class TaskAssignmentMultiThread{
 				pathsToTargetGoal.add(dummyTask);
 				//Consider a minimal pathLength
 				pathLength = 1;
-				allPaths.add(pathLength);
+				costPaths.add(pathLength);
 				return pathLength;
 			}
 			else { //There are considered dummy robot and real task
 				//dummy robot -> Consider a only virtual Robot 
 				pathsToTargetGoal.add(null);
 				pathLength = 1;
-				allPaths.add(pathLength);
+				costPaths.add(pathLength);
 				return pathLength;
 			}	
 		}	
 		//Return the cost of path length
-		allPaths.add(pathLength);
+		costPaths.add(pathLength);
 		return pathLength;
 	}
 	
@@ -821,7 +822,7 @@ public class TaskAssignmentMultiThread{
 				//the path to reach target end not exits
 				pathsToTargetGoal2.add(null);
 				//Infinity cost is returned
-				allPaths2.add(pathLength);
+				costPaths2.add(pathLength);
 				return pathLength;
 			}
 			
@@ -859,19 +860,19 @@ public class TaskAssignmentMultiThread{
 				pathsToTargetGoal2.add(dummyTask);
 				//Consider a minimal pathLength
 				pathLength = 1;
-				allPaths2.add(pathLength);
+				costPaths2.add(pathLength);
 				return pathLength;
 			}
 			else { //There are considered dummy robot and real task
 				//dummy robot -> Consider a only virtual Robot 
 				pathsToTargetGoal2.add(null);
 				pathLength = 1;
-				allPaths2.add(pathLength);
+				costPaths2.add(pathLength);
 				return pathLength;
 			}	
 		}	
 		//Return the cost of path length
-		allPaths2.add(pathLength);
+		costPaths2.add(pathLength);
 		return pathLength;
 	}
 	
@@ -947,14 +948,14 @@ public class TaskAssignmentMultiThread{
 	 long timeRequired = timeFinal- timeInitial;
 	 timeRequiretoEvaluatePaths = timeRequiretoEvaluatePaths + timeRequired;
 	 fileStream1.println(timeRequired+"");
-	 for(int x= 0; x < allPaths2.size(); x++) {
-		 allPathsTotal.add(allPaths.get(x));
-		 allPathsTotal.add(allPaths2.get(x));
+	 for(int x= 0; x < costPaths2.size(); x++) {
+		 costAllPaths.add(costPaths.get(x));
+		 costAllPaths.add(costPaths2.get(x));
 		 pathsToTargetGoalTotal.add(pathsToTargetGoal.get(x));
 		 pathsToTargetGoalTotal.add(pathsToTargetGoal2.get(x));
 	 }
-	 if(allPaths2.size() != allPaths.size()) {
-		 allPathsTotal.add(allPaths.get(allPaths.size()-1));
+	 if(costPaths2.size() != costPaths.size()) {
+		 costAllPaths.add(costPaths.get(costPaths.size()-1));
 		 pathsToTargetGoalTotal.add(pathsToTargetGoal.get(pathsToTargetGoal.size()-1));
 	 }
 		for (int robot = 0; robot < numRobotAug; robot++) {
@@ -977,7 +978,7 @@ public class TaskAssignmentMultiThread{
 				 }
 				 if(typesAreEqual) { // only if robot and typoe have the same types
 			
-					 pathLength =  allPathsTotal.get(robot*numTask+task);
+					 pathLength =  costAllPaths.get(robot*numTask+task);
 					 timeInitial2 = Calendar.getInstance().getTimeInMillis();
 						
 					if ( pathLength > maxPathLength && pathLength != this.MaxPathLength) {
@@ -1197,7 +1198,7 @@ public class TaskAssignmentMultiThread{
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j]/sumTardiness + arrivalTimeWeight*arrivalTimeMatrix[i][j]/sumArrivalTime;
-					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]+ tardinessWeight*tardinessMatrix[i][j] + arrivalTimeWeight*arrivalTimeMatrix[i][j];
+					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j]/sumTardiness + arrivalTimeWeight*arrivalTimeMatrix[i][j]/sumArrivalTime;
 				}
 			}
 		}
@@ -1205,8 +1206,8 @@ public class TaskAssignmentMultiThread{
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength + tardinessWeight*tardinessMatrix[i][j]/sumTardiness;
-					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]+ tardinessWeight*tardinessMatrix[i][j];
-	
+					//costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]+ tardinessWeight*tardinessMatrix[i][j];
+					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength + tardinessWeight*tardinessMatrix[i][j]/sumTardiness;
 				}
 			}
 		}
@@ -1472,10 +1473,10 @@ public class TaskAssignmentMultiThread{
 			//Evaluate the Assignment Matrix
 			double [][] AssignmentMatrix = saveAssignmentMatrix(numRobotAug,numTaskAug,optimizationProblem);
 			//Initialize cost of objective value
-			double objectiveFunctionValue = 0;
-			double costValue = 0; // -> is the cost of B function non normalized
 			double costofAssignment = 0;
+			double costofAssignmentForConstraint = 0;
 			double costF = 0;
+			double costProva = 0;
 			//Evaluate the cost of F Function for this Assignment
 			timeRequiretoComputeCriticalSection = 0;
 			timeRequiretoComputePathsDelay = 0;
@@ -1487,33 +1488,34 @@ public class TaskAssignmentMultiThread{
 						if (alpha != 1) {
 							//Evaluate cost of F function only if alpha is not equal to 1
 							costF = evaluatePathDelay(i+1,j,AssignmentMatrix,tec)/sumArrivalTime;
+							double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
+							costofAssignment = alpha*costB + (1-alpha)*costF + costofAssignment ;
+							costofAssignmentForConstraint = costB + costF + costofAssignmentForConstraint;
+							costProva = costProva + costValuesMatrix[i][j];
+							
 						}
-						double pathValue = costValuesMatrix[i][j];
-						double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
-						costValue = costValue + pathValue; // is the same value of objective function but non normalized
-						costofAssignment = Math.pow(alpha*costB + (1-alpha)*costF, 2) + costofAssignment ;
-						
-						
-					}				
+						else {
+							//In order to solve the case with more optimal solution with the same cost, the pow of each cost is considered
+							double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
+							costofAssignment = Math.pow(alpha*costB, 2) + costofAssignment ;
+							costofAssignmentForConstraint = alpha*costB + costofAssignmentForConstraint;
+						}
+					}
 				}		
 			}
-		
+	
 			fileStream.println(timeRequiretoEvaluatePaths+"");
 			fileStream.println(timeRequiretofillInPall+"");
 			fileStream.println(timeRequiretoComputeCriticalSection+"");
 			fileStream.println(timeRequiretoComputePathsDelay+"");
-			
-			
-			
-			objectiveFunctionValue = costofAssignment;
 			//Compare actual solution and optimal solution finds so far
-			if (objectiveFunctionValue < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
-				objectiveOptimalValue = objectiveFunctionValue;
+			if (costofAssignment < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
+				objectiveOptimalValue = costofAssignment;
 				optimalAssignmentMatrix = AssignmentMatrix;
 				//Add the constraint on cost for next solution
-				optimizationProblem = constraintOnCostSolution(optimizationProblem,costValue);
-				
 			}
+			
+			optimizationProblem = constraintOnCostSolution(optimizationProblem,costofAssignmentForConstraint);
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
 
