@@ -169,7 +169,7 @@ public class TaskAssignmentWithMap3 {
 	
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
-		assignmentProblem.startTaskAssignment(alpha, tec);
+		assignmentProblem.startTaskAssignment(tec);
 		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
 	}
 }
