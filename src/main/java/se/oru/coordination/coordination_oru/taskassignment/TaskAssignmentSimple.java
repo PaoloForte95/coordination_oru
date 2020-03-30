@@ -76,7 +76,7 @@ import se.oru.coordination.coordination_oru.taskassignment.Task;
 
 
 
-public class TaskAssignment{
+public class TaskAssignmentSimple{
 	//Optimization Problem Parameters
 	protected int numRobot;
 	protected int numTask;
