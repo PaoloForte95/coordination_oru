@@ -304,9 +304,11 @@ public class TaskAssignment {
 		}
 		taskArray.sort(new SortByDeadline());
 		for(int i=0;i < IDsIdleRobots.length; i++) {
-			if(taskArray.contains(taskQueue.get(i))) {
-				taskQueue.get(i).setPriority(true);
+			int index = taskQueue.indexOf(taskArray.get(i));
+			if(taskQueue.get(index).getDeadline() != -1) {
+				taskQueue.get(index).setPriority(true);
 			}
+			
 		}
 	}
 	
@@ -728,10 +730,24 @@ public class TaskAssignment {
 	 * @return The cost associated to the path length for the couple of robot and task given as input
 	 */
 	private double evaluatePathLength(int robot , int task, AbstractTrajectoryEnvelopeCoordinator tec){
-		
-		//Evaluate the path length for the actual couple of task and ID
 		//Initialize the path length to infinity
 		double pathLength = MaxPathLength;
+		boolean typesAreEqual = false;
+		 if (task < numTask && robot <= numRobot ) {
+		 typesAreEqual = taskQueue.get(task).isCompatible(tec.getRobot(robot));
+		 }
+		 else {
+			 //Considering a dummy robot or  a dummy task -> they don't have type
+			 typesAreEqual = true;
+		 }
+		 if(!typesAreEqual) {
+			 pathsToTargetGoal.add(null);
+			 costPaths.add(pathLength);
+			 return pathLength;
+			 
+		 }
+		//Evaluate the path length for the actual couple of task and ID
+		
 		// Only for real robots and tasks
 		if (robot <= numRobot && task < numTask) {
 			//Take the state for the i-th Robot
@@ -746,6 +762,7 @@ public class TaskAssignment {
 				rsp = getDefaultMotionPlanner();
 			}
 			rsp.setStart(rr.getPose());
+			System.out.println("TEST"+rr.getPose()+" robot>>  " + robot + " task>> "+ task);
 			rsp.setGoals(taskQueue.get(task).getStartPose(),taskQueue.get(task).getGoalPose());
 			rsp.setFootprint(tec.getFootprint(robot));
 		
@@ -828,6 +845,23 @@ public class TaskAssignment {
 		//Evaluate the path length for the actual couple of task and ID
 		//Initialize the path length to infinity
 		double pathLength = MaxPathLength;
+		boolean typesAreEqual = false;
+		 if (task < numTask && robot <= numRobot ) {
+		 typesAreEqual = taskQueue.get(task).isCompatible(tec.getRobot(robot));
+		 }
+		 else {
+			 //Considering a dummy robot or  a dummy task -> they don't have type
+			 typesAreEqual = true;
+		 }
+		 if(!typesAreEqual) {
+			 pathsToTargetGoal2.add(null);
+			 costPaths2.add(pathLength);
+			 return pathLength;
+			 
+		 }
+		//Evaluate the path length for the actual couple of task and ID
+		
+		
 		// Only for real robots and tasks
 		if (robot <= numRobot && task < numTask) {
 			//Take the state for the i-th Robot
@@ -1003,50 +1037,36 @@ public class TaskAssignment {
 		 }
 		
 	 }
-		
+	 //remove all elements from arrayList for next Task Assignemnt
+	 pathsToTargetGoal.removeAll(pathsToTargetGoal);
+	 pathsToTargetGoal2.removeAll(pathsToTargetGoal2);
+	 costPaths.removeAll(costPaths);
+	 costPaths2.removeAll(costPaths2);	
+	 timeInitial2 = Calendar.getInstance().getTimeInMillis();
 		for (int robot = 0; robot < numRobotAug; robot++) {
 			double maxPathLength = 1;
 			for (int task = 0; task < numTaskAug; task++ ) {
 				//Take time to understand how much time require this function
-			
-				double pathLength = MaxPathLength;
-				//Evaluate path Length
-				boolean typesAreEqual = false;
-				 if (task < numTask && robot < numRobot ) {
-				 typesAreEqual = taskQueue.get(task).isCompatible(tec.getRobot(robot+1));
-				 }
-				 else {
-					 //Considering a dummy robot or  a dummy task -> they don't have type
-					 typesAreEqual = true;
-				 }
 				 for(int path = 0;path < maxNumPaths; path++) {
-					  if(typesAreEqual) { // only if robot and typoe have the same types
+					  	// only if robot and typoe have the same types
 						//pathLength = evaluatePathLength(robot+1,task,tec);
-						pathLength =  costAllPaths.get(robot*numTaskAug*maxNumPaths+task*maxNumPaths+path);
-						
-						timeInitial2 = Calendar.getInstance().getTimeInMillis();
+					 	double pathLength =  costAllPaths.get(robot*numTaskAug*maxNumPaths+task*maxNumPaths+path);
 						if ( pathLength > maxPathLength && pathLength != this.MaxPathLength) {
 								maxPathLength = pathLength;
 							}
-						}
-						 
-					 else {
-						 pathsToTargetGoalTotal.add(robot*numTaskAug*maxNumPaths+task*maxNumPaths+path,null);
-					 }
-					PAll[robot][task][path] = pathLength;
-					//Take the time to fill in the PAll Matrix
-					long timeFinal2 = Calendar.getInstance().getTimeInMillis();
-					long timeRequired2 = timeFinal2- timeInitial2;
-					timeRequiretofillInPall = timeRequiretofillInPall + timeRequired2;
-					fileStream2.println(timeRequired2+"");
+						PAll[robot][task][path] = pathLength;
+						//Take the time to fill in the PAll Matrix
 					 }
 			}//For Task
 			//Sum the max path length for each robot
-			
 			sumPathsLength += maxPathLength;
 			//Sum the arrival time for the max path length
 			sumArrivalTime += computeArrivalTime(maxPathLength,this.minMaxVel,this.minMaxAcc);
 		}
+		long timeFinal2 = Calendar.getInstance().getTimeInMillis();
+		long timeRequired2 = timeFinal2- timeInitial2;
+		timeRequiretofillInPall = timeRequiretofillInPall + timeRequired2;
+		fileStream2.println(timeRequired2+"");
 		double [][][] PAllAug =  checkTargetGoals(PAll);
 		//Save the sum of max paths length to normalize path length cost
 		this.sumMaxPathsLength = sumPathsLength;
@@ -1348,17 +1368,17 @@ public class TaskAssignment {
 	 * 1) Each Task can be assign only to a robot;
 	 * 2) Each Robot can perform only a task at time;
 	 * @param numRobot -> Number of Robots
-	 * @param numTasks -> Number of Tasks.
+	 * @param numTasksAug -> Number of Tasks.
 	 * @return A constrained optimization problem without the objective function
 	 */
-	private MPSolver buildOptimizationProblem(int numRobot,int numTasks) {
+	private MPSolver buildOptimizationProblem(int numRobotAug,int numTasksAug) {
 		//Initialize a linear solver 
 		MPSolver optimizationProblem = new MPSolver(
 				"TaskAssignment", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
 		//START DECISION VARIABLE VARIABLE
-		MPVariable [][][] decisionVariable = new MPVariable[numRobot][numTasks][maxNumPaths];
-		for (int i = 0; i < numRobot; i++) {
-			 for (int j = 0; j < numTasks; j++) {
+		MPVariable [][][] decisionVariable = new MPVariable[numRobotAug][numTasksAug][maxNumPaths];
+		for (int i = 0; i < numRobotAug; i++) {
+			 for (int j = 0; j < numTasksAug; j++) {
 				 for(int s = 0; s < maxNumPaths; s++) {
 					 decisionVariable[i][j][s] = optimizationProblem.makeBoolVar("x"+"["+i+","+j+","+s+"]");
 				 }
@@ -1369,10 +1389,10 @@ public class TaskAssignment {
 		//////////////////////////
 		// START CONSTRAINTS
 		//Each Robot can be assign only to a Task	    
-		 for (int i = 0; i < numRobot; i++) {
+		 for (int i = 0; i < numRobotAug; i++) {
 			 //Initialize the constraint
 			 MPConstraint c0 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY, 1);
-			 for (int j = 0; j < numTasks; j++) {
+			 for (int j = 0; j < numTasksAug; j++) {
 				 for(int s = 0; s < maxNumPaths; s++) {
 					 //Build the constraint
 					 c0.setCoefficient(decisionVariable[i][j][s], 1); 
@@ -1381,10 +1401,10 @@ public class TaskAssignment {
 			 }
 		 }
 		//Each task can be performed only by a robot
-		 for (int j = 0; j < numRobot; j++) {
+		 for (int j = 0; j < numTasksAug; j++) {
 			//Initialize the constraint
 			 MPConstraint c0 = optimizationProblem.makeConstraint(1, 1); 
-			 for (int i = 0; i < numTasks; i++) {
+			 for (int i = 0; i < numRobotAug; i++) {
 				 for(int s = 0; s < maxNumPaths; s++) {
 					 //Build the constraint
 					 c0.setCoefficient(decisionVariable[i][j][s], 1); 
@@ -1393,6 +1413,23 @@ public class TaskAssignment {
 		 }
 	
 		//END CONSTRAINTS
+		//In case of having more task than robots, the task with a closest deadline are set with a higher priority
+		 if(taskQueue.size() > IDsIdleRobots.length) {
+			 checkOnTaskDeadline();
+			//Each task can be performed only by a robot
+			 for (int j = 0; j < taskQueue.size(); j++) {
+				//Initialize the constraint
+				 if(taskQueue.get(j).isPriority()) {
+					 MPConstraint c3 = optimizationProblem.makeConstraint(1, 1); 
+					 for (int i = 0; i < IDsIdleRobots.length; i++) {
+						 for(int s = 0; s < maxNumPaths; s++) {
+							 //Build the constraint
+							 c3.setCoefficient(decisionVariable[i][j][s], 1); 
+						 } 		
+					 }
+				 }
+			 }
+		 }
 		/////////////////////////////////////////////////
 		return optimizationProblem;	
 	}
@@ -1849,7 +1886,7 @@ public class TaskAssignment {
 								for(int s = 0; s < maxNumPaths; s++) {
 									System.out.println("x"+"["+(i+1)+","+(j+1)+","+(s+1)+"]"+" is "+ assignmentMatrix[i][j][s]);
 									if (assignmentMatrix[i][j][s] == 1) {
-										System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1) +"throw Path " + (s+1));
+										System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1) +" throw Path " + (s+1));
 									}
 								}
 									

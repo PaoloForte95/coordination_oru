@@ -71,6 +71,7 @@ import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.*;
 import com.google.ortools.sat.*;
 import se.oru.coordination.coordination_oru.taskassignment.Task;
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment.SortByDeadline;
 
 
 
@@ -474,6 +475,30 @@ public class TaskAssignmentSimple{
 			throw new Error("The task" + index + "not exist");
 		}else {
 			return taskQueue.get(index);
+		}
+	}
+	
+	class SortByDeadline implements Comparator<Task>{
+		@Override
+		public int compare(Task task1, Task task2) {
+			return (int) (task1.getDeadline()-task2.getDeadline());
+		}
+	}
+	
+	private void checkOnTaskDeadline() {
+		ArrayList <Task>taskArray =new ArrayList <Task>();
+		for(int j=0; j < taskQueue.size(); j++ ) {
+			taskArray.add(taskQueue.get(j));
+		}
+		taskArray.sort(new SortByDeadline());
+		for(int k= 0;k < taskArray.size();k++) {
+		}
+		for(int i=0;i < IDsIdleRobots.length; i++) {
+				int index = taskQueue.indexOf(taskArray.get(i));
+				if(taskQueue.get(index).getDeadline() != -1) {
+					taskQueue.get(index).setPriority(true);
+				}
+			
 		}
 	}
 	
@@ -1088,14 +1113,14 @@ public class TaskAssignmentSimple{
 	 * @param numTasks -> Number of Tasks.
 	 * @return A constrained optimization problem without the objective function
 	 */
-	private MPSolver buildOptimizationProblem(int numRobot,int numTasks) {
+	private MPSolver buildOptimizationProblem(int numRobotAug,int numTasksAug) {
 		//Initialize a linear solver 
 		MPSolver optimizationProblem = new MPSolver(
 				"TaskAssignment", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
 		//START DECISION VARIABLE VARIABLE
-		MPVariable [][] decisionVariable = new MPVariable[numRobot][numTasks]  ;
-		for (int i = 0; i < numRobot; i++) {
-			 for (int j = 0; j < numTasks; j++) {
+		MPVariable [][] decisionVariable = new MPVariable[numRobotAug][numTasksAug]  ;
+		for (int i = 0; i < numRobotAug; i++) {
+			 for (int j = 0; j < numTasksAug; j++) {
 				 decisionVariable[i][j] = optimizationProblem.makeBoolVar("x"+"["+i+","+j+"]");
 			 }
 		}
@@ -1103,25 +1128,40 @@ public class TaskAssignmentSimple{
 		//////////////////////////
 		// START CONSTRAINTS
 		//Each Robot can be assign only to a Task	    
-		 for (int i = 0; i < numRobot; i++) {
+		 for (int i = 0; i < numRobotAug; i++) {
 			 //Initialize the constraint
 			 MPConstraint c0 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY, 1);
-			 for (int j = 0; j < numTasks; j++) {
+			 for (int j = 0; j < numTasksAug; j++) {
 				 //Build the constraint
 				 c0.setCoefficient(decisionVariable[i][j], 1); 
 			 }
 		 }
 		//Each task can be performed only by a robot
-		 for (int j = 0; j < numRobot; j++) {
+		 for (int j = 0; j < numTasksAug; j++) {
 			//Initialize the constraint
 			 MPConstraint c0 = optimizationProblem.makeConstraint(1, 1); 
-			 for (int i = 0; i < numTasks; i++) {
+			 for (int i = 0; i < numRobotAug; i++) {
 				//Build the constraint
 				c0.setCoefficient(decisionVariable[i][j], 1); 		
 			 }
 		 }
 	
 		//END CONSTRAINTS
+		//In case of having more task than robots, the task with a closest deadline are set with a higher priority
+		 if(taskQueue.size() > IDsIdleRobots.length) {
+			 checkOnTaskDeadline();
+			//Each task can be performed only by a robot
+			 for (int j = 0; j < taskQueue.size(); j++) {
+				//Initialize the constraint
+				 if(taskQueue.get(j).isPriority()) {
+					 MPConstraint c3 = optimizationProblem.makeConstraint(1, 1); 
+					 for (int i = 0; i < IDsIdleRobots.length; i++) {
+							 //Build the constraint
+							 c3.setCoefficient(decisionVariable[i][j], 1); 
+						 }		
+				 }
+			 }
+		 }
 		/////////////////////////////////////////////////
 		return optimizationProblem;	
 	}
