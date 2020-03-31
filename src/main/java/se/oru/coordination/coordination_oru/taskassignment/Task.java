@@ -45,6 +45,7 @@ public class Task {
 	protected Set<Integer> robotTypes = null;
 	protected double deadline = -1;
 	protected double operationTime = 0;
+	protected boolean priority = false;
 	
 	
 	
@@ -141,7 +142,15 @@ public class Task {
 	public PoseSteering getGoal() {
 		return this.GoalPoint;	
 	}
+	
+	public boolean isPriority() {
+		return this.priority;	
+	}
 
+	
+	public void setPriority(boolean priority) {
+		this.priority = priority;	
+	}
 
 	public boolean isCompatible(Robot robot) {
 		return this.robotTypes.contains(robot.getRobotType());
