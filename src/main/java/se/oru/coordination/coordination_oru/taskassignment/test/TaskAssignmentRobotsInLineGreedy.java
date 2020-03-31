@@ -1,5 +1,6 @@
 package se.oru.coordination.coordination_oru.taskassignment.test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -31,8 +32,7 @@ import se.oru.coordination.coordination_oru.util.Missions;
 
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
-
-
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimple;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -53,7 +53,7 @@ import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.sat.*;
 
 @DemoDescription(desc = "One-shot navigation of 3 robots coordinating on paths obtained with the ReedsSheppCarPlanner.")
-public class TaskAssignmentRobotsInLineWithGreedy {
+public class TaskAssignmentRobotsInLineGreedy {
 	//load library used for optimization
 	 static {
 		    System.loadLibrary("jniortools");
@@ -100,12 +100,17 @@ public class TaskAssignmentRobotsInLineWithGreedy {
 		tec.setUseInternalCriticalPoints(false);
 
 		
+		String yamlFile = "maps/map-empty.yaml";
 		//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
 		ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
 		rsp.setRadius(0.2);
 		rsp.setFootprint(footprint1,footprint2,footprint3,footprint4);
 		rsp.setTurningRadius(4.0);
 		rsp.setDistanceBetweenPathPoints(0.5);
+		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
+		double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
+		rsp.setMapResolution(res);
+		rsp.setPlanningTimeInSecs(2);
 		
 		
 		Pose startPoseRobot1 = new Pose(20.0,6.0,0.0);
@@ -139,7 +144,7 @@ public class TaskAssignmentRobotsInLineWithGreedy {
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
 		double alpha = 0.7;
-		TaskAssignment assignmentProblem = new TaskAssignment();
+		TaskAssignmentSimple assignmentProblem = new TaskAssignmentSimple();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);

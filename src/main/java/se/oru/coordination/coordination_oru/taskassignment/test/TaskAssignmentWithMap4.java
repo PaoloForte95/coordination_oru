@@ -110,7 +110,7 @@ public class TaskAssignmentWithMap4 {
 		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-corridors-vi.yaml"));
 		double res = Double.parseDouble(Missions.getProperty("resolution", "maps/map-corridors-vi.yaml"));
 		rsp.setMapResolution(res);
-		rsp.setPlanningTimeInSecs(5);
+		rsp.setPlanningTimeInSecs(3);
 		
 		ReedsSheppCarPlanner rsp2 = new ReedsSheppCarPlanner();
 		rsp2.setRadius(0.2);
@@ -119,8 +119,8 @@ public class TaskAssignmentWithMap4 {
 		rsp2.setDistanceBetweenPathPoints(0.5);
 		rsp2.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-corridors-vi.yaml"));
 		double res2 = Double.parseDouble(Missions.getProperty("resolution", "maps/map-corridors-vi.yaml"));
-		rsp.setMapResolution(res2);
-		rsp2.setPlanningTimeInSecs(5);
+		rsp2.setMapResolution(res2);
+		rsp2.setPlanningTimeInSecs(3);
 		
 		
 		Pose startPoseRobot1 = new Pose(20.0,15.0,0.0);
@@ -184,6 +184,6 @@ public class TaskAssignmentWithMap4 {
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
 		assignmentProblem.startTaskAssignment(tec);
-		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
+
 	}
 }

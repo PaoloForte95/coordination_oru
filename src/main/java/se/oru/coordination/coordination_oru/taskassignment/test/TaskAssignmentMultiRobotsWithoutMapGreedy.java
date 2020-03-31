@@ -54,7 +54,7 @@ import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.sat.*;
 
 @DemoDescription(desc = "One-shot navigation of 3 robots coordinating on paths obtained with the ReedsSheppCarPlanner.")
-public class TaskAssignmentThreeRobotsGreedy {
+public class TaskAssignmentMultiRobotsWithoutMapGreedy {
 	//load library used for optimization
 	 static {
 		    System.loadLibrary("jniortools");

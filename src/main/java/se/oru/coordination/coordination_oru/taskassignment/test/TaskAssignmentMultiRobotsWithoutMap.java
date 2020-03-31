@@ -130,7 +130,7 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		Pose startPoseRobot5 = new Pose(5.0,20.0,Math.PI/2);
 
 		Robot robot1 = new Robot(1, 1);
-		Robot robot2 = new Robot(2, 1);
+		Robot robot2 = new Robot(2, 2);
 		Robot robot3 = new Robot(3, 1);
 		Robot robot4 = new Robot(4, 1);
 		Robot robot5 = new Robot(5, 1);
@@ -163,7 +163,7 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 
 		
 		Task task1 = new Task(startPoseGoal1,goalPoseGoal1,1);
-		Task task2 = new Task(startPoseGoal2,goalPoseGoal2,1);
+		Task task2 = new Task(startPoseGoal2,goalPoseGoal2,2);
 		Task task3 = new Task(startPoseGoal3,goalPoseGoal3,1);
 
 		Task task4 = new Task(startPoseGoal4,goalPoseGoal4,1);

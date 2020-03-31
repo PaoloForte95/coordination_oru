@@ -153,7 +153,7 @@ public class TaskAssignmentWithMap {
 
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 0.6;
+		double alpha = 1.0;
 		TaskAssignmentSimple assignmentProblem = new TaskAssignmentSimple();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
@@ -162,13 +162,15 @@ public class TaskAssignmentWithMap {
 		assignmentProblem.addTask(task5);
 		assignmentProblem.setFleetVisualization(viz);
 		
-		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
+		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
+		assignmentProblem.setLinearWeight(alpha);
+		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
 	
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
 		assignmentProblem.startTaskAssignment(tec);
-		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
+		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(tec);
 	}
 }

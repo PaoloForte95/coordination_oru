@@ -32,8 +32,7 @@ import se.oru.coordination.coordination_oru.util.Missions;
 
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
-
-
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimple;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -110,7 +109,7 @@ public class TaskAssignmentWithMap3 {
 		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-corridors-vi.yaml"));
 		double res = Double.parseDouble(Missions.getProperty("resolution", "maps/map-corridors-vi.yaml"));
 		rsp.setMapResolution(res);
-		
+		rsp.setPlanningTimeInSecs(3);
 		
 		Pose startPoseRobot1 = new Pose(20.0,15.0,0.0);
 		Pose startPoseRobot2 = new Pose(12.0,28.0,0.0);
@@ -154,14 +153,16 @@ public class TaskAssignmentWithMap3 {
 
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 1.0;
-		TaskAssignment assignmentProblem = new TaskAssignment();
+		double alpha = 0.6;
+		TaskAssignmentSimple assignmentProblem = new TaskAssignmentSimple();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
 		assignmentProblem.addTask(task4);
 		assignmentProblem.addTask(task5);
 		assignmentProblem.setFleetVisualization(viz);
+		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
+		assignmentProblem.setLinearWeight(alpha);
 		
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
@@ -170,6 +171,6 @@ public class TaskAssignmentWithMap3 {
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
 		assignmentProblem.startTaskAssignment(tec);
-		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
+
 	}
 }

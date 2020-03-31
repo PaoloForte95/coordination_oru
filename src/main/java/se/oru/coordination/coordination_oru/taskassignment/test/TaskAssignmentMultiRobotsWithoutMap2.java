@@ -112,16 +112,6 @@ public class TaskAssignmentMultiRobotsWithoutMap2 {
 		rsp.setMapResolution(res);
 		rsp.setPlanningTimeInSecs(2);
 		
-		
-		ReedsSheppCarPlanner rsp2 = new ReedsSheppCarPlanner();
-		rsp2.setRadius(0.2);
-		rsp2.setFootprint(footprint1,footprint2,footprint3,footprint4);
-		rsp2.setTurningRadius(4.0);
-		rsp2.setDistanceBetweenPathPoints(0.5);
-		rsp2.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
-		double res2 = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
-		rsp.setMapResolution(res2);
-		
 	   
 		Pose startPoseRobot1 = new Pose(4.0,6.0,0.0);
 		Pose startPoseRobot2 = new Pose(6.0,16.0,-Math.PI/4);
@@ -191,7 +181,7 @@ public class TaskAssignmentMultiRobotsWithoutMap2 {
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setCoordinator(tec);
 		assignmentProblem.setLinearWeight(alpha);
-		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
+		assignmentProblem.setCostFunctionsWeight(1.0, 0.0, 0.0);
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
 		double [][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);
 		

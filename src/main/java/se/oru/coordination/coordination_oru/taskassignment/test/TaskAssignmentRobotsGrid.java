@@ -33,8 +33,7 @@ import se.oru.coordination.coordination_oru.util.Missions;
 
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
-
-
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimple;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -109,21 +108,33 @@ public class TaskAssignmentRobotsGrid {
 		rsp.setTurningRadius(4.0);
 		rsp.setDistanceBetweenPathPoints(0.5);
 		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
+		
+		
+
+		ReedsSheppCarPlanner rsp2 = new ReedsSheppCarPlanner();
+		rsp2.setRadius(0.2);
+		rsp2.setFootprint(footprint1,footprint2,footprint3,footprint4);
+		rsp2.setTurningRadius(4.0);
+		rsp2.setDistanceBetweenPathPoints(0.5);
+		rsp2.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
+		double res2 = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
+		rsp.setMapResolution(res2);
+		
 		Random rand = new Random();
-		TaskAssignment assignmentProblem = new TaskAssignment();
+		TaskAssignmentSimple assignmentProblem = new TaskAssignmentSimple();
 		double delta = 0;
-		for(int i = 1; i<= 3; i++) {
+		for(int i = 1; i<= 5; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;
 			System.out.println("provaRobot >> "+ robotType);
-			Robot robot = new Robot(i,1);
+			Robot robot = new Robot(i,robotType);
 			tec.addRobot(robot,startPoseRobot);
 			Pose startPoseGoal = new Pose(15.0,(6.0 + delta),0.0);
 			Pose goalPoseRobot = new Pose(30.0 ,(6.0 + delta) ,0.0);
 			int taskType = rand.nextInt(2)+1;
 			System.out.println("provaTask >> "+ taskType);
-			Task task = new Task(startPoseGoal,goalPoseRobot,1);
+			Task task = new Task(startPoseGoal,goalPoseRobot,taskType);
 			assignmentProblem.addTask(task);
 			delta += 6.0;
 		}
@@ -134,8 +145,13 @@ public class TaskAssignmentRobotsGrid {
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setDefaultMotionPlanner(rsp);
+		//assignmentProblem.setDefaultMotionPlanner2(rsp2);
 		assignmentProblem.setFleetVisualization(viz);
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
+		assignmentProblem.setCoordinator(tec);
+		assignmentProblem.setLinearWeight(alpha);
+		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
+		//assignmentProblem.setNumThreadToUse(2);
 		
 		assignmentProblem.startTaskAssignment(tec);
 	}

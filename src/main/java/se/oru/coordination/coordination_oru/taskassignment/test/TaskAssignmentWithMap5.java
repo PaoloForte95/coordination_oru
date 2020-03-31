@@ -110,7 +110,7 @@ public class TaskAssignmentWithMap5 {
 		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-corridors-vi.yaml"));
 		double res = Double.parseDouble(Missions.getProperty("resolution", "maps/map-corridors-vi.yaml"));
 		rsp.setMapResolution(res);
-		rsp.setPlanningTimeInSecs(5);
+		rsp.setPlanningTimeInSecs(3);
 		
 		
 		ReedsSheppCarPlanner rsp2 = new ReedsSheppCarPlanner();
@@ -120,8 +120,8 @@ public class TaskAssignmentWithMap5 {
 		rsp2.setDistanceBetweenPathPoints(0.5);
 		rsp2.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-corridors-vi.yaml"));
 		double res2 = Double.parseDouble(Missions.getProperty("resolution", "maps/map-corridors-vi.yaml"));
-		rsp.setMapResolution(res2);
-		rsp2.setPlanningTimeInSecs(5);
+		rsp2.setMapResolution(res2);
+		rsp2.setPlanningTimeInSecs(3);
 		
 		
 		Pose startPoseRobot1 = new Pose(20.0,15.0,0.0);
@@ -152,24 +152,20 @@ public class TaskAssignmentWithMap5 {
 		Pose startPoseGoal1 = new Pose(28.0,5.0,0.0);
 		Pose startPoseGoal2 = new Pose(22.0,15.0,0.0);
 		Pose startPoseGoal3 = new Pose(24.0,6.0,0.0);
+		Pose startPoseGoal4 = new Pose(9.0,27.0,Math.PI/2);
+		Pose startPoseGoal5 = new Pose(26.0,5.0,0.0);
+		
 		Pose goalPoseRobot1 = new Pose(38.0,5.0,0.0);
 		Pose goalPoseRobot2 = new Pose(45.0,15.0,0.0);
 		Pose goalPoseRobot3 = new Pose(26.0,6.0,0.0);
-		
-		
+		Pose goalPoseRobot4 = new Pose(45.0,31.0,0.0);
+		Pose goalPoseRobot5 = new Pose(42.0,6.0,0.0);
 		
 		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
 		Task task2 = new Task(startPoseGoal2,goalPoseRobot2,1);
 		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
-
-		Pose startPoseGoal4 = new Pose(9.0,27.0,Math.PI/2);
-		Pose startPoseGoal5 = new Pose(26.0,5.0,0.0);
-		Pose endPoseGoal4 = new Pose(45.0,31.0,0.0);
-		Pose endPoseGoal5 = new Pose(42.0,6.0,0.0);
-		
-		
-		Task task4 = new Task(startPoseGoal4,endPoseGoal4,1);
-		Task task5 = new Task(startPoseGoal5,endPoseGoal5,1);
+		Task task4 = new Task(startPoseGoal4,goalPoseRobot4,1);
+		Task task5 = new Task(startPoseGoal5,goalPoseRobot5,1);
 		
 	
 		
@@ -194,6 +190,5 @@ public class TaskAssignmentWithMap5 {
 		assignmentProblem.setFleetVisualization(viz);
 		assignmentProblem.startTaskAssignment(tec);
 		assignmentProblem.setDefaultMotionPlanner2(rsp2);
-		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
 	}
 }

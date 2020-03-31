@@ -179,6 +179,5 @@ public class TaskAssignmentWithMap2 {
 		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setFleetVisualization(viz);
 		assignmentProblem.startTaskAssignment(tec);
-		//assignmentProblem.startTaskAssignmentGreedyAlgorithm(alpha, tec);
 	}
 }
