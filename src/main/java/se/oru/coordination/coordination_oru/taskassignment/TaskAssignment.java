@@ -236,12 +236,8 @@ public class TaskAssignment {
 				for (int s = 0; s < maxNumPaths; s++) {
 					if(PAll[i][j][s] != MaxPathLength) {
 						targetEndCanBeReach = true;
-						
 					}
-					System.out.print(targetEndCanBeReach+ " task " + (j+1) + " robot>> " + (i+1));
 				}
-				
-				
 			}
 			//no robot can reach the target end -> need to introduce a dummy task and robot 
 			if(!targetEndCanBeReach) {
@@ -292,6 +288,29 @@ public class TaskAssignment {
 		this.minMaxVel = MaxVel;
 		this.minMaxAcc = MaxAccel;
 	}
+	
+	class SortByDeadline implements Comparator<Task>{
+		@Override
+		public int compare(Task task1, Task task2) {
+			return (int) (task1.getDeadline()-task2.getDeadline());
+		}
+	}
+	
+	
+	private void checkOnTaskDeadline() {
+		ArrayList <Task>taskArray =new ArrayList <Task>();
+		for(int j=0; j < taskQueue.size(); j++ ) {
+			taskArray.add(taskQueue.get(j));
+		}
+		taskArray.sort(new SortByDeadline());
+		for(int i=0;i < IDsIdleRobots.length; i++) {
+			if(taskArray.contains(taskQueue.get(i))) {
+				taskQueue.get(i).setPriority(true);
+			}
+		}
+	}
+	
+	
 	
 	/**
 	 * Enable and initialize the fleetmaster library to estimate precedences to minimize the overall completion time.
@@ -747,7 +766,6 @@ public class TaskAssignment {
 			addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
 			//Save the path to Task in the path set
 			pathsToTargetGoal.add(pss);
-
 			//Take the Path Length
 			pathLength = Missions.getPathLength(pss);
 	
@@ -819,7 +837,7 @@ public class TaskAssignment {
 				throw new Error("RobotReport not found for Robot" + robot + ".");
 			}
 			//Evaluate the path from the Robot Starting Pose to Task End Pose
-			AbstractMotionPlanner rsp = this.motionPlanners2.get(robot);
+			AbstractMotionPlanner rsp = defaultMotionPlanner2;
 			if(rsp == null) { // if there is not  a specific motion planner for the robot
 				rsp = defaultMotionPlanner2;
 			}
@@ -833,6 +851,7 @@ public class TaskAssignment {
 				pathsToTargetGoal2.add(null);
 				//Infinity cost is returned
 				costPaths2.add(pathLength);
+				pathsToTargetGoal2.add(null);
 				return pathLength;
 			}
 			
@@ -844,9 +863,8 @@ public class TaskAssignment {
 			addPath(robot, pss.hashCode(), pss, null, tec.getFootprint(robot));
 			//Save the path to Task in the path set
 			this.pathsToTargetGoal2.add(pss);
-			
-			//Take the Path Length
 
+			//Take the Path Length
 			pathLength = Missions.getPathLength(pss);
 
 		} else { //There also virtual robot and task are considered 
@@ -946,7 +964,7 @@ public class TaskAssignment {
 		
 		long timeInitial = Calendar.getInstance().getTimeInMillis(); 
 		for(int kk=0; kk < A2.length-1; kk += numThreadToUse) {
-			for(int t = 0; t< numThreadToUse;t++) {
+			for(int t = 0; t < numThreadToUse;t++) {
 				A2[kk+t].start();
 			}
 			try {
@@ -983,6 +1001,7 @@ public class TaskAssignment {
 			 costAllPaths.add(costPaths2.get(x));
 			 pathsToTargetGoalTotal.add(pathsToTargetGoal2.get(x));
 		 }
+		
 	 }
 		
 		for (int robot = 0; robot < numRobotAug; robot++) {
@@ -1077,10 +1096,14 @@ public class TaskAssignment {
 			if (task < numTask && robot <= numRobot) {
 				//Take the Pose steering relate to i-th robot and j-th task from path set
 				PoseSteering[] pss1 = pathsToTargetGoalTotal.get((robot-1)*numTaskAug*maxNumPaths + task*maxNumPaths +pathID);	
+				if(pss1 == null) {
+					return delay;
+				}
 				//Initialize Array of delays for the two robots
 				TreeSet<IndexedDelay> te1TCDelays = new TreeSet<IndexedDelay>() ;
 				TreeSet<IndexedDelay> te2TCDelays = new TreeSet<IndexedDelay>() ;
 				//Compute the spatial Envelope for the i-th Robot
+				
 				SpatialEnvelope se1 = TrajectoryEnvelope.createSpatialEnvelope(pss1,tec.getFootprint(robot));
 				//Evaluate other path depending from the Assignment Matrix
 				for(int m = 0; m < assignmentMatrix.length; m++) {
@@ -1116,7 +1139,7 @@ public class TaskAssignment {
 												delay += delayCriticalSection;
 											}
 										}
-									}
+									
 								//Take the paths of driving robots from coordinator
 							    pathsDrivingRobot = tec.getDrivingEnvelope();
 							  //Evaluate the delay time due to already driving robots
@@ -1132,6 +1155,7 @@ public class TaskAssignment {
 								long timeRequired2 = timeFinal2- timeInitial2;
 								timeRequiretoComputePathsDelay = timeRequiretoComputePathsDelay + timeRequired2;
 								fileStream2.println(timeRequired2+"");
+								}
 							} 
 						 }
 						
@@ -1173,7 +1197,7 @@ public class TaskAssignment {
 			for (int j = 0 ; j < taskQueue.size(); j++) {
 				 for(int path = 0;path < maxNumPaths; path++) {
 					 double vel = tec.getRobot(i+1).getForwardModel().getVel();
-					 double acc = tec.getRobot(i+1).getForwardModel().getVel();
+					 double acc = tec.getRobot(i+1).getForwardModel().getAcc();
 					 double arrivalTime = computeArrivalTime(PAll[i][j][path],vel,acc);
 					 arrivalTimeMatrix[i][j][path] = arrivalTime;
 				 }
@@ -1235,7 +1259,7 @@ public class TaskAssignment {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					for(int path = 0;path < maxNumPaths; path++) {
 						BFunction[i][j][path] = pathLengthWeight*PAll[i][j][path]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j][path]/sumTardiness + arrivalTimeWeight*arrivalTimeMatrix[i][j][path]/sumArrivalTime;
-						costValuesMatrix[i][j][path] = pathLengthWeight*PAll[i][j][path]+ tardinessWeight*tardinessMatrix[i][j][path] + arrivalTimeWeight*arrivalTimeMatrix[i][j][path];
+						costValuesMatrix[i][j][path] = PAll[i][j][path]+ tardinessMatrix[i][j][path] + arrivalTimeMatrix[i][j][path];
 					}
 					
 				}
@@ -1246,7 +1270,7 @@ public class TaskAssignment {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					for(int path = 0;path < maxNumPaths; path++) {
 						BFunction[i][j][path] = pathLengthWeight*PAll[i][j][path]/sumMaxPathsLength+ tardinessWeight*tardinessMatrix[i][j][path]/sumTardiness;
-						costValuesMatrix[i][j][path] = pathLengthWeight*PAll[i][j][path]+ tardinessWeight*tardinessMatrix[i][j][path];
+						costValuesMatrix[i][j][path] = PAll[i][j][path]+ tardinessMatrix[i][j][path];
 					}
 
 	
@@ -1570,18 +1594,19 @@ public class TaskAssignment {
 			fileStream.println(timeRequiretoComputePathsDelay+"");
 			
 			
-			
 			//Compare actual solution and optimal solution finds so far
 			if (costofAssignment < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 				objectiveOptimalValue = costofAssignment;
 				optimalAssignmentMatrix = AssignmentMatrix;	
 			}
+			
 			//Add the constraint on cost for next solution
 			optimizationProblem = constraintOnCostSolution(optimizationProblem,costofAssignmentForConstraint);
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
 
 		}
+
 		
 		//Return the Optimal Assignment Matrix 
 		return  optimalAssignmentMatrix;    
@@ -1616,7 +1641,6 @@ public class TaskAssignment {
 		double objectiveOptimalValue = 100000000;
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
-		
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 			//Evaluate a feasible assignment
 			resultStatus = optimizationProblem.solve();

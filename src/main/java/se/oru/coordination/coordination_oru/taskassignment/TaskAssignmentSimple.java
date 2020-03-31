@@ -850,6 +850,9 @@ public class TaskAssignmentSimple{
 			if (task < numTask && robot <= numRobot) {
 				//Take the Pose steering relate to i-th robot and j-th task from path set
 				PoseSteering[] pss1 = pathsToTargetGoal.get((robot-1)*assignmentMatrix[0].length + task);	
+				if(pss1 == null) {
+					return delay;
+				}
 				//Initialize Array of delays for the two robots
 				TreeSet<IndexedDelay> te1TCDelays = new TreeSet<IndexedDelay>() ;
 				TreeSet<IndexedDelay> te2TCDelays = new TreeSet<IndexedDelay>() ;
@@ -861,7 +864,7 @@ public class TaskAssignmentSimple{
 						if (assignmentMatrix [m][n] > 0 && m+1 != robot && n != task && n < numTask && m < numRobot) {
 							//Take the path of this second robot from path set
 							PoseSteering[] pss2 = pathsToTargetGoal.get((m)*assignmentMatrix[0].length  + n);
-							if (pss2 != null) {//is == null if robotType is different to Task type
+							if (pss2 != null) {//is == null if robotType is different to Task type or path not exists
 								//Evaluate the Spatial Envelope of this second Robot
 								SpatialEnvelope se2 = TrajectoryEnvelope.createSpatialEnvelope(pss2,tec.getFootprint(m+1));
 								long timeInitial = Calendar.getInstance().getTimeInMillis();
@@ -888,7 +891,7 @@ public class TaskAssignmentSimple{
 										delay += delayCriticalSection;
 									}
 								}
-							}
+							
 						//Take the paths of driving robots from coordinator
 					    pathsDrivingRobot = tec.getDrivingEnvelope();
 					  //Evaluate the delay time due to already driving robots
@@ -904,6 +907,7 @@ public class TaskAssignmentSimple{
 						long timeRequired2 = timeFinal2- timeInitial2;
 						timeRequiretoComputePathsDelay = timeRequiretoComputePathsDelay + timeRequired2;
 						fileStream2.println(timeRequired2+"");
+						}
 					}
 				}	
 			}
@@ -944,7 +948,7 @@ public class TaskAssignmentSimple{
 		for (int i = 0 ; i < IDsIdleRobots.length; i++) {
 			for (int j = 0 ; j < taskQueue.size(); j++) {
 				double vel = tec.getRobot(i+1).getForwardModel().getVel();
-				double acc = tec.getRobot(i+1).getForwardModel().getVel();
+				double acc = tec.getRobot(i+1).getForwardModel().getAcc();
 				double arrivalTime = computeArrivalTime(PAll[i][j],vel,acc);
 				arrivalTimeMatrix[i][j] = arrivalTime;
 			}
@@ -1009,7 +1013,7 @@ public class TaskAssignmentSimple{
 			for (int i = 0 ; i < numRobotAug; i++) {
 				for (int j = 0 ; j < numTaskAug; j++) {
 					BFunction[i][j] = pathLengthWeight*PAll[i][j]/sumMaxPathsLength + tardinessWeight*tardinessMatrix[i][j]/sumTardiness;
-					costValuesMatrix[i][j] = pathLengthWeight*PAll[i][j]+ tardinessWeight*tardinessMatrix[i][j];
+					costValuesMatrix[i][j] = PAll[i][j]+ tardinessMatrix[i][j];
 				}
 			}
 		}
@@ -1269,7 +1273,7 @@ public class TaskAssignmentSimple{
 		double objectiveOptimalValue = 100000000;
 		//Solve the optimization problem
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
-	
+		int cont=0;
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 			//Evaluate an optimal assignment that minimize only the B function
 			resultStatus = optimizationProblem.solve();
@@ -1301,20 +1305,18 @@ public class TaskAssignmentSimple{
 							//In order to solve the case with more optimal solution with the same cost, the pow of each cost is considered
 							double costB = optimizationProblem.objective().getCoefficient(optimizationProblem.variables()[i*numTaskAug+j]);
 							costofAssignment = Math.pow(alpha*costB, 2) + costofAssignment ;
-							costofAssignmentForConstraint = alpha*costB + costofAssignmentForConstraint;
+							costofAssignmentForConstraint = Math.pow(costB,2) + costofAssignmentForConstraint;
+	
 						}
 					}				
 				}		
 			}
-			
+			System.out.println("cost>>"+ costofAssignmentForConstraint);
 			
 			fileStream.println(timeRequiretoEvaluatePaths+"");
 			fileStream.println(timeRequiretofillInPall+"");
 			fileStream.println(timeRequiretoComputeCriticalSection+"");
-	
 			fileStream.println(timeRequiretoComputePathsDelay+"");
-			
-	
 			//Compare actual solution and optimal solution finds so far
 			if (costofAssignment < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 				objectiveOptimalValue = costofAssignment;
@@ -1327,7 +1329,7 @@ public class TaskAssignmentSimple{
 			optimizationProblem = constraintOnCostSolution(optimizationProblem,costofAssignmentForConstraint);
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
-		
+	
 		}
 		
 		//Return the Optimal Assignment Matrix 
@@ -1635,11 +1637,10 @@ public class TaskAssignmentSimple{
 	 * B*alpha + (1-alpha)*F
 	 * @param tec -> An Abstract Trajectory Envelope Coordinator
 	 */
-	public void startTaskAssignmentGreedyAlgorithm(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
+	public void startTaskAssignmentGreedyAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
 		numRobot = coordinator.getIdleRobots().length;
-		linearWeight = alpha;
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallbackGreedy();
 
