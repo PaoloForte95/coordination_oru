@@ -1,43 +1,18 @@
 package se.oru.coordination.coordination_oru.taskassignment;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.commons.lang.ArrayUtils;
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
-import org.sat4j.sat.SolverController;
-import org.sat4j.sat.visu.SolverVisualisation;
-
-import com.vividsolutions.jts.geom.Coordinate;
-
-import aima.core.agent.Model;
-import se.oru.coordination.coordination_oru.ConstantAccelerationForwardModel;
-import se.oru.coordination.coordination_oru.CriticalSection;
 import se.oru.coordination.coordination_oru.Mission;
-import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
-import se.oru.coordination.coordination_oru.RobotReport;
-import se.oru.coordination.coordination_oru.demo.DemoDescription;
-import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
-import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
-import se.oru.coordination.coordination_oru.util.Missions;
-import com.google.ortools.linearsolver.*;
-import com.google.ortools.linearsolver.MPSolver.OptimizationProblemType;
-import com.google.ortools.linearsolver.MPSolver.ResultStatus;
-import com.google.ortools.linearsolver.PartialVariableAssignment;
-import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.SolverParameters;
-import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.*;
-import com.google.ortools.sat.*;
+
 
 public class Task {
 	
+	protected int taskID;
 	protected PoseSteering StartPoint;
 	protected PoseSteering GoalPoint;
 	protected int decidedRobotID = -1;
@@ -52,37 +27,42 @@ public class Task {
 	/**
  	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
 	 * robot can perform this task
+	 *  @param taskID -> the Id of Task
 	 * @param deadline -> deadline of Task 
 	 * @param StartPose -> Task Starting Position
 	 * @param GoalPose -> Task Ending Position
 	 * @param robotTypes -> robot type that can execute this task
 	 */
-	public Task (Pose StartPose, Pose GoalPose, int ... robotTypes) {
-		this(-1,new PoseSteering(StartPose, 0.0), new PoseSteering(GoalPose, 0.0),robotTypes);
+	public Task (int taskID,Pose StartPose, Pose GoalPose, int ... robotTypes) {
+		this(taskID,-1,new PoseSteering(StartPose, 0.0), new PoseSteering(GoalPose, 0.0),robotTypes);
 	}
 
 	/**
  	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
 	 * robot can perform this task
+	 * @param taskID -> the Id of Task
 	 * @param deadline -> deadline of Task 
 	 * @param StartPose -> Task Starting Position
 	 * @param GoalPose -> Task Ending Position
 	 * @param robotTypes -> robot type that can execute this task
 	 */
-	public Task (double deadline,Pose StartPose, Pose GoalPose, int ... robotTypes) {
-		this(deadline,new PoseSteering(StartPose, 0.0), new PoseSteering(GoalPose, 0.0),robotTypes);
+	public Task (int taskID,double deadline,Pose StartPose, Pose GoalPose, int ... robotTypes) {
+		this(taskID,deadline,new PoseSteering(StartPose, 0.0), new PoseSteering(GoalPose, 0.0),robotTypes);
 	}
 
 	
 	/**
  	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
 	 * robot can perform this task
-	  * @param StartPose -> Task Starting Position
+	 * @param taskID -> the Id of Task
+	 * @param StartPose -> Task Starting Position
+
 	 * @param GoalPose -> Task Ending Position
 	 * @param deadline -> deadline of Task
 	 * @param robotTypes -> robot type that can execute this task
 	 */
-	public Task (PoseSteering StartPose, PoseSteering GoalPose, int ... robotTypes) {
+	public Task (int taskID,PoseSteering StartPose, PoseSteering GoalPose, int ... robotTypes) {
+		this.taskID = taskID;
 		this.StartPoint = StartPose;
 		this.GoalPoint = GoalPose;
 
@@ -94,12 +74,15 @@ public class Task {
 	/**
  	 * Constructor. Generate a Task with a Starting Pose and an Ending Pose; the type is used to evaluate which 
 	 * robot can perform this task
-	  * @param StartPose -> Task Starting Position
+	 * @param taskID -> the Id of Task
+	 * @param deadline -> deadline of Task 
+	 * @param StartPose -> Task Starting Position
 	 * @param GoalPose -> Task Ending Position
 	 * @param deadline -> deadline of Task
 	 * @param robotTypes -> robot type that can execute this task
 	 */
-	public Task (double deadline, PoseSteering StartPose, PoseSteering GoalPose, int ... robotTypes) {
+	public Task (int taskID,double deadline, PoseSteering StartPose, PoseSteering GoalPose, int ... robotTypes) {
+		this.taskID = taskID;
 		this.StartPoint = StartPose;
 		this.GoalPoint = GoalPose;
 		this.deadline = deadline;
@@ -173,6 +156,10 @@ public class Task {
 	
 	public double getDeadline() {
 		return this.deadline;
+	}
+	
+	public int getID() {
+		return this.taskID;
 	}
 	
 	public void setOperationTime(double operationTime) {
