@@ -21,6 +21,7 @@ import se.oru.coordination.coordination_oru.Mission;
 import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
 import se.oru.coordination.coordination_oru.RobotReport;
 import se.oru.coordination.coordination_oru.demo.DemoDescription;
+import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
 import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
 import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
@@ -101,18 +102,6 @@ public class TaskAssignmentRobotsInLine {
 
 		
 		String yamlFile = "maps/map-empty.yaml";
-		//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
-		ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
-		rsp.setRadius(0.2);
-		rsp.setFootprint(footprint1,footprint2,footprint3,footprint4);
-		rsp.setTurningRadius(4.0);
-		rsp.setDistanceBetweenPathPoints(0.5);
-		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
-		double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
-		rsp.setMapResolution(res);
-		rsp.setPlanningTimeInSecs(2);
-			
-		
 		Pose startPoseRobot1 = new Pose(20.0,6.0,0.0);
 		Pose startPoseRobot2 = new Pose(16.0,6.0,0.0);
 		Pose startPoseRobot3 = new Pose(12.0,6.0,0.0);
@@ -137,28 +126,52 @@ public class TaskAssignmentRobotsInLine {
 		Pose goalPoseRobot3 = new Pose(26.0,6.0,0.0);
 		
 		
-		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
-		Task task2 = new Task(startPoseGoal2,goalPoseRobot2,1);
-		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
+		Task task1 = new Task(1,startPoseGoal1,goalPoseRobot1,1);
+		Task task2 = new Task(2,startPoseGoal2,goalPoseRobot2,1);
+		Task task3 = new Task(3,startPoseGoal3,goalPoseRobot3,1);
 
-	
+		
 		
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
 		double alpha = 0.6;
-		TaskAssignmentSimple assignmentProblem = new TaskAssignmentSimple();
+		int numPaths = 1;
+		TaskAssignment assignmentProblem = new TaskAssignment();
+		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
 
+		for (int robotID : tec.getIdleRobots()) {
+			ArrayList<AbstractMotionPlanner> rspGoal = new ArrayList<AbstractMotionPlanner>();
+			for(int taskID : assignmentProblem.getTaskIDs()) {
+				for(int pathID = 0;pathID < numPaths; pathID++) {
+					Coordinate[] footprint = tec.getFootprint(robotID);
+					//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
+					ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
+					rsp.setRadius(0.2);
+					rsp.setFootprint(footprint1,footprint2,footprint3,footprint4);
+					rsp.setTurningRadius(4.0);
+					rsp.setDistanceBetweenPathPoints(0.5);
+					rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-empty.yaml"));
+					double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
+					rsp.setMapResolution(res);
+					rsp.setPlanningTimeInSecs(2);
+					rspGoal.add(rsp);
+					tec.setMotionPlanner(robotID, rsp);
+					
+				}
+				
+			}
+
+			tec.setMotionPlannerGoals(robotID, rspGoal);
+		}
 		
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
-		assignmentProblem.setDefaultMotionPlanner(rsp);
-		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setFleetVisualization(viz);
-		//assignmentProblem.setLinearWeight(alpha);
+		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(1.0, 0.0, 0.0);
 		assignmentProblem.startTaskAssignment(tec);
 	}

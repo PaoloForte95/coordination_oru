@@ -32,7 +32,6 @@ import se.oru.coordination.coordination_oru.util.Missions;
 
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
-import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentMultiThread;
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimple;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
@@ -151,14 +150,14 @@ public class TaskAssignmentMultiRobotsWithoutMap3 {
 		Pose goalPoseGoal6 = new Pose(12.0,45.0,Math.PI/2);
 
 		
-		Task task1 = new Task(1000,startPoseGoal1,goalPoseGoal1,1);
-		Task task2 = new Task(1001,startPoseGoal2,goalPoseGoal2,1);
-		Task task3 = new Task(1002,startPoseGoal3,goalPoseGoal3,1);
+		Task task1 = new Task(1,1000,startPoseGoal1,goalPoseGoal1,1);
+		Task task2 = new Task(2,1001,startPoseGoal2,goalPoseGoal2,1);
+		Task task3 = new Task(3,1002,startPoseGoal3,goalPoseGoal3,1);
 
-		Task task4 = new Task(500,startPoseGoal4,goalPoseGoal4,1);
-		Task task5 = new Task(300,startPoseGoal5,goalPoseGoal5,1);
+		Task task4 = new Task(4,500,startPoseGoal4,goalPoseGoal4,1);
+		Task task5 = new Task(5,300,startPoseGoal5,goalPoseGoal5,1);
 		
-		Task task6 = new Task(startPoseGoal6,goalPoseGoal6,1);
+		Task task6 = new Task(6,startPoseGoal6,goalPoseGoal6,1);
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution

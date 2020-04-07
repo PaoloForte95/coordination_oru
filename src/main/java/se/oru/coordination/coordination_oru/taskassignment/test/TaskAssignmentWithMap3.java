@@ -138,9 +138,9 @@ public class TaskAssignmentWithMap3 {
 		
 		
 		
-		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
-		Task task2 = new Task(startPoseGoal2,goalPoseRobot2,1);
-		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
+		Task task1 = new Task(1,startPoseGoal1,goalPoseRobot1,1);
+		Task task2 = new Task(2,startPoseGoal2,goalPoseRobot2,1);
+		Task task3 = new Task(3,startPoseGoal3,goalPoseRobot3,1);
 
 		Pose startPoseGoal4 = new Pose(9.0,27.0,Math.PI/2);
 		Pose startPoseGoal5 = new Pose(26.0,5.0,0.0);
@@ -148,8 +148,8 @@ public class TaskAssignmentWithMap3 {
 		Pose goalPoseRobot5 = new Pose(42.0,6.0,0.0);
 		
 		
-		Task task4 = new Task(startPoseGoal4,goalPoseRobot4,1);
-		Task task5 = new Task(startPoseGoal5,goalPoseRobot5,1);
+		Task task4 = new Task(4,startPoseGoal4,goalPoseRobot4,1);
+		Task task5 = new Task(5,startPoseGoal5,goalPoseRobot5,1);
 
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution

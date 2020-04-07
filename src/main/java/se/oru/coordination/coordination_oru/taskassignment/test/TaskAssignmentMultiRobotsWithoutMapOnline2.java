@@ -161,14 +161,14 @@ public class TaskAssignmentMultiRobotsWithoutMapOnline2 {
 		Pose goalPoseGoal6 = new Pose(12.0,45.0,Math.PI/2);
 
 		
-		Task task1 = new Task(startPoseGoal1,goalPoseGoal1,1);
-		Task task2 = new Task(startPoseGoal2,goalPoseGoal2,1);
-		Task task3 = new Task(startPoseGoal3,goalPoseGoal3,1);
+		Task task1 = new Task(1,startPoseGoal1,goalPoseGoal1,1);
+		Task task2 = new Task(2,startPoseGoal2,goalPoseGoal2,1);
+		Task task3 = new Task(3,startPoseGoal3,goalPoseGoal3,1);
 
-		Task task4 = new Task(startPoseGoal4,goalPoseGoal4,1);
-		Task task5 = new Task(startPoseGoal5,goalPoseGoal5,1);
+		Task task4 = new Task(4,startPoseGoal4,goalPoseGoal4,1);
+		Task task5 = new Task(5,startPoseGoal5,goalPoseGoal5,1);
 		
-		Task task6 = new Task(startPoseGoal6,goalPoseGoal6,1);
+		Task task6 = new Task(6,startPoseGoal6,goalPoseGoal6,1);
 		
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
@@ -205,9 +205,9 @@ public class TaskAssignmentMultiRobotsWithoutMapOnline2 {
 		Pose newPoseGoal1 = new Pose(20.0,15.0,0.0);
 		Pose newPoseGoal2 = new Pose(32.0,10.0,0.0);
 		Pose newPoseGoal3 = new Pose(42.0,45.0,0.0);
-		Task task1new = new Task(startPoseGoal1new,newPoseGoal1,1);
-		Task task2new = new Task(startPoseGoal2new,newPoseGoal2,1);
-		Task task3new = new Task(startPoseGoal3new,newPoseGoal3,1);
+		Task task1new = new Task(7,startPoseGoal1new,newPoseGoal1,1);
+		Task task2new = new Task(8,startPoseGoal2new,newPoseGoal2,1);
+		Task task3new = new Task(9,startPoseGoal3new,newPoseGoal3,1);
 		
 
 		Thread.sleep(5000);

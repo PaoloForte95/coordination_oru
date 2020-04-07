@@ -22,6 +22,7 @@ import se.oru.coordination.coordination_oru.Mission;
 import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
 import se.oru.coordination.coordination_oru.RobotReport;
 import se.oru.coordination.coordination_oru.demo.DemoDescription;
+import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
 import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
 import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
 import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
@@ -102,57 +103,61 @@ public class TaskAssignmentRobotsGrid {
 
 		String yamlFile = "maps/map-empty.yaml";
 		//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
-		ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
-		rsp.setRadius(0.2);
-		rsp.setFootprint(footprint1,footprint2,footprint3,footprint4);
-		rsp.setTurningRadius(4.0);
-		rsp.setDistanceBetweenPathPoints(0.5);
-		rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
-		
-		
 
-		ReedsSheppCarPlanner rsp2 = new ReedsSheppCarPlanner();
-		rsp2.setRadius(0.2);
-		rsp2.setFootprint(footprint1,footprint2,footprint3,footprint4);
-		rsp2.setTurningRadius(4.0);
-		rsp2.setDistanceBetweenPathPoints(0.5);
-		rsp2.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
-		double res2 = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
-		rsp.setMapResolution(res2);
 		
 		Random rand = new Random();
-		TaskAssignmentSimple assignmentProblem = new TaskAssignmentSimple();
+		TaskAssignment assignmentProblem = new TaskAssignment();
+		int numPaths = 1;
 		double delta = 0;
-		for(int i = 1; i<= 5; i++) {
+		for(int i = 1; i<= 4; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;
-			System.out.println("provaRobot >> "+ robotType);
-			Robot robot = new Robot(i,robotType);
+			Robot robot = new Robot(i,1);
 			tec.addRobot(robot,startPoseRobot);
 			Pose startPoseGoal = new Pose(15.0,(6.0 + delta),0.0);
 			Pose goalPoseRobot = new Pose(30.0 ,(6.0 + delta) ,0.0);
 			int taskType = rand.nextInt(2)+1;
-			System.out.println("provaTask >> "+ taskType);
-			Task task = new Task(startPoseGoal,goalPoseRobot,taskType);
+			Task task = new Task(i,startPoseGoal,goalPoseRobot,1);
 			assignmentProblem.addTask(task);
 			delta += 6.0;
 		}
 		
+		
+		for (int robotID : tec.getIdleRobots()) {
+			ArrayList<AbstractMotionPlanner> rspGoal = new ArrayList<AbstractMotionPlanner>();
+			for(int taskID : assignmentProblem.getTaskIDs()) {
+				for(int pathID = 0;pathID < numPaths; pathID++) {
+					Coordinate[] footprint = tec.getFootprint(robotID);
+					//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
+					ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
+					rsp.setRadius(0.2);
+					rsp.setFootprint(footprint);
+					rsp.setTurningRadius(4.0);
+					rsp.setDistanceBetweenPathPoints(0.5);
+					rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-empty.yaml"));
+					double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
+					rsp.setMapResolution(res);
+					rsp.setPlanningTimeInSecs(2);
+					rspGoal.add(rsp);
+					tec.setMotionPlanner(robotID, rsp);
+					
+				}
+				
+			}
+
+			tec.setMotionPlannerGoals(robotID, rspGoal);
+		}
 	
 		//Solve the problem to find some feasible solution
-		double alpha = 0.6;
+		double alpha = 0.2;
+		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
-		assignmentProblem.setDefaultMotionPlanner(rsp);
-		//assignmentProblem.setDefaultMotionPlanner2(rsp2);
 		assignmentProblem.setFleetVisualization(viz);
-		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		assignmentProblem.setCoordinator(tec);
 		assignmentProblem.setLinearWeight(alpha);
-		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
-		//assignmentProblem.setNumThreadToUse(2);
-		
+		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);	
 		assignmentProblem.startTaskAssignment(tec);
 	}
 }

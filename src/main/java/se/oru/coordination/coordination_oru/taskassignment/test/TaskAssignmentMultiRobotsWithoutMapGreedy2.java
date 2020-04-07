@@ -54,7 +54,7 @@ import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.sat.*;
 
 @DemoDescription(desc = "One-shot navigation of 3 robots coordinating on paths obtained with the ReedsSheppCarPlanner.")
-public class TaskAssignmentMultiRobotsWithoutMapGreedy {
+public class TaskAssignmentMultiRobotsWithoutMapGreedy2 {
 	//load library used for optimization
 	 static {
 		    System.loadLibrary("jniortools");
@@ -141,9 +141,9 @@ public class TaskAssignmentMultiRobotsWithoutMapGreedy {
 		Pose goalPoseRobot3 = new Pose(21.0,3.0,-Math.PI/2);
 		
 		
-		Task task1 = new Task(startPoseGoal1,goalPoseRobot1,1);
-		Task task2 = new Task(startPoseGoal2,goalPoseRobot2,1);
-		Task task3 = new Task(startPoseGoal3,goalPoseRobot3,1);
+		Task task1 = new Task(1,startPoseGoal1,goalPoseRobot1,1);
+		Task task2 = new Task(2,startPoseGoal2,goalPoseRobot2,1);
+		Task task3 = new Task(3,startPoseGoal3,goalPoseRobot3,1);
 
 		Pose startPoseGoal4 = new Pose(8.0,16.0,-Math.PI/2);
 		Pose startPoseGoal5 = new Pose(-5.0,-5.0,Math.PI/2);
@@ -151,8 +151,8 @@ public class TaskAssignmentMultiRobotsWithoutMapGreedy {
 		Pose endPoseGoal5 = new Pose(-15.0,-8.0,Math.PI/2);
 		
 		
-		Task task4 = new Task(startPoseGoal4,endPoseGoal4,1);
-		Task task5 = new Task(startPoseGoal5,endPoseGoal5,1);
+		Task task4 = new Task(5,startPoseGoal4,endPoseGoal4,1);
+		Task task5 = new Task(6,startPoseGoal5,endPoseGoal5,1);
 		
 		
 	    ///////////////////////////////////////////////////////
@@ -166,9 +166,7 @@ public class TaskAssignmentMultiRobotsWithoutMapGreedy {
 		//assignmentProblem.addTask(task5);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
-		assignmentProblem.setDefaultMotionPlanner(rsp);
 		assignmentProblem.setFleetVisualization(viz);
-		tec.setDefaultMotionPlanner(assignmentProblem.getDefaultMotionPlanner());
 		
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
 		assignmentProblem.startTaskAssignmentGreedyAlgorithm(tec);
