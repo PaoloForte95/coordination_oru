@@ -1,7 +1,10 @@
 package se.oru.coordination.coordination_oru;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -126,6 +129,8 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	protected AbstractMotionPlanner defaultMotionPlanner = null;
 	protected HashMap<Integer,AbstractMotionPlanner> motionPlanners = new HashMap<Integer, AbstractMotionPlanner>();
 	
+	protected HashMap<Integer,ArrayList<AbstractMotionPlanner>> motionPlannersGoals = new HashMap<Integer, ArrayList<AbstractMotionPlanner>>();
+	
 	//Network knowledge
 	protected double packetLossProbability = NetworkConfiguration.PROBABILITY_OF_PACKET_LOSS;
 	public static int MAX_TX_DELAY = NetworkConfiguration.getMaximumTxDelay();
@@ -140,6 +145,24 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	
 
 	/**
+	 * Set a set of motion planner to be used for planning for the specific robot
+	 * @param plannerID The ID of the planner for which the given motion planner should be used.
+	 * @param mp The motion planners that will be called for planning.
+	 */
+	public void setMotionPlannerGoals(int plannerID, ArrayList<AbstractMotionPlanner> mp) {
+		this.motionPlannersGoals.put(plannerID, mp);
+	}
+	
+	/**
+	 * Get an array List of  motion planners to be used for planning for a specific robot
+	 * robot.
+	 * @param robotID The ID of the planner 
+	 */
+	public ArrayList<AbstractMotionPlanner> getMotionPlannerGoals(int plannerID) {
+		return this.motionPlannersGoals.get(plannerID);
+	}
+	
+	/**
 	 * Add a robot with type and ForwardModel
 	 * @param robot -> The robot to add
 	 */
@@ -150,21 +173,13 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 		this.robots.put(robot.getRobotID(), robot);
 		placeRobot(robot.getRobotID(),startingPosition);
 		setFootprint(robot.getRobotID(),robot.getFootprint());
-		if(robot.getMotionPlanner() != null) {
-			this.motionPlanners.put(robot.getRobotID(), robot.getMotionPlanner());
-		}
 	}
 
 	public Robot getRobot(int robotID) {
 		return this.robots.get(robotID);
 	}
 	
-//	public Integer getRobotType(int robotID) {
-//		if (robotType.containsKey(robotID)) {
-//			return robotType.get(robotID);
-//		}else return -1;
-//	
-//	}	
+	
 	
 	public ArrayList<SpatialEnvelope> getDrivingEnvelope() {
 		//Collect all driving envelopes and current pose indices
@@ -186,7 +201,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	 * @return
 	 */
 	
-	public Integer[] getIdleRobots() {
+	public ArrayList<Integer>  getIdleRobots() {
 		ArrayList<Integer> IdleRobots = new ArrayList<Integer>();
 		int i = 1;
 		while(getRobotReport(i) != null) {
@@ -195,7 +210,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 			}
 			i += 1;
 		}
-		return IdleRobots.toArray(new Integer[IdleRobots.size()]);
+		return IdleRobots;
 	}
 	
 	
@@ -1460,8 +1475,11 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 		
 		//FIXME: if this is not placed into the control loop (), then a robot can pass from (P) to (D) without 
 		//affecting the set of dependencies.
+		
+		
 
 		synchronized (solver) {
+			long timeInitial2 = Calendar.getInstance().getTimeInMillis();
 			for (final TrajectoryEnvelope te : envelopesToTrack) {
 				TrajectoryEnvelopeTrackerDummy startParkingTracker = null;
 				synchronized (trackers) {
@@ -1530,6 +1548,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 					public void onTrackingFinished() {
 
 						synchronized (solver) {
+							
 							metaCSPLogger.info("Tracking finished for " + myTE);
 							
 							if (trackingCallbacks.containsKey(myTE.getRobotID())) trackingCallbacks.get(myTE.getRobotID()).onTrackingFinished();
@@ -1573,6 +1592,16 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 							computeCriticalSections();
 							updateDependencies();							
 						}
+						PrintStream fileStream1 = null;
+						try {
+							fileStream1 = new PrintStream(new FileOutputStream("ExecutionTime.txt",true));
+						} catch (FileNotFoundException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						long timeFinal2 = Calendar.getInstance().getTimeInMillis();
+						long timeRequired2 = timeFinal2- timeInitial2;
+						fileStream1.println(timeRequired2+" "+ myTE.getRobotID());
 
 					}
 
@@ -1612,7 +1641,9 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 					
 			computeCriticalSections();
 			envelopesToTrack.clear();
+			
 		}
+		
 	}
 
 	/**
@@ -1818,13 +1849,21 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	}
 
 	protected void setupInferenceCallback() {
-
+		PrintStream fileStream1 = null;
+		PrintStream fileStream3 = null;
+		try {
+			fileStream1 = new PrintStream(new File("ExecutionTime.txt"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		Thread inference = new Thread("Coordinator inference") {
 			private long threadLastUpdate = Calendar.getInstance().getTimeInMillis();
 			@Override
 			public void run() {
 				while (true) {
 					synchronized (solver) {	
+						
 						if (!missionsPool.isEmpty()) {
 							//get the oldest posted mission
 							int oldestMissionRobotID = -1;
@@ -1837,8 +1876,9 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 							}
 							envelopesToTrack.add(missionsPool.get(oldestMissionRobotID).getFirst());
 							missionsPool.remove(oldestMissionRobotID);
-							startTrackingAddedMissions();
+							startTrackingAddedMissions();						
 						}
+						
 						updateDependencies();
 						
 						if (!quiet) printStatistics();
