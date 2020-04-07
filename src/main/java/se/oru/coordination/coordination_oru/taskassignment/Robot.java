@@ -1,73 +1,16 @@
 package se.oru.coordination.coordination_oru.taskassignment;
 
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.TreeSet;
-import java.util.logging.Logger;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.metacsp.multi.spatial.DE9IM.GeometricShapeDomain;
-import org.metacsp.multi.spatial.DE9IM.GeometricShapeVariable;
-import org.metacsp.multi.spatioTemporal.paths.Pose;
-import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
-import org.metacsp.multi.spatioTemporal.paths.Trajectory;
-import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
-import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelopeSolver;
-import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope.SpatialEnvelope;
-import org.metacsp.utility.UI.Callback;
-import org.metacsp.utility.logging.MetaCSPLogging;
-import org.sat4j.sat.SolverController;
-import org.sat4j.sat.visu.SolverVisualisation;
-
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.geom.util.AffineTransformation;
-
-import aima.core.agent.Model;
-import aima.core.util.datastructure.Pair;
-import se.oru.coordination.coordination_oru.AbstractTrajectoryEnvelopeCoordinator;
-import se.oru.coordination.coordination_oru.AbstractTrajectoryEnvelopeTracker;
 import se.oru.coordination.coordination_oru.ConstantAccelerationForwardModel;
-import se.oru.coordination.coordination_oru.CriticalSection;
 import se.oru.coordination.coordination_oru.ForwardModel;
-import se.oru.coordination.coordination_oru.IndexedDelay;
-import se.oru.coordination.coordination_oru.Mission;
-import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
-import se.oru.coordination.coordination_oru.RobotReport;
-import se.oru.coordination.coordination_oru.TrajectoryEnvelopeCoordinator;
-import se.oru.coordination.coordination_oru.demo.DemoDescription;
-import se.oru.coordination.coordination_oru.fleetmasterinterface.AbstractFleetMasterInterface;
-import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInterface;
-import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInterfaceLib.CumulatedIndexedDelaysList;
-import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
-import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
-import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
-import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
-import se.oru.coordination.coordination_oru.tests.icaps2018.eval.TrajectoryEnvelopeCoordinatorSimulationICAPS;
-import se.oru.coordination.coordination_oru.util.Missions;
-import com.google.ortools.linearsolver.*;
-import com.google.ortools.linearsolver.MPSolver.OptimizationProblemType;
-import com.google.ortools.linearsolver.MPSolver.ResultStatus;
-import com.google.ortools.linearsolver.PartialVariableAssignment;
-import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.SolverParameters;
-import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.*;
-import com.google.ortools.sat.*;
-import se.oru.coordination.coordination_oru.taskassignment.Task;
+
 public class Robot {
 	
 	 protected int robotID;
 	 protected int robotType;
 	 protected Coordinate[] footprint;
 	 protected ForwardModel fm = null;
-	 protected AbstractMotionPlanner motionPlanner = null;
+	
 	 
 	 /**
 		 * The default footprint used for robots if none is specified.
@@ -146,16 +89,6 @@ public class Robot {
 	 
 	 public void setForwardModel(ForwardModel fm) {
 		 this.fm= fm;
-	 }
-	 
-	 
-	 public void setMotionPlanner(AbstractMotionPlanner MotionPlanner) {
-		 this.motionPlanner= MotionPlanner;
-	 }
-	 
-	 
-	 public AbstractMotionPlanner getMotionPlanner() {
-		 return this.motionPlanner;
 	 }
 }
 
