@@ -148,35 +148,26 @@ public class TaskAssignmentWithMap4 {
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.addTask(task1);
-		//assignmentProblem.addTask(task2);
+		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
 		assignmentProblem.addTask(task4);
-		//assignmentProblem.addTask(task5);
+		assignmentProblem.addTask(task5);
 		
 		
 		for (int robotID : tec.getIdleRobots()) {
-			ArrayList<AbstractMotionPlanner> rspGoal = new ArrayList<AbstractMotionPlanner>();
-			for(int taskID : assignmentProblem.getTaskIDs()) {
-				for(int pathID = 0;pathID < numPaths; pathID++) {
-					Coordinate[] footprint = tec.getFootprint(robotID);
-					//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
-					ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
-					rsp.setRadius(0.2);
-					rsp.setFootprint(footprint);
-					rsp.setTurningRadius(4.0);
-					rsp.setDistanceBetweenPathPoints(0.5);
-					rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-corridors-vi.yaml"));
-					double res = Double.parseDouble(Missions.getProperty("resolution", "maps/map-corridors-vi.yaml"));
-					rsp.setMapResolution(res);
-					rsp.setPlanningTimeInSecs(2);
-					rspGoal.add(rsp);
-					tec.setMotionPlanner(robotID, rsp);
-					
-				}
-				
-			}
-
-			tec.setMotionPlannerGoals(robotID, rspGoal);
+			Coordinate[] footprint = tec.getFootprint(robotID);
+			//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
+			ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
+			rsp.setRadius(0.2);
+			rsp.setFootprint(footprint);
+			rsp.setTurningRadius(4.0);
+			rsp.setDistanceBetweenPathPoints(0.5);
+			rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-corridors-vi.yaml"));
+			double res = Double.parseDouble(Missions.getProperty("resolution", "maps/map-corridors-vi.yaml"));
+			rsp.setMapResolution(res);
+			rsp.setPlanningTimeInSecs(2);
+			tec.setMotionPlanner(robotID, rsp);
+			
 		}
 		
 		

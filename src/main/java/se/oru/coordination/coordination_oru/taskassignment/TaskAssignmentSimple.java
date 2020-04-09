@@ -95,7 +95,7 @@ public class TaskAssignmentSimple{
 	
 	protected ArrayList <Task> taskQueue = new ArrayList <Task>();
 	//Number of Idle Robots
-	protected Integer[] IDsIdleRobots;
+	protected ArrayList <Integer> IDsIdleRobots = new ArrayList <Integer>();
 	//Path and arrival Time Parameters
 	//Infinity cost if path to reach a goal note exists
 	protected double MaxPathLength = 10000000;
@@ -137,9 +137,7 @@ public class TaskAssignmentSimple{
 	public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
 	
 	protected FleetVisualization viz = null;
-	
-	
-	protected int ll;
+
 	
 	/**
 	 * Set a motion planner to be used for re-planning for a specific
@@ -493,7 +491,7 @@ public class TaskAssignmentSimple{
 		taskArray.sort(new SortByDeadline());
 		for(int k= 0;k < taskArray.size();k++) {
 		}
-		for(int i=0;i < IDsIdleRobots.length; i++) {
+		for(int i=0;i < IDsIdleRobots.size(); i++) {
 				int index = taskQueue.indexOf(taskArray.get(i));
 				if(taskQueue.get(index).getDeadline() != -1) {
 					taskQueue.get(index).setPriority(true);
@@ -535,7 +533,7 @@ public class TaskAssignmentSimple{
 				 for (int j = 0; j < numTasks; j++) {
 					 //check if robot can be assigned to one task
 					 //if (taskQueue.get(j).getTaskType() == tec.getRobotType(IDsIdleRobots[i])) {
-					 if (taskQueue.get(j).isCompatible(tec.getRobot(IDsIdleRobots[i]))) {
+					 if (taskQueue.get(j).isCompatible(tec.getRobot(IDsIdleRobots.get(i)))) {
 						 flagAllocateRobot = true;
 						 
 					 }
@@ -557,7 +555,7 @@ public class TaskAssignmentSimple{
 				 for (int j = 0; j < numRobot; j++) {
 					//check if task can be assigned to one robot
 					 //if (taskQueue.get(i).getTaskType() == tec.getRobotType(IDsIdleRobots[j])) {
-					 if (taskQueue.get(i).isCompatible(tec.getRobot(IDsIdleRobots[j]))) {
+					 if (taskQueue.get(i).isCompatible(tec.getRobot(IDsIdleRobots.get(j)))) {
 						 flagAllocateTask = true;
 					 }
 				 }
@@ -677,7 +675,7 @@ public class TaskAssignmentSimple{
 		// Only for real robots and tasks
 		if (robot <= numRobot && task < numTask) {
 			//Take the state for the i-th Robot
-			RobotReport rr = tec.getRobotReport(IDsIdleRobots[robot-1]);
+			RobotReport rr = tec.getRobotReport(IDsIdleRobots.get(robot-1));
 			if (rr == null) {
 				metaCSPLogger.severe("RobotReport not found for Robot" + robot + ".");
 				throw new Error("RobotReport not found for Robot" + robot + ".");
@@ -709,6 +707,7 @@ public class TaskAssignmentSimple{
 			pathsToTargetGoal.add(pss);
 			//Take the Path Length
 			pathLength = Missions.getPathLength(pss);
+			System.out.println("PRovaaaaLLLLLL"+ pathLength + "robot>> "+ robot + " task>>" +task);
 		
 			
 		} else { //There also virtual robot and task are considered 
@@ -719,7 +718,7 @@ public class TaskAssignmentSimple{
 				//Create the task to stay in robot starting position
 				PoseSteering[] dummyTask = new PoseSteering[1];
 				//Take the state for the i-th Robot
-				RobotReport rr = tec.getRobotReport(IDsIdleRobots[robot-1]);
+				RobotReport rr = tec.getRobotReport(IDsIdleRobots.get(robot-1));
 				if (rr == null) {
 					metaCSPLogger.severe("RobotReport not found for Robot" + robot + ".");
 					throw new Error("RobotReport not found for Robot" + robot + ".");
@@ -970,7 +969,7 @@ public class TaskAssignmentSimple{
 	private double [][] computeArrivalTimeFleet(double[][]PAll,AbstractTrajectoryEnvelopeCoordinator tec){
 		//Compute the arrival time of this path, considering a robot alone with a velocity trapezoidal model
 		double [][] arrivalTimeMatrix = new double [numRobotAug][numTaskAug];
-		for (int i = 0 ; i < IDsIdleRobots.length; i++) {
+		for (int i = 0 ; i < IDsIdleRobots.size(); i++) {
 			for (int j = 0 ; j < taskQueue.size(); j++) {
 				double vel = tec.getRobot(i+1).getForwardModel().getVel();
 				double acc = tec.getRobot(i+1).getForwardModel().getAcc();
@@ -995,7 +994,7 @@ public class TaskAssignmentSimple{
 		double tardiness = 0;
 		
 		double [][] tardinessMatrix = new double [numRobotAug][numTaskAug];
-		for (int i = 0 ; i < IDsIdleRobots.length; i++) {
+		for (int i = 0 ; i < IDsIdleRobots.size(); i++) {
 			for (int j = 0 ; j < taskQueue.size(); j++) {
 				if (taskQueue.get(j).isDeadlineSpecified()) { // Compute tardiness only if specified in task constructor
 					double deadline = taskQueue.get(j).getDeadline();  //Expressed in seconds
@@ -1148,14 +1147,14 @@ public class TaskAssignmentSimple{
 	
 		//END CONSTRAINTS
 		//In case of having more task than robots, the task with a closest deadline are set with a higher priority
-		 if(taskQueue.size() > IDsIdleRobots.length) {
+		 if(taskQueue.size() > IDsIdleRobots.size()) {
 			 checkOnTaskDeadline();
 			//Each task can be performed only by a robot
 			 for (int j = 0; j < taskQueue.size(); j++) {
 				//Initialize the constraint
 				 if(taskQueue.get(j).isPriority()) {
 					 MPConstraint c3 = optimizationProblem.makeConstraint(1, 1); 
-					 for (int i = 0; i < IDsIdleRobots.length; i++) {
+					 for (int i = 0; i < IDsIdleRobots.size(); i++) {
 							 //Build the constraint
 							 c3.setCoefficient(decisionVariable[i][j], 1); 
 						 }		
@@ -1183,7 +1182,7 @@ public class TaskAssignmentSimple{
 		//Take the number of tasks
 		numTask = taskQueue.size();
 		//Get free robots and their IDs
-		numRobot = tec.getIdleRobots().length;
+		numRobot = tec.getIdleRobots().size();
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
@@ -1244,7 +1243,7 @@ public class TaskAssignmentSimple{
 		//Take the number of tasks
 		numTask = taskQueue.size();
 		//Get free robots and their IDs
-		numRobot = tec.getIdleRobots().length;
+		numRobot = tec.getIdleRobots().size();
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
@@ -1400,7 +1399,7 @@ public class TaskAssignmentSimple{
 		
 		numTask = taskQueue.size();
 		//Get free robots
-		numRobot = tec.getIdleRobots().length;
+		numRobot = tec.getIdleRobots().size();
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
@@ -1483,7 +1482,7 @@ public class TaskAssignmentSimple{
 		
 		numTask = taskQueue.size();
 		//Get free robots
-		numRobot = tec.getIdleRobots().length;
+		numRobot = tec.getIdleRobots().size();
 		IDsIdleRobots = tec.getIdleRobots();
 		//Evaluate dummy robot and dummy task
 		dummyRobotorTask(numRobot,numTask,tec);
@@ -1548,7 +1547,7 @@ public class TaskAssignmentSimple{
 		for (int i = 0; i < AssignmentMatrix.length; i++) {
 			 for (int j = 0; j < AssignmentMatrix[0].length; j++) {
 				 if (AssignmentMatrix[i][j] > 0) {
-					 if (i < IDsIdleRobots.length) { //Considering only real Robot
+					 if (i < IDsIdleRobots.size()) { //Considering only real Robot
 						 PoseSteering[] pss = pathsToTargetGoal.get(i*AssignmentMatrix[0].length + j);	
 						 //For Dispatch mission
 						 if (j < taskQueue.size() && pss != null) {
@@ -1574,7 +1573,7 @@ public class TaskAssignmentSimple{
 		//Remove Assigned Tasks from the set	
 		int i = 0;
 		int cont = 0;
-		while (i < Math.min(IDsIdleRobots.length, taskQueue.size())) {
+		while (i < Math.min(IDsIdleRobots.size(), taskQueue.size())) {
 			if (taskQueue.size() == 0 || taskQueue.size() <= i) {
 				break;
 			}
@@ -1615,7 +1614,7 @@ public class TaskAssignmentSimple{
 	public void startTaskAssignment(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
-		numRobot = coordinator.getIdleRobots().length;
+		numRobot = coordinator.getIdleRobots().size();
 
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallback();
@@ -1632,7 +1631,7 @@ public class TaskAssignmentSimple{
 			public void run() {
 				while (true) {
 					System.out.println("Thread Running");
-					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().size() != 0 ) {
 						MPSolver solverOnline = buildOptimizationProblemWithBNormalized(coordinator);
 						double [][] assignmentMatrix = solveOptimizationProblem(solverOnline,coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
@@ -1680,7 +1679,7 @@ public class TaskAssignmentSimple{
 	public void startTaskAssignmentGreedyAlgorithm(AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
-		numRobot = coordinator.getIdleRobots().length;
+		numRobot = coordinator.getIdleRobots().size();
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallbackGreedy();
 
@@ -1696,7 +1695,7 @@ public class TaskAssignmentSimple{
 			public void run() {
 				while (true) {
 					System.out.println("Thread Running");
-					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().size() != 0 ) {
 						double [][] assignmentMatrix = solveOptimizationProblemGreedyAlgorithm(coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
 							for (int j = 0; j < assignmentMatrix[0].length; j++) {
@@ -1743,7 +1742,7 @@ public class TaskAssignmentSimple{
 	public void startTaskAssignmentExactAlgorithm(double alpha,AbstractTrajectoryEnvelopeCoordinator tec) {
 		//Create meta solver and solver
 		coordinator = tec;
-		numRobot = coordinator.getIdleRobots().length;
+		numRobot = coordinator.getIdleRobots().size();
 		linearWeight = alpha;
 		//Start a thread that checks and enforces dependencies at every clock tick
 		this.setupInferenceCallbackExact();
@@ -1760,7 +1759,7 @@ public class TaskAssignmentSimple{
 			public void run() {
 				while (true) {
 					System.out.println("Thread Running");
-					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().length != 0 ) {
+					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().size() != 0 ) {
 						double [][] assignmentMatrix = solveOptimizationProblemExactAlgorithm(coordinator,linearWeight);
 						for (int i = 0; i < assignmentMatrix.length; i++) {
 							for (int j = 0; j < assignmentMatrix[0].length; j++) {
