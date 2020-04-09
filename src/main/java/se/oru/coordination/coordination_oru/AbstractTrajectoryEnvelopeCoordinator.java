@@ -129,7 +129,6 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	protected AbstractMotionPlanner defaultMotionPlanner = null;
 	protected HashMap<Integer,AbstractMotionPlanner> motionPlanners = new HashMap<Integer, AbstractMotionPlanner>();
 	
-	protected HashMap<Integer,ArrayList<AbstractMotionPlanner>> motionPlannersGoals = new HashMap<Integer, ArrayList<AbstractMotionPlanner>>();
 	
 	//Network knowledge
 	protected double packetLossProbability = NetworkConfiguration.PROBABILITY_OF_PACKET_LOSS;
@@ -142,25 +141,7 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	
 	//State knowledge
 	protected HashMap<Integer,Boolean> isDriving = new HashMap<Integer, Boolean>();
-	
 
-	/**
-	 * Set a set of motion planner to be used for planning for the specific robot
-	 * @param plannerID The ID of the planner for which the given motion planner should be used.
-	 * @param mp The motion planners that will be called for planning.
-	 */
-	public void setMotionPlannerGoals(int plannerID, ArrayList<AbstractMotionPlanner> mp) {
-		this.motionPlannersGoals.put(plannerID, mp);
-	}
-	
-	/**
-	 * Get an array List of  motion planners to be used for planning for a specific robot
-	 * robot.
-	 * @param robotID The ID of the planner 
-	 */
-	public ArrayList<AbstractMotionPlanner> getMotionPlannerGoals(int plannerID) {
-		return this.motionPlannersGoals.get(plannerID);
-	}
 	
 	/**
 	 * Add a robot with type and ForwardModel
@@ -1601,7 +1582,8 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 						}
 						long timeFinal2 = Calendar.getInstance().getTimeInMillis();
 						long timeRequired2 = timeFinal2- timeInitial2;
-						fileStream1.println(timeRequired2+" "+ myTE.getRobotID());
+						//fileStream1.println(timeRequired2+" "+ myTE.getRobotID());
+						fileStream1.println(timeRequired2+" ");
 
 					}
 
