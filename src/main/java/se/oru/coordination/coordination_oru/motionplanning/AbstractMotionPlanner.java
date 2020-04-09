@@ -46,6 +46,8 @@ public abstract class AbstractMotionPlanner {
 	protected PoseSteering[] pathPS = null;
 
 	
+	public abstract AbstractMotionPlanner getCopy();
+	
 	public void setFootprint(Coordinate ... coords) {
 		this.footprintCoords = coords;
 	}
@@ -80,7 +82,7 @@ public abstract class AbstractMotionPlanner {
 		this.goal = newGoals.toArray(new Pose[newGoals.size()]);
 	}
 	
-	public void setMap(String mapYAMLFile) {
+	private void setMap(String mapYAMLFile) {
 		try {
 			File file = new File(mapYAMLFile);
 			BufferedReader br = new BufferedReader(new FileReader(file));
@@ -239,6 +241,13 @@ public abstract class AbstractMotionPlanner {
 	        }
 	    }
 	    return dir.delete();
+	}
+	
+	public boolean isFree(Pose p) {
+		AbstractMotionPlanner planner = this.getCopy();
+		planner.setStart(p);
+		planner.setGoals(p);
+		return planner.plan();
 	}
 
 }
