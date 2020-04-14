@@ -13,9 +13,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
@@ -174,8 +176,6 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	return drivingEnvelopes;
 	}
 	
-	
-	
 	/**
 	 * * Return a vector of Free Robots 
 	 * @param numRobots -> Number of Robots 
@@ -184,16 +184,15 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	
 	public ArrayList<Integer>  getIdleRobots() {
 		ArrayList<Integer> IdleRobots = new ArrayList<Integer>();
-		int i = 1;
-		while(getRobotReport(i) != null) {
-			if(!isDriving(i)) {
-				IdleRobots.add(getRobotReport(i).getRobotID());
+		Set<Integer> robotIDs = robots.keySet();
+		for(Iterator<Integer> it = robotIDs.iterator();it.hasNext();){
+			int robotID = it.next();
+			if(!isDriving(robotID)) {
+				IdleRobots.add(robotID);
 			}
-			i += 1;
 		}
 		return IdleRobots;
 	}
-	
 	
 	
 
