@@ -145,6 +145,18 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	protected HashMap<Integer,Boolean> isDriving = new HashMap<Integer, Boolean>();
 
 	
+	//fake coordinator
+	protected boolean fakeCoordinator = false;
+	
+	
+	/**
+	 * Use the fake coordinator
+	 * @param value -> True if you want to use the fake coordinator
+	 */
+	public void setFakeCoordinator(boolean value) {
+		this.fakeCoordinator = value;
+	}
+	
 	/**
 	 * Add a robot with type and ForwardModel
 	 * @param robot -> The robot to add

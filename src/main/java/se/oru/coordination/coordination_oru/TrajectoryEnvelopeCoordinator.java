@@ -560,10 +560,15 @@ public abstract class TrajectoryEnvelopeCoordinator extends AbstractTrajectoryEn
 	@Override
 	protected void updateDependencies() {
 		synchronized(solver) {
-			if (this.avoidDeadlockGlobally) globalCheckAndRevise();
-			else localCheckAndRevise();
+			if(!fakeCoordinator) {
+				if (this.avoidDeadlockGlobally) globalCheckAndRevise();
+				else localCheckAndRevise();
+			}
+			else for (int robotID : trackers.keySet()) setCriticalPoint(robotID, -1, true); 
+			
 		}
 	}
+	
 	
 	protected void localCheckAndRevise() {
 

@@ -20,6 +20,7 @@ import se.oru.coordination.coordination_oru.fleetmasterinterface.FleetMasterInte
 
 public abstract class TimedTrajectoryEnvelopeCoordinator extends TrajectoryEnvelopeCoordinator {
 		
+	
 	protected AbstractFleetMasterInterface fleetMasterInterface = null;
 	protected boolean propagateDelays = false;
 	
@@ -144,11 +145,17 @@ public abstract class TimedTrajectoryEnvelopeCoordinator extends TrajectoryEnvel
 	@Override
 	protected void updateDependencies() {
 		synchronized(solver) {
-			if (this.fleetMasterInterface != null && this.propagateDelays) localCheckAndReviseWithDelayPropagation();
-			else { //use "the super" updateDependencies(), eventually with new heuristic, defined in the overridden getOrderWithAdvancedHeuristics function.
-				if (this.avoidDeadlockGlobally) globalCheckAndRevise();
-				else localCheckAndRevise();
+			if(!fakeCoordinator) {
+				if (this.fleetMasterInterface != null && this.propagateDelays) localCheckAndReviseWithDelayPropagation();
+				else { //use "the super" updateDependencies(), eventually with new heuristic, defined in the overridden getOrderWithAdvancedHeuristics function.
+					if (this.avoidDeadlockGlobally) globalCheckAndRevise();
+					else localCheckAndRevise();
+				}
 			}
+			else for (int robotID : trackers.keySet()) setCriticalPoint(robotID, -1, true); 
+		
+			
+			
 		}
 	}
 	
