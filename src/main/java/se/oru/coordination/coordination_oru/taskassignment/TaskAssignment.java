@@ -1585,9 +1585,13 @@ public class TaskAssignment {
 		Random rand = new Random();
 		ArrayList <Integer> IDsRandomRobots = new ArrayList <Integer>();
 		ArrayList <Integer> IDsRandomRobots2 = new ArrayList <Integer>();
-		IDsRandomRobots.addAll(IDsIdleRobots);
-		IDsRandomRobots2.addAll(IDsIdleRobots);
-		
+		IDsRandomRobots.addAll(IDsAllRobots);
+		IDsRandomRobots2.addAll(IDsAllRobots);
+		int ind  = (int) Math.floor(Math.random()*IDsRandomRobots.size());
+		prova1 = IDsRandomRobots.get(ind);
+		int index = IDsRandomRobots2.indexOf(prova1);
+		IDsRandomRobots2.remove(index);
+		//IDsRandomRobots.remove(ind);
 		for(int k=0; k <  (numInteration) ;k++){
 			//Evaluate an optimal assignment that minimize only the B function
 			//Initialize cost of objective value
@@ -1600,14 +1604,14 @@ public class TaskAssignment {
 			if(k>0) {	
 					if(cont == numRobotAug) {
 						//prova1 += 1;
-						int ind  = (int) Math.floor(Math.random()*IDsRandomRobots.size());
+						ind  = (int) Math.floor(Math.random()*IDsRandomRobots.size());
 						prova1 = IDsRandomRobots.get(ind);
 						IDsRandomRobots.remove(ind);
 						IDsRandomRobots2.addAll(IDsIdleRobots);
 						cont = 0;
-						int index = IDsRandomRobots2.indexOf(prova1);
+						index = IDsRandomRobots2.indexOf(prova1);
 						IDsRandomRobots2.remove(index);
-						prova2 = 0;
+						
 						for(int i=0; i< AssignmentMatrix.length;i ++) {
 								for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
 									for(int s = 0; s < maxNumPaths; s++) {
@@ -1615,17 +1619,20 @@ public class TaskAssignment {
 									}
 								}
 						}
+						fileStream4.println("-------------------");
+						fileStream4.println("Start from previous optimal Solution");
+						fileStream4.println("-------------------");
 	
-					}else {
-						//prova2 +=1;
-						int ind2 = (int) Math.floor(Math.random()*IDsRandomRobots2.size());
-						if(IDsRandomRobots2.size()>0) {
-							prova2 = IDsRandomRobots2.get(ind2);
-							IDsRandomRobots2.remove(ind2);
-						}
-						
-						cont +=1;
 					}
+					//prova2 +=1;
+					int ind2 = (int) Math.floor(Math.random()*IDsRandomRobots2.size());
+					if(IDsRandomRobots2.size()>0) {
+						prova2 = IDsRandomRobots2.get(ind2);
+						IDsRandomRobots2.remove(ind2);
+					}
+					
+					cont +=1;
+					
 				
 				for(int i=0; i< AssignmentMatrix.length;i ++) {
 					for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
@@ -1635,15 +1642,17 @@ public class TaskAssignment {
 					}
 				}
 				
-				for(int i=0; i< AssignmentMatrix.length;i ++) {
-					for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
+				for (int robotID : IDsAllRobots ) {
+					int i = IDsAllRobots.indexOf(robotID);
+					for (int taskID : IDsAllTasks ) {
+						int j = IDsAllTasks.indexOf(taskID);
 						for(int s = 0; s < maxNumPaths; s++) {
-							if(AssignmentMatrix[i][j][s]==1 && i == prova1 && i!= prova2) {
+							if (AssignmentMatrix[i][j][s]==1  && robotID == prova1) {
 								index1i = i;	
 								index1j = j;
 								index1s = s;
 							}
-							if(AssignmentMatrix[i][j][s]==1 && i == prova2 && i!= prova1) {
+							if(AssignmentMatrix[i][j][s]==1 && robotID == prova2) {
 								index2i = i;	
 								index2j = j;
 								index2s = s;		
@@ -1651,13 +1660,27 @@ public class TaskAssignment {
 						}
 					}
 				}
+				boolean typesAreEqual1 = false;
+				boolean typesAreEqual2 = false;
+				if (index2j < taskQueue.size() && IDsIdleRobots.contains(prova1) ) {
+					typesAreEqual1 = taskQueue.get(index2j).isCompatible(tec.getRobot(prova1));	
+				 }else {
+					 typesAreEqual1 = true;
+				 }
 				
-				newAssignmentMatrix[index1i][index1j][index1s] = 0;
-				newAssignmentMatrix[index1i][index2j][index1s] = 1;
-				newAssignmentMatrix[index2i][index1j][index2s] = 1;
-				newAssignmentMatrix[index2i][index2j][index2s] = 0;
-				
-				
+				if (index1j < taskQueue.size() && IDsIdleRobots.contains(prova2) ) {
+					typesAreEqual2 = taskQueue.get(index1j).isCompatible(tec.getRobot(prova2));
+							
+				 }else {
+					 typesAreEqual2 = true;
+
+				 }
+				if(typesAreEqual1 && typesAreEqual2) {
+					newAssignmentMatrix[index1i][index1j][index1s] = 0;
+					newAssignmentMatrix[index1i][index2j][index1s] = 1;
+					newAssignmentMatrix[index2i][index1j][index2s] = 1;
+					newAssignmentMatrix[index2i][index2j][index2s] = 0;
+				}
 				for(int it=0; it < k;it ++) {
 					for(int i=0; i< AssignmentMatrix.length;i ++) {
 						for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
@@ -1687,6 +1710,7 @@ public class TaskAssignment {
 			if(!solutionAlreadyFound) {
 				fileStream4.println("-------------------");
 				fileStream4.println("Solution not already found" + solutionAlreadyFound);
+				fileStream4.println("Switch" + prova1 + "--" + prova2 );
 				fileStream4.println("-------------------");
 				
 				//Evaluate the cost of F Function for this Assignment
@@ -1722,6 +1746,7 @@ public class TaskAssignment {
 			}else {
 				fileStream4.println("-------------------");
 				fileStream4.println("Solution already found" + solutionAlreadyFound);
+				fileStream4.println("Switch was" + prova1 + "--" + prova2 );
 				fileStream4.println("-------------------");
 				costofAssignment =  costSolutions[indexSolutionFound];
 			}
