@@ -1578,9 +1578,9 @@ public class TaskAssignment {
 		}
 		int cont = 0;
 		boolean solutionAlreadyFound = false;
-		double[][][][] matrixSolutionFound= new double[numInteration+numRobotAug][numRobotAug][numTaskAug][maxNumPaths];
+		double[][][][] matrixSolutionFound= new double[numInteration][numRobotAug][numTaskAug][maxNumPaths];
 		boolean [] solutionFound = new boolean [numRobotAug*numTaskAug*maxNumPaths];
-		double [] costSolutions = new double [numInteration+numRobotAug];
+		double [] costSolutions = new double [numInteration];
 		int indexSolutionFound = 0;
 		Random rand = new Random();
 		ArrayList <Integer> IDsRandomRobots = new ArrayList <Integer>();
@@ -1588,7 +1588,7 @@ public class TaskAssignment {
 		IDsRandomRobots.addAll(IDsIdleRobots);
 		IDsRandomRobots2.addAll(IDsIdleRobots);
 		
-		for(int k=0; k <  (numInteration+numRobotAug) ;k++){
+		for(int k=0; k <  (numInteration) ;k++){
 			//Evaluate an optimal assignment that minimize only the B function
 			//Initialize cost of objective value
 			
@@ -1605,6 +1605,8 @@ public class TaskAssignment {
 						IDsRandomRobots.remove(ind);
 						IDsRandomRobots2.addAll(IDsIdleRobots);
 						cont = 0;
+						int index = IDsRandomRobots2.indexOf(prova1);
+						IDsRandomRobots2.remove(index);
 						prova2 = 0;
 						for(int i=0; i< AssignmentMatrix.length;i ++) {
 								for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
@@ -1617,8 +1619,11 @@ public class TaskAssignment {
 					}else {
 						//prova2 +=1;
 						int ind2 = (int) Math.floor(Math.random()*IDsRandomRobots2.size());
-						prova2 = IDsRandomRobots.get(ind2);
-						IDsRandomRobots2.remove(ind2);
+						if(IDsRandomRobots2.size()>0) {
+							prova2 = IDsRandomRobots2.get(ind2);
+							IDsRandomRobots2.remove(ind2);
+						}
+						
 						cont +=1;
 					}
 				
