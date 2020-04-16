@@ -1507,17 +1507,15 @@ public class TaskAssignment {
 	
 	
 	/** 
-	 * Solve the optimization problem given as input considering both B and F Functions. The objective function is defined as sum(c_ij * x_ij) for (i = 1...n)(j = 1...m).
-	 * with n = number of robot and m = number of tasks. The solver first finds the optimal solution considering only B function and then
-	 * for this each solution (that is an assignment) evaluates the cost of F function. Then a new optimal solution considering only B is 
-	 * computed and it is consider only if the cost of this new assignment considering only B is less than the min cost of previous assignments
-	 * considering both F and B function
+	 * Solve the optimization problem given as input considering both B and F Functions with a Local Search Algorithm. The objective function is defined as sum(c_ij * x_ij) for (i = 1...n)(j = 1...m).
+	 * with n = number of robot and m = number of tasks. Starting from a feasible solution, all his neighbors are computed; then the new solution 
+	 * is the optimal solutions considering the neighbors. The algorithm go on until the specified number of iterations
 	 * @param tec -> an Abstract Trajectory Envelope Coordinator
-
+	 * @param iteration -> number of iteration to consider ( if -1 all feasible solution are considered)
 	 * @return An Optimal Assignment that minimize the objective function
 	 */
 	
-	public double [][][] solveOptimizationProblemLocalSearch(AbstractTrajectoryEnvelopeCoordinator tec){
+	public double [][][] solveOptimizationProblemLocalSearch(AbstractTrajectoryEnvelopeCoordinator tec,int iteration){
 		long initialTime = 	Calendar.getInstance().getTimeInMillis();
 		PrintStream fileStream = null;
 		PrintStream fileStream1 = null;
@@ -1562,7 +1560,13 @@ public class TaskAssignment {
 		double [][][] AssignmentMatrix = saveAssignmentMatrix(numRobotAug,numTaskAug,optimizationProblem);
 		int prova1 = 0;
 		int prova2 = 0;
-		int numInteration = numberFeasibleSolution(numRobotAug,numTaskAug);
+		
+		int numIteration = numberFeasibleSolution(numRobotAug,numTaskAug);
+		if(iteration > numIteration || iteration == -1) {
+			iteration =  numIteration;
+		}else {
+			numIteration = iteration;
+		}
 		int index1i = 0;
 		int index1j = 0;
 		int index1s = 0;
@@ -1578,9 +1582,9 @@ public class TaskAssignment {
 			}
 		}
 		boolean solutionAlreadyFound = false;
-		double[][][][] matrixSolutionFound= new double[numInteration][numRobotAug][numTaskAug][maxNumPaths];
+		double[][][][] matrixSolutionFound= new double[iteration][numRobotAug][numTaskAug][maxNumPaths];
 		boolean [] solutionFound = new boolean [numRobotAug*numTaskAug*maxNumPaths];
-		double [] costSolutions = new double [numInteration];
+		double [] costSolutions = new double [iteration];
 		int indexSolutionFound = 0;
 		ArrayList <Integer> IDsRandomRobots = new ArrayList <Integer>();
 		ArrayList <Integer> IDsRandomRobots2 = new ArrayList <Integer>();
@@ -1591,7 +1595,7 @@ public class TaskAssignment {
 		int index = IDsRandomRobots2.indexOf(prova1);
 		IDsRandomRobots2.remove(index);
 		//IDsRandomRobots.remove(ind);
-		for(int k=0; k <=  numInteration ;k++){
+		for(int k=0; k <=  iteration ;k++){
 			//Evaluate an optimal assignment that minimize only the B function
 			//Initialize cost of objective value
 			
@@ -1628,11 +1632,6 @@ public class TaskAssignment {
 						prova2 = IDsRandomRobots2.get(ind2);
 						IDsRandomRobots2.remove(ind2);
 					}
-					fileStream4.println("Size" + IDsRandomRobots2.size());
-					
-					
-					
-				
 				for(int i=0; i< AssignmentMatrix.length;i ++) {
 					for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
 						for(int s = 0; s < maxNumPaths; s++) {
@@ -1760,7 +1759,10 @@ public class TaskAssignment {
 					}
 				}
 			}
-			
+			fileStream.println(timeRequiretoEvaluatePaths+"");
+			fileStream.println(timeRequiretofillInPall+"");
+			fileStream.println(timeRequiretoComputeCriticalSection+"");
+			fileStream.println(timeRequiretoComputePathsDelay+"");
 			//Compare actual solution and optimal solution finds so far
 			if (costofAssignment < objectiveOptimalValue ) {
 				objectiveOptimalValue = costofAssignment;
@@ -1788,6 +1790,11 @@ public class TaskAssignment {
 		//Return the Optimal Assignment Matrix 
 		return  optimalAssignmentMatrix;    
 	}
+	
+	
+	
+	
+	
 	
 	
 	/** 
