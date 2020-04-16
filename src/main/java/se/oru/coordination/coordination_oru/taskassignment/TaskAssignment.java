@@ -1544,6 +1544,7 @@ public class TaskAssignment {
 		dummyRobotorTask(numRobot,numTask,tec);
 		getAllRobotIDs();
 		getAllTaskIDs();
+	
 		//Consider possibility to have dummy Robot or Tasks
 		double [][][] PAll = evaluatePAll(tec);
 		double[][][] BFunction = evaluateBFunction(PAll,tec);
@@ -1576,13 +1577,11 @@ public class TaskAssignment {
 				}
 			}
 		}
-		int cont = 0;
 		boolean solutionAlreadyFound = false;
 		double[][][][] matrixSolutionFound= new double[numInteration][numRobotAug][numTaskAug][maxNumPaths];
 		boolean [] solutionFound = new boolean [numRobotAug*numTaskAug*maxNumPaths];
 		double [] costSolutions = new double [numInteration];
 		int indexSolutionFound = 0;
-		Random rand = new Random();
 		ArrayList <Integer> IDsRandomRobots = new ArrayList <Integer>();
 		ArrayList <Integer> IDsRandomRobots2 = new ArrayList <Integer>();
 		IDsRandomRobots.addAll(IDsAllRobots);
@@ -1592,7 +1591,7 @@ public class TaskAssignment {
 		int index = IDsRandomRobots2.indexOf(prova1);
 		IDsRandomRobots2.remove(index);
 		//IDsRandomRobots.remove(ind);
-		for(int k=0; k <  (numInteration) ;k++){
+		for(int k=0; k <=  numInteration ;k++){
 			//Evaluate an optimal assignment that minimize only the B function
 			//Initialize cost of objective value
 			
@@ -1600,15 +1599,13 @@ public class TaskAssignment {
 			double costofAssignmentForConstraint = 0;
 			double costBFunction = 0;
 			double costFFunction = 0;
-
 			if(k>0) {	
-					if(cont == numRobotAug) {
+					if(IDsRandomRobots2.size() == 0) {
 						//prova1 += 1;
 						ind  = (int) Math.floor(Math.random()*IDsRandomRobots.size());
 						prova1 = IDsRandomRobots.get(ind);
 						IDsRandomRobots.remove(ind);
-						IDsRandomRobots2.addAll(IDsIdleRobots);
-						cont = 0;
+						IDsRandomRobots2.addAll(IDsAllRobots);
 						index = IDsRandomRobots2.indexOf(prova1);
 						IDsRandomRobots2.remove(index);
 						
@@ -1616,6 +1613,7 @@ public class TaskAssignment {
 								for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
 									for(int s = 0; s < maxNumPaths; s++) {
 										AssignmentMatrix[i][j][s] = optimalAssignmentMatrix[i][j][s];
+				
 									}
 								}
 						}
@@ -1630,8 +1628,9 @@ public class TaskAssignment {
 						prova2 = IDsRandomRobots2.get(ind2);
 						IDsRandomRobots2.remove(ind2);
 					}
+					fileStream4.println("Size" + IDsRandomRobots2.size());
 					
-					cont +=1;
+					
 					
 				
 				for(int i=0; i< AssignmentMatrix.length;i ++) {
