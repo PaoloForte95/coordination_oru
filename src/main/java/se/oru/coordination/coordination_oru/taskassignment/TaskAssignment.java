@@ -71,6 +71,8 @@ public class TaskAssignment {
 		protected ArrayList <Integer> IDsRealTasks = new ArrayList <Integer>();
 		protected ArrayList <Integer> IDsAllRobots = new ArrayList <Integer>();
 		protected ArrayList <Integer> IDsAllTasks = new ArrayList <Integer>();
+		protected int virtualRobotIDs = Integer.MAX_VALUE;
+		protected int virtualTaskIDs = Integer.MAX_VALUE;
 		//Path and arrival Time Parameters
 		//Infinity cost if path to reach a goal note exists
 		protected double MaxPathLength = 10000000;
@@ -92,6 +94,7 @@ public class TaskAssignment {
 		protected long timeRequiretofillInPall;
 		protected long timeRequiretoComputeCriticalSection;
 		protected long timeRequiretoComputePathsDelay;
+		protected long timeRequiretoEvaluateF;
 		protected long initialTime;
 		
 		protected HashMap<Integer, PoseSteering[]> pathsToTargetGoal =  new HashMap<Integer, PoseSteering[]>();
@@ -188,13 +191,14 @@ public class TaskAssignment {
 	 */
 	
 	private void getAllRobotIDs() {
-		int virtualRobotID = Integer.MAX_VALUE;
+		int virtualRobotID = this.virtualRobotIDs;
 		for(int i= 0; i < numRobotAug; i++) {
 			if(i < IDsIdleRobots.size()) {
 				IDsAllRobots.add(IDsIdleRobots.get(i));	
 			}else {
 				IDsAllRobots.add(virtualRobotID);
 				virtualRobotID = virtualRobotID-1;
+				this.virtualRobotIDs -=1;
 			}	
 		}
 	}
@@ -220,13 +224,14 @@ public class TaskAssignment {
 	
 	private void getAllTaskIDs() {
 		getRealTaskIDs();
-		int virtaulTaskID = Integer.MAX_VALUE;
+		int virtaulTaskID = this.virtualTaskIDs;
 		for(int i= 0; i < numTaskAug; i++) {
 			if(i < IDsRealTasks.size()) {
 				IDsAllTasks.add(IDsRealTasks.get(i));
 			}else {
 				IDsAllTasks.add(virtaulTaskID);
 				virtaulTaskID = virtaulTaskID-1;
+				this.virtualTaskIDs -=1;
 			}	
 		}
 	}
@@ -269,12 +274,18 @@ public class TaskAssignment {
 					}else {
 						if(i < IDsAllRobots.size()) {
 							robotID = IDsAllRobots.get(i);
-							taskID = IDsAllTasks.get(j);
+
 							
 						}else {
-							robotID = IDsAllRobots.get(IDsAllRobots.size()-1)+1;
-							taskID = IDsAllTasks.get(IDsAllTasks.size()-1)+1;
+							robotID = this.virtualRobotIDs -1 ;
 							IDsAllRobots.add(robotID);
+						}
+						if (j < IDsAllTasks.size()) {
+							taskID = IDsAllTasks.get(j);
+						}else {
+							taskID = virtualTaskIDs - 1;
+							this.virtualTaskIDs -= 1;
+							IDsAllTasks.add(taskID);
 						}
 						PAllAug[i][j][s] = 1;
 						pathsToTargetGoal.put(robotID*numTaskAug*maxNumPaths+taskID*maxNumPaths+s, null);
@@ -612,16 +623,15 @@ public class TaskAssignment {
 		//Take decision Variable from Optimization Problem
 		MPVariable [][][] DecisionVariable = tranformArray(optimizationProblem);
 		//Initialize a Constraint
-		MPConstraint c2 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY,1);
+		//MPConstraint c2 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY,1);
+		MPConstraint c2 = optimizationProblem.makeConstraint(0,numRobotAug-1);
 		//Define the actual optimal solution as a Constraint in order to not consider more it
     	for (int i = 0; i < numRobotAug; i++) {
     		for (int j = 0; j < numTaskAug; j++) {
     			for(int s = 0;s < maxNumPaths; s++) {
     					if (assignmentMatrix[i][j][s] >0) {
     						c2.setCoefficient(DecisionVariable[i][j][s],1);
-    					}else {
-    						c2.setCoefficient(DecisionVariable[i][j][s],0);
-	    			}
+    					}
     			}
     		}		
 		 }
@@ -933,7 +943,6 @@ public class TaskAssignment {
 	 */
 	private double evaluatePathDelay(int robotID ,int taskID,int pathID,double [][][] assignmentMatrix,AbstractTrajectoryEnvelopeCoordinator tec){
 		CriticalSection[][][][] cssMatrix = new CriticalSection [IDsIdleRobots.size()][IDsRealTasks.size()][maxNumPaths][1];
-		Integer [] arrayIDs = new Integer[2] ;
 		PrintStream fileStream1 = null;
 		PrintStream fileStream2 = null;
 		try {
@@ -982,8 +991,6 @@ public class TaskAssignment {
 										SpatialEnvelope se2 = TrajectoryEnvelope.createSpatialEnvelope(pss2,tec.getFootprint(secondRobotID));
 										long timeInitial = Calendar.getInstance().getTimeInMillis();
 										//Compute the Critical Section between this 2 robot
-										arrayIDs[0] = robotID*numTaskAug*maxNumPaths+taskID*maxNumPaths+pathID;
-										arrayIDs[1] = secondRobotID*numTaskAug*maxNumPaths  + secondTaskID*maxNumPaths+s;
 										CriticalSection [] css = new CriticalSection[1];
 										if(criticalSections.containsKey(robotID*numTaskAug*maxNumPaths+taskID*maxNumPaths+pathID) ) {
 											css= criticalSections.get(robotID*numTaskAug*maxNumPaths+taskID*maxNumPaths+pathID)[secondRobotIndex][secondTaskIndex][s];
@@ -1051,6 +1058,7 @@ public class TaskAssignment {
 				return delay;
 			}
 		}
+		
 		//return the delay for the i-th robot and the j-th task due to interference with other robots
 		return delay;
 		}
@@ -1217,7 +1225,7 @@ public class TaskAssignment {
     		if (resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
     			numberFeasibleSolution = numberFeasibleSolution+1;
     		}
-    		double [][][] assignmentMatrix = saveAssignmentMatrix(numRobot,numTasks,optimizationProblemCopy);
+    		double [][][] assignmentMatrix = saveAssignmentMatrix(numRobotAug,numTaskAug,optimizationProblemCopy);
 			//Add the constraint to actual solution -> in order to consider this solution as already found  
     		optimizationProblemCopy = constraintOnPreviousSolution(optimizationProblemCopy,assignmentMatrix);
 	    }
@@ -1297,6 +1305,7 @@ public class TaskAssignment {
 				
 			 }
 		 }
+		
 		//Each task can be performed only by a robot
 		 for (int j = 0; j < numTasksAug; j++) {
 			//Initialize the constraint
@@ -1361,6 +1370,7 @@ public class TaskAssignment {
 		double[][][] BFunction = evaluateBFunction(PAll,tec);
 		//Build the solver and an objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
+		
 		MPVariable [][][] decisionVariable = tranformArray(optimizationProblem); 
 	    /////////////////////////////////
 	    //START OBJECTIVE FUNCTION		
@@ -1416,7 +1426,11 @@ public class TaskAssignment {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		long timeProva= 0;
+		long timeProvaFinal= 0;
 		
+		long timeProva2= 0;
+		long timeProvaFinal2= 0;
 		
 		//Initialize the optimal assignment and the cost associated to it
 		double [][][] optimalAssignmentMatrix = new double[numRobotAug][numTaskAug][maxNumPaths];
@@ -1424,10 +1438,14 @@ public class TaskAssignment {
 		double costBOptimal = 0;
 		double costFOptimal = 0;
 		//Solve the optimization problem
+		optimizationProblem.setNumThreads(numRobotAug*numTaskAug);
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 			//Evaluate an optimal assignment that minimize only the B function
+			timeProva2 = Calendar.getInstance().getTimeInMillis();
 			resultStatus = optimizationProblem.solve();
+			timeProvaFinal2 = Calendar.getInstance().getTimeInMillis();
+			long timeRequiredProva =  timeProvaFinal2-  timeProva2;
 			//Evaluate the Assignment Matrix
 			double [][][] AssignmentMatrix = saveAssignmentMatrix(numRobotAug,numTaskAug,optimizationProblem);
 			//Initialize cost of objective value
@@ -1437,7 +1455,7 @@ public class TaskAssignment {
 			//Evaluate the cost of F Function for this Assignment
 			timeRequiretoComputeCriticalSection = 0;
 			timeRequiretoComputePathsDelay = 0;
-			
+			timeProva = Calendar.getInstance().getTimeInMillis();
 			//Take time to understand how much time require this function
 			for (int robotID : IDsAllRobots ) {
 				int i = IDsAllRobots.indexOf(robotID);
@@ -1463,6 +1481,8 @@ public class TaskAssignment {
 									
 				}		
 			}
+			timeProvaFinal = Calendar.getInstance().getTimeInMillis();
+			timeRequiretoEvaluateF = timeProvaFinal - timeProva;
 			fileStream3.println(optimizationProblem.objective().value()+"");
 			fileStream3.println((costofAssignmentForConstraint-optimizationProblem.objective().value())+"");
 			fileStream3.println(costofAssignmentForConstraint+"");
@@ -1473,7 +1493,8 @@ public class TaskAssignment {
 			fileStream.println(timeRequiretofillInPall+"");
 			fileStream.println(timeRequiretoComputeCriticalSection+"");
 			fileStream.println(timeRequiretoComputePathsDelay+"");
-			
+			fileStream.println(timeRequiretoEvaluateF+"");
+			fileStream.println(timeRequiredProva+"");
 			
 			//Compare actual solution and optimal solution finds so far
 			if (costofAssignment < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
@@ -1491,10 +1512,10 @@ public class TaskAssignment {
 			}
 			
 			//Add the constraint on cost for next solution
-			optimizationProblem = constraintOnCostSolution(optimizationProblem,costofAssignmentForConstraint);
+			//optimizationProblem = constraintOnCostSolution(optimizationProblem,costofAssignmentForConstraint);
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
-
+			
 		}
 		fileStream3.println(costBOptimal+"");
 		fileStream3.println(costFOptimal+"");
@@ -1546,6 +1567,8 @@ public class TaskAssignment {
 		//Consider possibility to have dummy Robot or Tasks
 		double [][][] PAll = evaluatePAll(tec);
 		double[][][] BFunction = evaluateBFunction(PAll,tec);
+		
+
 		//Build the optimization Problem without the objective function
 		MPSolver optimizationProblem = buildOptimizationProblem(numRobotAug,numTaskAug);
 		MPObjective objective = optimizationProblem.objective();
@@ -1561,7 +1584,11 @@ public class TaskAssignment {
 		int prova1 = 0;
 		int prova2 = 0;
 		
-		int numIteration = numberFeasibleSolution(numRobotAug,numTaskAug);
+		
+		int numIteration = 1;
+		for(int fat= 1 ; fat <= numRobotAug; fat++) {
+			numIteration *= fat;
+		}
 		if(iteration > numIteration || iteration == -1) {
 			iteration =  numIteration;
 		}else {
@@ -1595,7 +1622,7 @@ public class TaskAssignment {
 		int index = IDsRandomRobots2.indexOf(prova1);
 		IDsRandomRobots2.remove(index);
 		//IDsRandomRobots.remove(ind);
-		for(int k=0; k <=  iteration ;k++){
+		for(int k=0; k <  iteration ;k++){
 			//Evaluate an optimal assignment that minimize only the B function
 			//Initialize cost of objective value
 			
@@ -1604,14 +1631,20 @@ public class TaskAssignment {
 			double costBFunction = 0;
 			double costFFunction = 0;
 			if(k>0) {	
+				fileStream4.println("--"+ numIteration);
+				fileStream4.println("--"+ k);
 					if(IDsRandomRobots2.size() == 0) {
 						//prova1 += 1;
+						if(IDsRandomRobots.size()==0) {
+							IDsRandomRobots.addAll(IDsAllRobots);
+						}
 						ind  = (int) Math.floor(Math.random()*IDsRandomRobots.size());
 						prova1 = IDsRandomRobots.get(ind);
 						IDsRandomRobots.remove(ind);
 						IDsRandomRobots2.addAll(IDsAllRobots);
 						index = IDsRandomRobots2.indexOf(prova1);
 						IDsRandomRobots2.remove(index);
+						
 						
 						for(int i=0; i< AssignmentMatrix.length;i ++) {
 								for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
@@ -1649,11 +1682,12 @@ public class TaskAssignment {
 								index1i = i;	
 								index1j = j;
 								index1s = s;
+
 							}
 							if(AssignmentMatrix[i][j][s]==1 && robotID == prova2) {
 								index2i = i;	
 								index2j = j;
-								index2s = s;		
+								index2s = s;
 							}
 						}
 					}
@@ -1693,7 +1727,7 @@ public class TaskAssignment {
 					}
 					solutionAlreadyFound = true;
 					for(int f=0; f < solutionFound.length;f++) {
-						if(!solutionFound[f]) {
+						if(solutionFound[f]== false) {
 							solutionAlreadyFound = false;
 							break;
 						}
@@ -1704,7 +1738,7 @@ public class TaskAssignment {
 					}
 				}
 			}
-			
+			solutionAlreadyFound = false;
 			if(!solutionAlreadyFound) {
 				fileStream4.println("-------------------");
 				fileStream4.println("Solution not already found" + solutionAlreadyFound);
@@ -1743,7 +1777,7 @@ public class TaskAssignment {
 				costSolutions[k] = costofAssignment;
 			}else {
 				fileStream4.println("-------------------");
-				fileStream4.println("Solution already found" + solutionAlreadyFound);
+				fileStream4.println("Solution already found" + solutionAlreadyFound + "--" + indexSolutionFound);
 				fileStream4.println("Switch was" + prova1 + "--" + prova2 );
 				fileStream4.println("-------------------");
 				costofAssignment =  costSolutions[indexSolutionFound];
@@ -1777,11 +1811,6 @@ public class TaskAssignment {
 					}
 				}
 			}
-			
-			
-			
-
-			
 		}
 		
 		 long timeFinal = Calendar.getInstance().getTimeInMillis();
@@ -1790,6 +1819,8 @@ public class TaskAssignment {
 		//Return the Optimal Assignment Matrix 
 		return  optimalAssignmentMatrix;    
 	}
+	
+	
 	
 	
 	
