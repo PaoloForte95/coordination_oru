@@ -1586,7 +1586,12 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 						}
 						PrintStream fileStream1 = null;
 						try {
-							fileStream1 = new PrintStream(new FileOutputStream("ExecutionTime.txt",true));
+							
+							if(fakeCoordinator) {
+								fileStream1 = new PrintStream(new FileOutputStream("ExecutionTimeNominal.txt",true));
+							}else {
+								fileStream1 = new PrintStream(new FileOutputStream("ExecutionTime.txt",true));
+							}
 						} catch (FileNotFoundException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -1845,7 +1850,12 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 		PrintStream fileStream1 = null;
 		PrintStream fileStream3 = null;
 		try {
-			fileStream1 = new PrintStream(new File("ExecutionTime.txt"));
+			if(fakeCoordinator) {
+				fileStream1 = new PrintStream(new File("ExecutionTimeNominal.txt"));
+			}else {
+				fileStream1 = new PrintStream(new File("ExecutionTime.txt"));
+			}
+			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
