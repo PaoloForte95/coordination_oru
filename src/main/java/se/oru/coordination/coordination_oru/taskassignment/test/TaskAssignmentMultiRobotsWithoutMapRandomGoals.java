@@ -79,14 +79,17 @@ public class TaskAssignmentMultiRobotsWithoutMapRandomGoals {
 		Pose startPoseRobot5 = new Pose(5.0,20.0,Math.PI/2);
 		Pose startPoseRobot6 = new Pose(5.0,8.0,0.0);
 		Pose startPoseRobot7 = new Pose(18.0,20.0,Math.PI/2);
-
+		Pose startPoseRobot8 = new Pose(7.0,32.0,-Math.PI/2);
+		
+		
 		Robot robot1 = new Robot(1, 1);
-		Robot robot2 = new Robot(2, 2);
+		Robot robot2 = new Robot(2, 1);
 		Robot robot3 = new Robot(3, 1);
 		Robot robot4 = new Robot(4, 1);
 		Robot robot5 = new Robot(5, 1);
-		Robot robot6 = new Robot(6, 2);
+		Robot robot6 = new Robot(6, 1);
 		Robot robot7 = new Robot(7, 1);
+		Robot robot8 = new Robot(8, 1);
 		
 		
 		
@@ -95,8 +98,8 @@ public class TaskAssignmentMultiRobotsWithoutMapRandomGoals {
 		tec.addRobot(robot3,startPoseRobot3);
 		tec.addRobot(robot4, startPoseRobot4);
 		tec.addRobot(robot5, startPoseRobot5);
-		tec.addRobot(robot6, startPoseRobot6);
-		tec.addRobot(robot7, startPoseRobot7);
+		//tec.addRobot(robot6, startPoseRobot6);
+		//tec.addRobot(robot7, startPoseRobot7);
 		
 		String yamlFile = "maps/map-empty.yaml";
 	
@@ -127,7 +130,6 @@ public class TaskAssignmentMultiRobotsWithoutMapRandomGoals {
 		
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		
-		Task [] taskArray = new Task[5];
 		double rangeMinStart = 15.0;
 		double rangeMinStarty = 4.0;
 		double rangeMinGoal = 20.0;
@@ -136,7 +138,7 @@ public class TaskAssignmentMultiRobotsWithoutMapRandomGoals {
 		double rangeMaxy = 40.0;
 		Pose RandomStartPose = new Pose(0.0,0.0,0);
 		Pose RandomGoalPose = new Pose(0.0,0.0,0);
-		for(int j=1;j <= 7; j++) {
+		for(int j=1;j <= 5; j++) {
 			boolean flag1 = false;
 			while(! flag1) {
 				double randomStartPosex = rangeMinStart + (rangeMax-rangeMinStart)*rand.nextDouble();
@@ -153,17 +155,9 @@ public class TaskAssignmentMultiRobotsWithoutMapRandomGoals {
 				flag2 = rsp2.isFree(RandomGoalPose);
 				fileStream.println("Pose goalPoseGoal"+j+" = new Pose" + RandomGoalPose+";");
 			}
-			if(j==4 ) {
-				Task taskRandom = new Task(j,RandomStartPose,RandomGoalPose,1,2);
-				assignmentProblem.addTask(taskRandom);
+			Task taskRandom = new Task(j,RandomStartPose,RandomGoalPose,1);
+			assignmentProblem.addTask(taskRandom);
 			
-			}else if(j==7) {
-				Task taskRandom = new Task(j,RandomStartPose,RandomGoalPose,2);
-				assignmentProblem.addTask(taskRandom);
-			} else {
-				Task taskRandom = new Task(j,RandomStartPose,RandomGoalPose,1);
-				assignmentProblem.addTask(taskRandom);
-			}
 			
 		}
 		
@@ -198,7 +192,7 @@ public class TaskAssignmentMultiRobotsWithoutMapRandomGoals {
 		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(1.0, 0.0, 0.0);
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
-		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
 		
 		for (int i = 0; i < assignmentMatrix.length; i++) {
 			for (int j = 0; j < assignmentMatrix[0].length; j++) {

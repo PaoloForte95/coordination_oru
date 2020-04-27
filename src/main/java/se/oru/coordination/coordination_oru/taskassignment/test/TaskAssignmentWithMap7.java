@@ -116,8 +116,8 @@ public class TaskAssignmentWithMap7 {
 		tec.addRobot(robot1,startPoseRobot1);
 		tec.addRobot(robot2,startPoseRobot2);
 		tec.addRobot(robot3,startPoseRobot3);
-		//tec.addRobot(robot4,startPoseRobot4);
-		//tec.addRobot(robot5,startPoseRobot5);
+		tec.addRobot(robot4,startPoseRobot4);
+		tec.addRobot(robot5,startPoseRobot5);
 		
 		Pose startPoseGoal1 = new Pose(28.0,5.0,0.0);
 		Pose startPoseGoal2 = new Pose(22.0,15.0,0.0);
@@ -130,7 +130,7 @@ public class TaskAssignmentWithMap7 {
 		Pose goalPoseRobot2 = new Pose(45.0,15.0,0.0);
 		Pose goalPoseRobot3 = new Pose(48.0,4.0,0.0);
 		Pose goalPoseRobot4 = new Pose(48.0,27.0,0.0);
-		Pose goalPoseRobot5 = new Pose(42.0,6.0,0.0);
+		Pose goalPoseRobot5 = new Pose(40.0,6.0,0.0);
 		
 		Task task1 = new Task(1,startPoseGoal1,goalPoseRobot1,1);
 		Task task2 = new Task(2,startPoseGoal2,goalPoseRobot2,1);
@@ -140,7 +140,9 @@ public class TaskAssignmentWithMap7 {
 
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 0.2;
+		tec.setFakeCoordinator(true);
+		//tec.setAvoidDeadlocksGlobally(true);
+		double alpha = 0.0;
 		int numPaths = 1;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.setmaxNumPaths(numPaths);
@@ -148,7 +150,7 @@ public class TaskAssignmentWithMap7 {
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
 		assignmentProblem.addTask(task4);
-		//assignmentProblem.addTask(task5);
+		assignmentProblem.addTask(task5);
 		
 		
 		for (int robotID : tec.getIdleRobots()) {
@@ -172,7 +174,22 @@ public class TaskAssignmentWithMap7 {
 		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
-		assignmentProblem.startTaskAssignment(tec);
-
+		//assignmentProblem.startTaskAssignment(tec);
+		
+		
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
+				
+		for (int i = 0; i < assignmentMatrix.length; i++) {
+			for (int j = 0; j < assignmentMatrix[0].length; j++) {
+				for(int s = 0; s < numPaths; s++) {
+					System.out.println("x"+"["+(i+1)+","+(j+1)+","+(s+1)+"]"+" is "+ assignmentMatrix[i][j][s]);
+					if(assignmentMatrix[i][j][s] == 1) {
+						System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1)+" throw Path " + (s+1));
+					}
+				}
+			} 
+		}
+		assignmentProblem.TaskAllocation(assignmentMatrix,tec);	
+		
 	}
 }

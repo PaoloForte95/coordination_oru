@@ -179,7 +179,7 @@ public class TaskAssignmentMultiRobotsWithoutMapGreedy {
 			rsp.setPlanningTimeInSecs(2);
 			tec.setMotionPlanner(robotID, rsp);
 	}
-		
+		tec.setFakeCoordinator(true);
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
 		

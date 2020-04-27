@@ -109,7 +109,7 @@ public class TaskAssignmentRobotsGridExact {
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		int numPaths = 1;
 		double delta = 0;
-		for(int i = 1; i<= 5; i++) {
+		for(int i = 1; i<= 11; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;

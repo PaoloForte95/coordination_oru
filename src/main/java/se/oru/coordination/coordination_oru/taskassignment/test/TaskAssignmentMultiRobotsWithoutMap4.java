@@ -199,7 +199,7 @@ public class TaskAssignmentMultiRobotsWithoutMap4 {
 		assignmentProblem.setmaxNumPaths(numPaths);
 		
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
-		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
 		
 		for (int i = 0; i < assignmentMatrix.length; i++) {
 			for (int j = 0; j < assignmentMatrix[0].length; j++) {

@@ -109,7 +109,7 @@ public class TaskAssignmentRobotsGridGreedy {
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		int numPaths = 1;
 		double delta = 0;
-		for(int i = 1; i<= 4; i++) {
+		for(int i = 1; i<= 11; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;
@@ -140,13 +140,11 @@ public class TaskAssignmentRobotsGridGreedy {
 	}
 	
 		//Solve the problem to find some feasible solution
-		double alpha = 0.6;
 		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setFleetVisualization(viz);
 		assignmentProblem.setCoordinator(tec);
-		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);	
 		assignmentProblem.startTaskAssignmentGreedyAlgorithm(tec);
 	}

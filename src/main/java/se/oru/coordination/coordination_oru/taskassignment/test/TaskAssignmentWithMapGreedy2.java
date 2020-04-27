@@ -116,8 +116,8 @@ public class TaskAssignmentWithMapGreedy2 {
 		tec.addRobot(robot1,startPoseRobot1);
 		tec.addRobot(robot2,startPoseRobot2);
 		tec.addRobot(robot3,startPoseRobot3);
-		//tec.addRobot(robot4,startPoseRobot4);
-		//tec.addRobot(robot5,startPoseRobot5);
+		tec.addRobot(robot4,startPoseRobot4);
+		tec.addRobot(robot5,startPoseRobot5);
 		
 		Pose startPoseGoal1 = new Pose(28.0,5.0,0.0);
 		Pose startPoseGoal2 = new Pose(22.0,15.0,0.0);
@@ -148,7 +148,7 @@ public class TaskAssignmentWithMapGreedy2 {
 		assignmentProblem.addTask(task2);
 		assignmentProblem.addTask(task3);
 		assignmentProblem.addTask(task4);
-		//assignmentProblem.addTask(task5);
+		assignmentProblem.addTask(task5);
 		
 		
 		for (int robotID : tec.getIdleRobots()) {

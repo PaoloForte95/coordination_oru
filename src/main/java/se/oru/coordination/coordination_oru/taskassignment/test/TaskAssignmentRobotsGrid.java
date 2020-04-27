@@ -109,7 +109,7 @@ public class TaskAssignmentRobotsGrid {
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		int numPaths = 1;
 		double delta = 0;
-		for(int i = 1; i<= 4; i++) {
+		for(int i = 1; i<= 11; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = rand.nextInt(2)+1;
@@ -140,7 +140,7 @@ public class TaskAssignmentRobotsGrid {
 		}
 	
 		//Solve the problem to find some feasible solution
-		double alpha = 0.2;
+		double alpha = 0.6;
 		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
@@ -149,5 +149,6 @@ public class TaskAssignmentRobotsGrid {
 		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);	
 		assignmentProblem.startTaskAssignment(tec);
+		
 	}
 }

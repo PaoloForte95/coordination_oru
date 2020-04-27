@@ -118,7 +118,7 @@ public class TaskAssignmentMultiRobotsWithoutMapOnline {
 		
 		
 		tec.addRobot(robot1,startPoseRobot1);
-		tec.addRobot(robot2,startPoseRobot2);
+		//tec.addRobot(robot2,startPoseRobot2);
 		tec.addRobot(robot3,startPoseRobot3);
 		//tec.addRobot(robot4, startPoseRobot4);
 		//tec.addRobot(robot5, startPoseRobot5);
@@ -158,9 +158,9 @@ public class TaskAssignmentMultiRobotsWithoutMapOnline {
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
-		assignmentProblem.addTask(task3);
-		assignmentProblem.addTask(task4);
-		assignmentProblem.addTask(task5);
+		//assignmentProblem.addTask(task3);
+		//assignmentProblem.addTask(task4);
+		//assignmentProblem.addTask(task5);
 		assignmentProblem.setmaxNumPaths(numPaths);
 		for (int robotID : tec.getIdleRobots()) {
 			Coordinate[] footprint = tec.getFootprint(robotID);

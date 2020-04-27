@@ -1,57 +1,40 @@
 package se.oru.coordination.coordination_oru.taskassignment.test;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.Comparator;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
-import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
-import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
-import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope.SpatialEnvelope;
 
+import com.google.ortools.linearsolver.MPSolver;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.Polygon;
 
-import aima.core.agent.Model;
-import se.oru.coordination.coordination_oru.ConstantAccelerationForwardModel;
+
+
 import se.oru.coordination.coordination_oru.CriticalSection;
-import se.oru.coordination.coordination_oru.Mission;
+
 import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
 import se.oru.coordination.coordination_oru.RobotReport;
 import se.oru.coordination.coordination_oru.demo.DemoDescription;
-import se.oru.coordination.coordination_oru.motionplanning.AbstractMotionPlanner;
+
 import se.oru.coordination.coordination_oru.motionplanning.ompl.ReedsSheppCarPlanner;
 import se.oru.coordination.coordination_oru.simulation2D.TimedTrajectoryEnvelopeCoordinatorSimulation;
-import se.oru.coordination.coordination_oru.simulation2D.TrajectoryEnvelopeCoordinatorSimulation;
+
 import se.oru.coordination.coordination_oru.util.BrowserVisualization;
-import se.oru.coordination.coordination_oru.util.JTSDrawingPanelVisualization;
+
 import se.oru.coordination.coordination_oru.util.Missions;
 
 
 
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
-import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimple;
-
-import org.metacsp.multi.spatioTemporal.paths.Pose;
-import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
-import org.metacsp.multi.spatioTemporal.paths.Trajectory;
-import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 
 import se.oru.coordination.coordination_oru.taskassignment.Robot;
 import se.oru.coordination.coordination_oru.taskassignment.Task;
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimulatedAnnealing;
 
 
 
-
-import com.google.ortools.linearsolver.*;
-import com.google.ortools.linearsolver.MPSolver.ResultStatus;
-import com.google.ortools.linearsolver.PartialVariableAssignment;
-import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.sat.*;
 
 @DemoDescription(desc = "One-shot navigation of 3 robots coordinating on paths obtained with the ReedsSheppCarPlanner.")
 public class TaskAssignmentMultiRobotsWithoutMap {
@@ -157,6 +140,7 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		
 		Task task6 = new Task(6,startPoseGoal6,goalPoseGoal6,1);
 	
+		//TaskAssignmentSimulatedAnnealing assignmentProblem = new TaskAssignmentSimulatedAnnealing();
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		int numPaths = 1;
 		assignmentProblem.addTask(task1);
@@ -182,8 +166,21 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		}
 		
 	    ///////////////////////////////////////////////////////
+		
+		double [][][]optimalAllocation = {{{0.0},{0.0},{1.0},{0.0},{0.0}},
+				{{0.0},{0.0},{0.0},{1.0},{0.0}},
+				{{0.0},{1.0},{0.0},{0.0},{0.0}},
+				{{0.0},{0.0},{0.0},{0.0},{1.0}},
+				{{1.0},{0.0},{0.0},{0.0},{0.0}}};
+		
 		//Solve the problem to find some feasible solution
-		double alpha = 0;
+		double alpha = 0.0;
+		
+		tec.setFakeCoordinator(true);
+		tec.setAvoidDeadlocksGlobally(true);
+		assignmentProblem.LoadScenario("ProvaScenario");
+		assignmentProblem.LoadScenarioAllocation(optimalAllocation);
+		
 		
 		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
@@ -192,8 +189,9 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		assignmentProblem.setCoordinator(tec);
 		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(1.0, 0.0, 0.0);
-		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
-		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec,alpha);
+		//MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
+		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
 		
 		for (int i = 0; i < assignmentMatrix.length; i++) {
 			for (int j = 0; j < assignmentMatrix[0].length; j++) {

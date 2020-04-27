@@ -143,7 +143,7 @@ public class TaskAssignmentWithMap4 {
 
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 0.2;
+		double alpha = 0.0;
 		int numPaths = 1;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.setmaxNumPaths(numPaths);
@@ -170,13 +170,27 @@ public class TaskAssignmentWithMap4 {
 			
 		}
 		
-		
+		tec.setFakeCoordinator(true);
+		tec.setAvoidDeadlocksGlobally(true);
 		assignmentProblem.setFleetVisualization(viz);
 		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
-		assignmentProblem.startTaskAssignment(tec);
-
+		//assignmentProblem.startTaskAssignment(tec);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
+		
+		for (int i = 0; i < assignmentMatrix.length; i++) {
+			for (int j = 0; j < assignmentMatrix[0].length; j++) {
+				for(int s = 0; s < numPaths; s++) {
+					System.out.println("x"+"["+(i+1)+","+(j+1)+","+(s+1)+"]"+" is "+ assignmentMatrix[i][j][s]);
+					if(assignmentMatrix[i][j][s] == 1) {
+						System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1)+" throw Path " + (s+1));
+					}
+				}
+			} 
+		}
+		assignmentProblem.TaskAllocation(assignmentMatrix,tec);	
+		
 	}
 }

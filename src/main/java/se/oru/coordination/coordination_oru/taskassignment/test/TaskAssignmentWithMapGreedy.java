@@ -144,7 +144,7 @@ public class TaskAssignmentWithMapGreedy {
 
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		double alpha = 1.0;
+
 		int numPaths = 1;
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		assignmentProblem.setmaxNumPaths(numPaths);
@@ -173,7 +173,6 @@ public class TaskAssignmentWithMapGreedy {
 		
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
-		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
 		assignmentProblem.setFleetVisualization(viz);
 		assignmentProblem.startTaskAssignmentGreedyAlgorithm(tec);
