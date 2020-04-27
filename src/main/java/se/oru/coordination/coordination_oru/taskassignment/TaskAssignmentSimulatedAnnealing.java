@@ -1,8 +1,11 @@
 package se.oru.coordination.coordination_oru.taskassignment;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +68,7 @@ public class TaskAssignmentSimulatedAnnealing {
 		protected ArrayList <Task> taskQueue = new ArrayList <Task>();
 		
 		protected String scenario;
+		protected double [][][] ScenarioAllocation;
 		//Parameters of weights in Optimization Problem
 		protected double pathLengthWeight = 1;
 		protected double arrivalTimeWeight = 0;
@@ -125,13 +129,45 @@ public class TaskAssignmentSimulatedAnnealing {
 			this.maxNumPaths = maxNumPaths;
 		}
 		
+		public void writeMatrix(String filename, double[][][] optimalAssignmentMatrix) {
+		    try {
+		        BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+		        bw.write("{{");
+		        for (int i = 0; i < optimalAssignmentMatrix.length; i++) {
+		        	for (int j = 0; j < optimalAssignmentMatrix[i].length; j++) {
+		        		bw.write("{");
+		        		for (int s = 0; s < maxNumPaths; s++) {
+		        			bw.write(optimalAssignmentMatrix[i][j][s]+"");
+		        		}
+		        		bw.write("}");
+		        		bw.write(",");
+		        		
+		        	}
+		        	bw.write("}");
+		        	bw.write(",");
+		            bw.newLine();
+		            bw.write("{");
+		        }
+		        bw.flush();
+		    } catch (IOException e) {}
+		}
+		
 		/**
-		 * Set the Coordinator 
+		 * Load a  Scenario 
 		 * @param scenario ->  Scenario to load
 		 */
 		
 		public void LoadScenario(String scenario) {
 			this.scenario = scenario;
+		}
+		
+		/**
+		 * Load an Optimal Task Allocation
+		 * @param scenario ->  Scenario to load
+		 */
+		
+		public void LoadScenarioAllocation(double [][][] Allocation) {
+			this.ScenarioAllocation = Allocation;
 		}
 		
 		/**
@@ -1394,6 +1430,24 @@ public class TaskAssignmentSimulatedAnnealing {
 				 } 		
 			 }
 		 }
+		 
+		 
+		 
+		 for (int robotID : IDsAllRobots ) {
+				int i = IDsAllRobots.indexOf(robotID);
+				for (int taskID : IDsAllTasks ) {
+					int j = IDsAllTasks.indexOf(taskID);
+					for(int s = 0; s < maxNumPaths; s++) {
+							 if (i < numRobot) { //Considering only real Robot
+								 PoseSteering[] pss = pathsToTargetGoal.get(robotID*numTaskAug*maxNumPaths+taskID*maxNumPaths+s);
+								 if(pss==null) {
+									 MPConstraint c3 = optimizationProblem.makeConstraint(0,0);
+									 c3.setCoefficient(decisionVariable[i][j][s],1); 
+								 }
+							 }
+					}
+				}
+		 }
 	
 		//END CONSTRAINTS
 		//In case of having more task than robots, the task with a closest deadline are set with a higher priority
@@ -1439,6 +1493,7 @@ public class TaskAssignmentSimulatedAnnealing {
 		PrintStream fileStream3 = null;
 		PrintStream fileStream4 = null;
 		PrintStream fileStream5 = null;
+		Random rand = new Random(3455343);
 		try {
 			fileStream = new PrintStream(new File("RequiredTime.txt"));
 			fileStream1 = new PrintStream(new File("CriticalSections.txt"));
@@ -1510,12 +1565,29 @@ public class TaskAssignmentSimulatedAnnealing {
 		ArrayList <Integer> IDsRandomRobots = new ArrayList <Integer>();
 		ArrayList <Integer> IDsRandomRobots2 = new ArrayList <Integer>();
 		IDsRandomRobots.addAll(IDsAllRobots);
-		IDsRandomRobots2.addAll(IDsAllRobots);
-		int ind  = (int) Math.floor(Math.random()*IDsRandomRobots.size());
+		//IDsRandomRobots2.addAll(IDsAllRobots);
+		//IDsRandomRobots2.addAll(IDsAllRobots);
+		int ind  = (int) Math.floor(rand.nextDouble()*IDsRandomRobots.size());
 		prova1 = IDsRandomRobots.get(ind);
+
+		for(int m: IDsAllRobots) {
+			if(IDsIdleRobots.contains(m) && tec.getRobot(prova1)!=null){
+				tec.getRobot(m).getRobotType();
+				tec.getRobot(prova1).getRobotType();
+				if(tec.getRobot(m).getRobotType() == tec.getRobot(prova1).getRobotType()) {
+					IDsRandomRobots2.add(m);
+					
+				}
+			}else {//virtual robots
+				IDsRandomRobots2.add(m);
+			}
+		}
 		int index = IDsRandomRobots2.indexOf(prova1);
 		IDsRandomRobots2.remove(index);
 		//IDsRandomRobots.remove(ind);
+		if(ScenarioAllocation!= null) {
+			return this.ScenarioAllocation;
+		}
 		for(int k=0; k <=  iteration ;k++){
 			//Evaluate an optimal assignment that minimize only the B function
 			//Initialize cost of objective value
@@ -1527,16 +1599,30 @@ public class TaskAssignmentSimulatedAnnealing {
 			if(k>0) {	
 					if(IDsRandomRobots2.size() == 0) {
 						//prova1 += 1;
-						ind  = (int) Math.floor(Math.random()*IDsRandomRobots.size());
+						if(IDsRandomRobots.size()==0) {
+							IDsRandomRobots.addAll(IDsAllRobots);
+						}
+						ind  = (int) Math.floor(rand.nextDouble()*IDsRandomRobots.size());
 						prova1 = IDsRandomRobots.get(ind);
 						IDsRandomRobots.remove(ind);
-						IDsRandomRobots2.addAll(IDsAllRobots);
+						for(int m: IDsAllRobots) {
+							if(IDsIdleRobots.contains(m) && tec.getRobot(prova1)!=null){
+								tec.getRobot(m).getRobotType();
+								tec.getRobot(prova1).getRobotType();
+								if(tec.getRobot(m).getRobotType() == tec.getRobot(prova1).getRobotType()) {
+									IDsRandomRobots2.add(m);
+									
+								}
+							}else {//virtual robots
+								IDsRandomRobots2.add(m);
+							}
+						}
 						index = IDsRandomRobots2.indexOf(prova1);
 						IDsRandomRobots2.remove(index);
 			
 					}
 					//prova2 +=1;
-					int ind2 = (int) Math.floor(Math.random()*IDsRandomRobots2.size());
+					int ind2 = (int) Math.floor(rand.nextDouble()*IDsRandomRobots2.size());
 					if(IDsRandomRobots2.size()>0) {
 						prova2 = IDsRandomRobots2.get(ind2);
 						IDsRandomRobots2.remove(ind2);
@@ -1567,27 +1653,12 @@ public class TaskAssignmentSimulatedAnnealing {
 						}
 					}
 				}
-				boolean typesAreEqual1 = false;
-				boolean typesAreEqual2 = false;
-				if (index2j < taskQueue.size() && IDsIdleRobots.contains(prova1) ) {
-					typesAreEqual1 = taskQueue.get(index2j).isCompatible(tec.getRobot(prova1));	
-				 }else {
-					 typesAreEqual1 = true;
-				 }
 				
-				if (index1j < taskQueue.size() && IDsIdleRobots.contains(prova2) ) {
-					typesAreEqual2 = taskQueue.get(index1j).isCompatible(tec.getRobot(prova2));
-							
-				 }else {
-					 typesAreEqual2 = true;
-
-				 }
-				if(typesAreEqual1 && typesAreEqual2) {
-					newAssignmentMatrix[index1i][index1j][index1s] = 0;
-					newAssignmentMatrix[index1i][index2j][index1s] = 1;
-					newAssignmentMatrix[index2i][index1j][index2s] = 1;
-					newAssignmentMatrix[index2i][index2j][index2s] = 0;
-				}
+				newAssignmentMatrix[index1i][index1j][index1s] = 0;
+				newAssignmentMatrix[index1i][index2j][index1s] = 1;
+				newAssignmentMatrix[index2i][index1j][index2s] = 1;
+				newAssignmentMatrix[index2i][index2j][index2s] = 0;
+				
 				for(int it=0; it < k;it ++) {
 					for(int i=0; i< AssignmentMatrix.length;i ++) {
 						for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
@@ -1613,7 +1684,7 @@ public class TaskAssignmentSimulatedAnnealing {
 					}
 				}
 			}
-			
+			solutionAlreadyFound = false;
 			if(!solutionAlreadyFound) {
 				fileStream4.println("-------------------");
 				fileStream4.println("Solution not already found" + solutionAlreadyFound);
@@ -1685,7 +1756,7 @@ public class TaskAssignmentSimulatedAnnealing {
 			//Compare actual solution and optimal solution finds so far
 			if(k> 0) {
 				
-				double kk= Math.random();
+				double kk= rand.nextDouble();
 				double kk2 = probability(costSolutions[k-1],costofAssignment,k);
 
 				if(kk < kk2) {
@@ -1724,6 +1795,7 @@ public class TaskAssignmentSimulatedAnnealing {
 		 long timeRequired = timeFinal- initialTime;
 		 fileStream5.println(timeRequired+"");
 		//Return the Optimal Assignment Matrix 
+		writeMatrix("MatrixOptimal",optimalAssignmentMatrix);
 		return  optimalAssignmentMatrix;    
 	}
 	
