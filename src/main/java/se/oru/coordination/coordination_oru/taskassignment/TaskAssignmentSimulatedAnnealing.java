@@ -1684,7 +1684,7 @@ public class TaskAssignmentSimulatedAnnealing {
 					}
 				}
 			}
-			solutionAlreadyFound = false;
+			//solutionAlreadyFound = false;
 			if(!solutionAlreadyFound) {
 				fileStream4.println("-------------------");
 				fileStream4.println("Solution not already found" + solutionAlreadyFound);
@@ -1796,6 +1796,8 @@ public class TaskAssignmentSimulatedAnnealing {
 		 fileStream5.println(timeRequired+"");
 		//Return the Optimal Assignment Matrix 
 		writeMatrix("MatrixOptimal",optimalAssignmentMatrix);
+		this.ScenarioAllocation = null;
+		this.scenario = null;
 		return  optimalAssignmentMatrix;    
 	}
 	

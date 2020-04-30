@@ -1583,12 +1583,14 @@ public class TaskAssignment {
 		PrintStream fileStream = null;
 		PrintStream fileStream1 = null;
 		PrintStream fileStream3 = null;
+		PrintStream fileStream4 = null;
 		PrintStream fileStream5 = null;
 		try {
 			fileStream = new PrintStream(new File("RequiredTime.txt"));
 			fileStream1 = new PrintStream(new File("CriticalSections.txt"));
 			PrintStream fileStream2 = new PrintStream(new File("PathDelay.txt"));
 			fileStream3 = new PrintStream(new File("CostOptimalSolution.txt"));
+			fileStream4 = new PrintStream(new File("AssignMatrix.txt"));
 			fileStream5 = new PrintStream(new File("TotalTime.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -1662,6 +1664,16 @@ public class TaskAssignment {
 			fileStream.println(timeRequiretoComputePathsDelay+"");
 			fileStream.println(timeRequiredProva+"");
 			
+			fileStream4.println("-------------------");
+			fileStream4.println(costofAssignment+"");
+			fileStream4.println("-------------------");
+			for(int i=0; i< AssignmentMatrix.length;i ++) {
+				for(int j = 0 ; j <AssignmentMatrix[0].length; j++) {
+					for(int s = 0; s < maxNumPaths; s++) {
+						fileStream4.println(AssignmentMatrix[i][j][s]+"--" +(i+1) + "--"+(j+1)+"--"+(s+1));
+					}
+				}
+			}
 			//Compare actual solution and optimal solution finds so far
 			if (costofAssignment < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
 				objectiveOptimalValue = costofAssignment;
@@ -1688,8 +1700,22 @@ public class TaskAssignment {
 		long timeFinal = Calendar.getInstance().getTimeInMillis();
 		long timeRequired = timeFinal- initialTime;
 		 fileStream5.println(timeRequired+"");
+		 fileStream4.println("-------------------");
+		 fileStream4.println("OPTIMAL");
+		fileStream4.println(objectiveOptimalValue+"");
+		fileStream4.println("-------------------");
+		for(int i=0; i< optimalAssignmentMatrix.length;i ++) {
+			for(int j = 0 ; j <optimalAssignmentMatrix[0].length; j++) {
+				for(int s = 0; s < maxNumPaths; s++) {
+					fileStream4.println(optimalAssignmentMatrix[i][j][s]+"--" +(i+1) + "--"+(j+1)+"--"+(s+1));
+				}
+			}
+			}
+		 
 		//Return the Optimal Assignment Matrix 
 		writeMatrix("MatrixOptimal",optimalAssignmentMatrix);
+		this.ScenarioAllocation = null;
+		this.scenario = null;
 		return  optimalAssignmentMatrix;    
 	}
 	
@@ -2002,6 +2028,8 @@ public class TaskAssignment {
 		 fileStream5.println(timeRequired+"");
 		//Return the Optimal Assignment Matrix 
 		 writeMatrix("MatrixOptimal",optimalAssignmentMatrix);
+		this.ScenarioAllocation = null;
+		this.scenario = null;
 		return  optimalAssignmentMatrix;    
 	}
 	
