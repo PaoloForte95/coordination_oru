@@ -174,7 +174,24 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 		return this.robots.get(robotID);
 	}
 	
+	/**
+	 * Return the max footprint of the robots in fleet
+	 */
 	
+	public Coordinate[] getMaxFootprint() {
+		double maxArea = 0.0;
+		int robotIDMax = 1;
+		Set<Integer> robotIDs = robots.keySet();
+		for(Iterator<Integer> it = robotIDs.iterator();it.hasNext();){
+			int robotID = it.next();
+			double robotFootprintArea = getFootprintPolygon(robotID).getArea();
+			if(robotFootprintArea > maxArea) {
+				maxArea = robotFootprintArea;
+				robotIDMax = robotID; 
+			}
+		}
+		return getFootprintPolygon(robotIDMax).getCoordinates();
+	}
 	
 	public ArrayList<SpatialEnvelope> getDrivingEnvelope() {
 		//Collect all driving envelopes and current pose indices
@@ -1598,8 +1615,8 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 						}
 						long timeFinal2 = Calendar.getInstance().getTimeInMillis();
 						long timeRequired2 = timeFinal2- timeInitial2;
-						//fileStream1.println(timeRequired2+" "+ myTE.getRobotID());
-						fileStream1.println(timeRequired2+" ");
+						fileStream1.println(timeRequired2+" "+ myTE.getRobotID());
+						//fileStream1.println(timeRequired2+" ");
 
 					}
 
@@ -1847,19 +1864,6 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 	}
 
 	protected void setupInferenceCallback() {
-		PrintStream fileStream1 = null;
-		PrintStream fileStream3 = null;
-		try {
-			if(fakeCoordinator) {
-				fileStream1 = new PrintStream(new File("ExecutionTimeNominal.txt"));
-			}else {
-				fileStream1 = new PrintStream(new File("ExecutionTime.txt"));
-			}
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		Thread inference = new Thread("Coordinator inference") {
 			private long threadLastUpdate = Calendar.getInstance().getTimeInMillis();
 			@Override
