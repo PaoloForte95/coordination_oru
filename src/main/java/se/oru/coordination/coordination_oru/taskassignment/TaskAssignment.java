@@ -28,7 +28,7 @@ import org.metacsp.utility.logging.MetaCSPLogging;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-
+import com.vividsolutions.jts.geom.Polygon;
 
 import aima.core.util.datastructure.Pair;
 import se.oru.coordination.coordination_oru.AbstractTrajectoryEnvelopeCoordinator;
@@ -65,10 +65,14 @@ public class TaskAssignment {
 		protected double linearWeight = 1;
 		protected double [][][] costValuesMatrix;
 		protected ArrayList <Task> taskQueue = new ArrayList <Task>();
+		protected ArrayList <Task> taskPosponedQueue = new ArrayList <Task>();
 		//Parameters of weights in Optimization Problem
 		protected double pathLengthWeight = 1;
 		protected double arrivalTimeWeight = 0;
 		protected double tardinessWeight = 0;
+		protected double timeOut = Double.POSITIVE_INFINITY;
+		
+		
 		//Number of Idle Robots
 		protected ArrayList <Integer> IDsIdleRobots = new ArrayList <Integer>();
 		protected ArrayList <Integer> IDsRealTasks = new ArrayList <Integer>();
@@ -113,10 +117,34 @@ public class TaskAssignment {
 		protected static Logger metaCSPLogger = MetaCSPLogging.getLogger(TrajectoryEnvelopeCoordinator.class);
 		
 		
+		
+		
 		//Task Allocation Thread Parameters 
-		protected int CONTROL_PERIOD_Task = 15000;
+		protected int CONTROL_PERIOD_Task = 30000;
 		public static int EFFECTIVE_CONTROL_PERIOD_task = 0;
 		protected FleetVisualization viz = null;
+		
+		
+		/**
+		 * Set the timeOut for the optimazion Problem in minutes. The algorithm will search a solution until this time.
+		 * Use number from 0.1 to 0.6 for seconds
+		 * @param timeOus -> timeout value in minutes
+		 * 
+		 */
+		public void setTimeOutinMin(double timeOut) {
+			if(timeOut < 0.1) {
+				throw new Error("Timeout cannot be negative!");
+			}
+			if(timeOut < 0.6) {
+				this.timeOut = timeOut*1000;
+			}
+			else {
+				this.timeOut = timeOut*60*1000;
+			}
+			
+		}
+	
+		
 		
 		/**
 		 * Set the number of paths to reach a goal.
@@ -374,6 +402,10 @@ public class TaskAssignment {
 	}
 	
 	
+	/**
+	 * Evaluate if a task has a deadline. Tasks with the closest deadline are priority.
+	*/
+	
 	private void checkOnTaskDeadline() {
 		ArrayList <Task>taskArray =new ArrayList <Task>();
 		for(int j=0; j < taskQueue.size(); j++ ) {
@@ -389,7 +421,68 @@ public class TaskAssignment {
 		}
 	}
 	
+	/**
+	 * Delete one or multiple tasks from taskQueue in order to avoid blocking
+	*/
 	
+	private void checkOnBlocking(AbstractTrajectoryEnvelopeCoordinator tec) {
+		
+		Coordinate[] taskFootprint = tec.getMaxFootprint();
+		for(int j=0; j < taskQueue.size(); j++ ) {
+			Task taskProva = taskQueue.get(j);
+			double xTask=taskProva.getGoalPose().getX();
+			double yTask=taskProva.getGoalPose().getY();
+			double dist1 = taskFootprint[0].distance(taskFootprint[1])/2;
+			double dist2 = taskFootprint[1].distance(taskFootprint[2])/2;
+			Coordinate Taskfootprint1 = new Coordinate((xTask-dist1),(yTask+dist2));
+			Coordinate Taskfootprint2 = new Coordinate((xTask+dist1),(yTask+dist2));
+			Coordinate Taskfootprint3 = new Coordinate((xTask+dist1),(yTask-dist2));
+			Coordinate Taskfootprint4 = new Coordinate((xTask-dist1),(yTask-dist2));
+			Polygon ll=TrajectoryEnvelope.createFootprintPolygon(Taskfootprint1,Taskfootprint2,Taskfootprint3,Taskfootprint4);
+			
+			for(int k = 0; k < taskQueue.size(); k++ ) {
+				if(k != j) {
+					Task taskProva2 = taskQueue.get(k);
+					double xTask2=taskProva2.getGoalPose().getX();
+					double yTask2=taskProva2.getGoalPose().getY();
+					Coordinate Taskfootprint5 = new Coordinate((xTask2-dist1),(yTask2+dist1));
+					Coordinate Taskfootprint6 = new Coordinate((xTask2+dist1),(yTask2+dist2));
+					Coordinate Taskfootprint7 = new Coordinate((xTask2+dist1),(yTask2-dist2));
+					Coordinate Taskfootprint8 = new Coordinate((xTask2-dist1),(yTask2-dist2));
+					Polygon gg=TrajectoryEnvelope.createFootprintPolygon(Taskfootprint5,Taskfootprint6,Taskfootprint7,Taskfootprint8);
+					if(ll.intersects(gg) ) {
+						if(taskProva2.getDeadline() == -1 && taskProva.getDeadline() == -1) {
+							taskQueue.remove(k);
+							taskPosponedQueue.add(taskProva2);
+						}else {
+							if (taskProva2.getDeadline() == -1 && taskProva.getDeadline() != -1){
+								taskQueue.remove(k);
+								taskPosponedQueue.add(taskProva2);
+
+							}else if(taskProva2.getDeadline() != -1 && taskProva.getDeadline() == -1) {
+								taskQueue.remove(j);
+								taskPosponedQueue.add(taskProva);
+								j -=1;
+								break;
+							}else {
+								if(taskProva2.getDeadline() > taskProva.getDeadline() ) {
+									taskQueue.remove(k);
+									taskPosponedQueue.add(taskProva2);
+								}else {
+									taskQueue.remove(j);
+									taskPosponedQueue.add(taskProva);
+									j -=1;
+									break;
+								}	
+							}
+						}
+						
+					}
+					
+				}
+			}
+		}
+	}
 	
 	/**
 	 * Enable and initialize the fleetmaster library to estimate precedences to minimize the overall completion time.
@@ -547,6 +640,15 @@ public class TaskAssignment {
 	 */
 	public boolean removeTask(Task task) {
 		return taskQueue.remove(task);
+	}
+	
+	/**
+	 * Remove the task in the index position from the queue 
+	 * @param task The task to remove
+	 * @return Task that is removed
+	 */
+	public Task removeTask(int index) {
+		return taskQueue.remove(index);
 	}
 	
 	
@@ -922,7 +1024,7 @@ public class TaskAssignment {
 		this.sumArrivalTime = sumArrivalTime;
 		
 		//Return the cost of path length	
-		Missions.saveScenario("ProvaScenario");
+
 		return PAllAug;
 		}
 	
@@ -979,19 +1081,7 @@ public class TaskAssignment {
 				 for(int path = 0;path < maxNumPaths; path++) {
 					 final int pathID = path;
 					  if(typesAreEqual) { // only if robot and typoe have the same types
-						  /*
-							String yamlFile = "maps/map-empty.yaml";
-							//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
-							ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
-							rsp.setRadius(0.2);
-							rsp.setFootprint(tec.getFootprint(robotID));
-							rsp.setTurningRadius(4.0);
-							rsp.setDistanceBetweenPathPoints(0.5);
-							rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", yamlFile));
-							double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
-							rsp.setMapResolution(res);
-							rsp.setPlanningTimeInSecs(2);
-							*/
+	
 						
 							new Thread("Robot" + robotID) {
 								public void run() {
@@ -1525,6 +1615,10 @@ public class TaskAssignment {
 	 */
 	public MPSolver buildOptimizationProblemWithBNormalized(AbstractTrajectoryEnvelopeCoordinator tec) {
 		this.initialTime = 	Calendar.getInstance().getTimeInMillis();
+		
+		
+		//Perform a check in order to avoid blocking
+		checkOnBlocking(tec);
 		//Take the number of tasks
 		numTask = taskQueue.size();
 		//Get free robots and their IDs
@@ -1606,12 +1700,14 @@ public class TaskAssignment {
 		double costBOptimal = 0;
 		double costFOptimal = 0;
 		//Solve the optimization problem
-		if(ScenarioAllocation!= null) {
+		if(ScenarioAllocation != null) {
 			return this.ScenarioAllocation;
 		}
 		
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
-		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
+		long timeOffsetInitial = Calendar.getInstance().getTimeInMillis();
+		long timeOffset = 0;
+		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE && timeOffset < timeOut) {
 			//Evaluate an optimal assignment that minimize only the B function
 			timeProva2 = Calendar.getInstance().getTimeInMillis();
 			resultStatus = optimizationProblem.solve();
@@ -1693,6 +1789,8 @@ public class TaskAssignment {
 			optimizationProblem = constraintOnCostSolution(optimizationProblem,costofAssignmentForConstraint);
 			//Add the constraint to actual solution in order to consider this solution as already found  
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
+			long timeOffsetFinal = Calendar.getInstance().getTimeInMillis();
+			timeOffset = timeOffsetFinal - timeOffsetInitial;
 			
 		}
 		fileStream3.println(costBOptimal+"");
@@ -1710,7 +1808,7 @@ public class TaskAssignment {
 					fileStream4.println(optimalAssignmentMatrix[i][j][s]+"--" +(i+1) + "--"+(j+1)+"--"+(s+1));
 				}
 			}
-			}
+		}
 		 
 		//Return the Optimal Assignment Matrix 
 		writeMatrix("MatrixOptimal",optimalAssignmentMatrix);
@@ -2374,6 +2472,10 @@ public class TaskAssignment {
 						TaskAllocation(assignmentMatrix,coordinator);
 						System.out.print("Task to be completed "+ taskQueue.size());
 						solverOnline.clear();
+						if(taskPosponedQueue.size() !=0) {
+							taskQueue.addAll(taskPosponedQueue);
+							taskPosponedQueue.removeAll(taskPosponedQueue);
+						}
 					}
 
 					//Sleep a little...
