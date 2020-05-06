@@ -905,7 +905,7 @@ public class TaskAssignmentSimulatedAnnealing {
 		this.sumArrivalTime = sumArrivalTime;
 		
 		//Return the cost of path length	
-		Missions.saveScenario("ProvaScenario");
+
 		return PAllAug;
 		}
 	
