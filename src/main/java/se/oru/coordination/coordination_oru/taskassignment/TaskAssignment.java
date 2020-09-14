@@ -1538,7 +1538,8 @@ public class TaskAssignment {
 		//Each Robot can be assign only to a Task	    
 		 for (int i = 0; i < numRobotAug; i++) {
 			 //Initialize the constraint
-			 MPConstraint c0 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY, 1);
+			 //MPConstraint c0 = optimizationProblem.makeConstraint(-Double.POSITIVE_INFINITY, 1);
+			 MPConstraint c0 = optimizationProblem.makeConstraint(1, 1);
 			 for (int j = 0; j < numTasksAug; j++) {
 				 for(int s = 0; s < maxNumPaths; s++) {
 					 //Build the constraint
@@ -1679,6 +1680,7 @@ public class TaskAssignment {
 		PrintStream fileStream3 = null;
 		PrintStream fileStream4 = null;
 		PrintStream fileStream5 = null;
+		PrintStream fileStream6 = null;
 		try {
 			fileStream = new PrintStream(new File("RequiredTime.txt"));
 			fileStream1 = new PrintStream(new File("CriticalSections.txt"));
@@ -1686,6 +1688,7 @@ public class TaskAssignment {
 			fileStream3 = new PrintStream(new File("CostOptimalSolution.txt"));
 			fileStream4 = new PrintStream(new File("AssignMatrix.txt"));
 			fileStream5 = new PrintStream(new File("TotalTime.txt"));
+			fileStream6 = new PrintStream(new File("OptimizationProblem.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1699,14 +1702,19 @@ public class TaskAssignment {
 		double objectiveOptimalValue = 100000000;
 		double costBOptimal = 0;
 		double costFOptimal = 0;
+		
+		fileStream6.println(optimizationProblem.numConstraints()+ "");
 		//Solve the optimization problem
 		if(ScenarioAllocation != null) {
 			return this.ScenarioAllocation;
 		}
 		
+		
+		
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
 		long timeOffsetInitial = Calendar.getInstance().getTimeInMillis();
 		long timeOffset = 0;
+		int cont = 1;
 		while(resultStatus != MPSolver.ResultStatus.INFEASIBLE && timeOffset < timeOut) {
 			//Evaluate an optimal assignment that minimize only the B function
 			timeProva2 = Calendar.getInstance().getTimeInMillis();
@@ -1791,6 +1799,7 @@ public class TaskAssignment {
 			optimizationProblem = constraintOnPreviousSolution(optimizationProblem,AssignmentMatrix);
 			long timeOffsetFinal = Calendar.getInstance().getTimeInMillis();
 			timeOffset = timeOffsetFinal - timeOffsetInitial;
+			cont +=1;
 			
 		}
 		fileStream3.println(costBOptimal+"");
@@ -1809,7 +1818,7 @@ public class TaskAssignment {
 				}
 			}
 		}
-		 
+		fileStream6.println(cont+ "");
 		//Return the Optimal Assignment Matrix 
 		writeMatrix("MatrixOptimal",optimalAssignmentMatrix);
 		this.ScenarioAllocation = null;
