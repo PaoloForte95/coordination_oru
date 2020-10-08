@@ -63,8 +63,8 @@ extern "C" bool plan_multiple_circles(const char* mapFilename, double mapResolut
 		  return false;
 	  }
 
-	  ob::PlannerPtr planner(new og::RRTConnect(si));
-	  //ob::PlannerPtr planner(new og::RRTstar(si));
+	  //ob::PlannerPtr planner(new og::RRTConnect(si));
+	  ob::PlannerPtr planner(new og::RRTstar(si));
 	  //ob::PlannerPtr planner(new og::TRRT(si));
 	  //ob::PlannerPtr planner(new og::SST(si));
 	  //ob::PlannerPtr planner(new og::LBTRRT(si));
