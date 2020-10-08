@@ -865,6 +865,8 @@ public class TaskAssignment {
 			//Evaluate the path from the Robot Starting Pose to Task End Pose
 			int taskIndex = IDsRealTasks.indexOf(taskID);
 			AbstractMotionPlanner rsp =  tec.getMotionPlanner(robotID).getCopy();
+			
+			
 			rsp.setStart(rr.getPose());
 			rsp.setGoals(taskQueue.get(taskIndex).getStartPose(),taskQueue.get(taskIndex).getGoalPose());
 			rsp.setFootprint(tec.getFootprint(robotID));
@@ -874,12 +876,15 @@ public class TaskAssignment {
 				//the path to reach target end not exits
 				pathsToTargetGoal.put(robotID*numTaskAug*maxNumPaths+taskID*maxNumPaths+path, null);		
 				//Infinity cost is returned 
+				
 				return pathLength;
+				
 			}
 			
 			//If the path exists
 			//Take the Pose Steering representing the path
 			PoseSteering[] pss = rsp.getPath();
+		
 			//Add the path to the FleetMaster Interface -> this is necessary for F function
 			addPath(robotID, pss.hashCode(), pss, null, tec.getFootprint(robotID));
 			//Save the path to Task in the path set
@@ -1681,6 +1686,7 @@ public class TaskAssignment {
 		PrintStream fileStream4 = null;
 		PrintStream fileStream5 = null;
 		PrintStream fileStream6 = null;
+		PrintStream fileStream7 = null;
 		try {
 			fileStream = new PrintStream(new File("RequiredTime.txt"));
 			fileStream1 = new PrintStream(new File("CriticalSections.txt"));
@@ -1689,6 +1695,7 @@ public class TaskAssignment {
 			fileStream4 = new PrintStream(new File("AssignMatrix.txt"));
 			fileStream5 = new PrintStream(new File("TotalTime.txt"));
 			fileStream6 = new PrintStream(new File("OptimizationProblem.txt"));
+			fileStream7 = new PrintStream(new FileOutputStream("AnalysisProblem.txt",true));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1710,7 +1717,7 @@ public class TaskAssignment {
 		}
 		
 		
-		
+		fileStream7.println("Tasks>> "+ IDsRealTasks.size() + " Robot>> " + IDsIdleRobots.size() );
 		MPSolver.ResultStatus resultStatus = optimizationProblem.solve();
 		long timeOffsetInitial = Calendar.getInstance().getTimeInMillis();
 		long timeOffset = 0;
@@ -2055,7 +2062,7 @@ public class TaskAssignment {
 					}
 				}
 			}
-			//solutionAlreadyFound = false;
+			solutionAlreadyFound = false;
 			if(!solutionAlreadyFound) {
 				fileStream4.println("-------------------");
 				fileStream4.println("Solution not already found" + solutionAlreadyFound);
