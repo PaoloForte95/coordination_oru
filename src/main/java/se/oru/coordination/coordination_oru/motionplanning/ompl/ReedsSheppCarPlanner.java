@@ -27,7 +27,7 @@ public class ReedsSheppCarPlanner extends AbstractMotionPlanner {
 	private IntByReference pathLength = null;
 	private double distanceBetweenPathPoints = 0.5;
 	private double turningRadius = 1.0;
-	private double planningTimeInSecs = 30.0;
+	private double planningTimeInSecs = 5.0;
 	private Coordinate[] collisionCircleCenters = null;
 	
 	public static ReedsSheppCarPlannerLib INSTANCE = null;
