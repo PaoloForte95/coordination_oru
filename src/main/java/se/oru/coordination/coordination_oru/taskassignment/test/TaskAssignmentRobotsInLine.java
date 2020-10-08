@@ -96,15 +96,16 @@ public class TaskAssignmentRobotsInLine {
 		//JTSDrawingPanelVisualization viz = new JTSDrawingPanelVisualization();
 		//viz.setSize(1024, 768);
 		BrowserVisualization viz = new BrowserVisualization();
-		viz.setInitialTransform(20, 0, 0);
+		viz.setInitialTransform(30,0,0);
 		tec.setVisualization(viz);
 		tec.setUseInternalCriticalPoints(false);
 
 		
 		String yamlFile = "maps/map-empty.yaml";
-		Pose startPoseRobot1 = new Pose(20.0,6.0,0.0);
-		Pose startPoseRobot2 = new Pose(16.0,6.0,0.0);
-		Pose startPoseRobot3 = new Pose(12.0,6.0,0.0);
+		viz.setMap(yamlFile);
+		Pose startPoseRobot1 = new Pose(16.0,6.0,0.0);
+		Pose startPoseRobot2 = new Pose(12.0,6.0,0.0);
+		Pose startPoseRobot3 = new Pose(8.0,6.0,0.0);
 	
 
 		Robot robot1 = new Robot(1);
@@ -118,12 +119,12 @@ public class TaskAssignmentRobotsInLine {
 	
 
 	
-		Pose startPoseGoal1 = new Pose(24.0,6.0,0.0);
-		Pose startPoseGoal2 = new Pose(24.0,6.0,0.0);
-		Pose startPoseGoal3 = new Pose(24.0,6.0,0.0);
-		Pose goalPoseRobot1 = new Pose(34.0,6.0,0.0);
-		Pose goalPoseRobot2 = new Pose(30.0,6.0,0.0);
-		Pose goalPoseRobot3 = new Pose(26.0,6.0,0.0);
+		Pose startPoseGoal1 = new Pose(20.0,6.0,0.0);
+		Pose startPoseGoal2 = new Pose(20.0,6.0,0.0);
+		Pose startPoseGoal3 = new Pose(20.0,6.0,0.0);
+		Pose goalPoseRobot1 = new Pose(30.0,6.0,0.0);
+		Pose goalPoseRobot2 = new Pose(26.0,6.0,0.0);
+		Pose goalPoseRobot3 = new Pose(22.0,6.0,0.0);
 		
 		
 		Task task1 = new Task(1,startPoseGoal1,goalPoseRobot1,1);

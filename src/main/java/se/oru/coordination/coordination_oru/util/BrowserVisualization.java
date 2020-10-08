@@ -277,7 +277,7 @@ public class BrowserVisualization implements FleetVisualization {
 		Geometry circle1 = createCircle(start, 1);
 		Geometry circle2 = createCircle(goal, 1);
 		Geometry circle3 = createCircle(goal, 1);
-		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, color, -1, true, null) + "}";
+		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, "blue", -1, true, null) + "}";
 		String jsonString1 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name1, circle1, "#ffffff", -1, true, null) + "}";
 		String jsonString2 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name2, circle2, color, -1, true, null) + "}";
 		String jsonString3 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name2, circle3, "#ffffff", -1, true, null) + "}";

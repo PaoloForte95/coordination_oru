@@ -190,8 +190,8 @@ public class TestScalability {
 		
 		public static void main(String[] args) throws InterruptedException {
 			long initialTime = 	Calendar.getInstance().getTimeInMillis();
-			int numRobot = 10;
-			int numTask = 10;
+			int numRobot = 3;
+			int numTask = 3;
 			int numPath = 1;
 			TestScalability test = new TestScalability(numRobot,numTask,numPath);
 			double [][][]pathMatrix = new double[numRobot][numTask][numPath];
@@ -223,6 +223,7 @@ public class TestScalability {
 			System.out.println("Number of Task: " + numTask);
 			System.out.println("Number of Path: " + numPath);
 			System.out.println("Number of Path: " + (Calendar.getInstance().getTimeInMillis()<Double.POSITIVE_INFINITY));
+			
 		};
 
 }

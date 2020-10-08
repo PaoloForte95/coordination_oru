@@ -66,9 +66,16 @@ public class JTSDrawingPanelVisualization implements FleetVisualization {
 		double y = rr.getPose().getY();
 		double theta = rr.getPose().getTheta();
 		String name = "R"+rr.getRobotID();
+		//if(rr.getRobotID()==1) {
+		//	name = "Rx";
+		//}
+		//else if(rr.getRobotID()==2){
+			//name = "Ri";
+		//}else
+			//name = "R"+rr.getRobotID();
 		if (extraStatusInfo != null) {
 			for (String st : extraStatusInfo) {
-				name += ("\\"+st);
+			name += ("\\"+st);
 			}
 		}
 		panel.addGeometry(name, TrajectoryEnvelope.getFootprint(fp, x, y, theta), false, true, false, "#FF0000");
@@ -177,6 +184,7 @@ public class JTSDrawingPanelVisualization implements FleetVisualization {
 	public void addEnvelope(TrajectoryEnvelope te) {
 		GeometricShapeDomain dom = (GeometricShapeDomain)te.getEnvelopeVariable().getDomain();
 		panel.addGeometry("_"+te.getID(), dom.getGeometry(), true, false);
+		//panel.addGeometry("_"+te.getID(), dom.getGeometry(), true, true);
 		panel.setPermanent("_"+te.getID());
 	}
 

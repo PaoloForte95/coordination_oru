@@ -93,6 +93,11 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		Pose startPoseRobot4 = new Pose(16.0,30.0,-Math.PI/2);
 		Pose startPoseRobot5 = new Pose(5.0,20.0,Math.PI/2);
 
+		
+	
+
+		
+		
 		Robot robot1 = new Robot(1, 1);
 		Robot robot2 = new Robot(2, 1);
 		Robot robot3 = new Robot(3, 1);
@@ -108,11 +113,11 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		tec.addRobot(robot5, startPoseRobot5);
 		
 		String yamlFile = "maps/map-empty.yaml";
-	
 		
 		
 		
-	
+		
+
 		Pose startPoseGoal1 = new Pose(16.0,25.0,0.0);
 		Pose startPoseGoal2 = new Pose(25.0,7.0,0.0);
 		Pose startPoseGoal3 = new Pose(4.0,8.0,0.0);
@@ -129,8 +134,21 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		Pose goalPoseGoal5 = new Pose(32.0,25.0,Math.PI/2);
 		
 		Pose goalPoseGoal6 = new Pose(4.0,30.0,Math.PI/2);
+		
+		
+	
 
 		
+
+		
+		
+		//Pose startPoseGoal4 = new Pose(27.0,20.0,Math.PI/2);
+		//Pose startPoseGoal5 = new Pose(26.0,5.0,0.0);
+		
+	
+		//Pose goalPoseRobot4 = new Pose(48.0,27.0,0.0);
+		//Pose goalPoseRobot5 = new Pose(52.0,6.0,0.0);
+
 		Task task1 = new Task(1,startPoseGoal1,goalPoseGoal1,1);
 		Task task2 = new Task(2,startPoseGoal2,goalPoseGoal2,1);
 		Task task3 = new Task(3,startPoseGoal3,goalPoseGoal3,1);
@@ -138,7 +156,7 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		Task task4 = new Task(4,startPoseGoal4,goalPoseGoal4,1);
 		Task task5 = new Task(5,startPoseGoal5,goalPoseGoal5,1);
 		
-		Task task6 = new Task(6,startPoseGoal6,goalPoseGoal6,1);
+		//Task task6 = new Task(6,startPoseGoal6,goalPoseGoal6,1);
 	
 		//TaskAssignmentSimulatedAnnealing assignmentProblem = new TaskAssignmentSimulatedAnnealing();
 		TaskAssignment assignmentProblem = new TaskAssignment();
@@ -160,6 +178,8 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 				rsp.setDistanceBetweenPathPoints(0.5);
 				rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-empty.yaml"));
 				double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
+				//rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/CentroPiaggio.yaml"));
+				//double res = Double.parseDouble(Missions.getProperty("resolution", "maps/CentroPiaggio.yaml"));
 				rsp.setMapResolution(res);
 				rsp.setPlanningTimeInSecs(2);
 				tec.setMotionPlanner(robotID, rsp);
@@ -174,12 +194,12 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 				{{1.0},{0.0},{0.0},{0.0},{0.0}}};
 		
 		//Solve the problem to find some feasible solution
-		double alpha = 0.0;
+		double alpha = 1.0;
 		
-		tec.setFakeCoordinator(true);
+		//tec.setFakeCoordinator(true);
 		tec.setAvoidDeadlocksGlobally(true);
-		assignmentProblem.LoadScenario("ProvaScenario");
-		assignmentProblem.LoadScenarioAllocation(optimalAllocation);
+		//assignmentProblem.LoadScenario("ProvaScenario");
+		//assignmentProblem.LoadScenarioAllocation(optimalAllocation);
 		
 		
 		assignmentProblem.setmaxNumPaths(numPaths);
@@ -189,9 +209,9 @@ public class TaskAssignmentMultiRobotsWithoutMap {
 		assignmentProblem.setCoordinator(tec);
 		assignmentProblem.setLinearWeight(alpha);
 		assignmentProblem.setCostFunctionsWeight(1.0, 0.0, 0.0);
-		//MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
-		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
-		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
+		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
+		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
 		
 		for (int i = 0; i < assignmentMatrix.length; i++) {
 			for (int j = 0; j < assignmentMatrix[0].length; j++) {

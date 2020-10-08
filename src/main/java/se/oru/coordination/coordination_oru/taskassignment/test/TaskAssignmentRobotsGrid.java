@@ -1,6 +1,8 @@
 package se.oru.coordination.coordination_oru.taskassignment.test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -12,6 +14,7 @@ import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope.SpatialEnvelope;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Polygon;
 
@@ -100,32 +103,68 @@ public class TaskAssignmentRobotsGrid {
 		viz.setInitialTransform(20, 0, 0);
 		tec.setVisualization(viz);
 		tec.setUseInternalCriticalPoints(false);
-
+		
 		String yamlFile = "maps/map-empty.yaml";
+		viz.setMap(yamlFile);
 		//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
-
+		ArrayList <Task> taskQueue = new ArrayList <Task>();
 		
 		Random rand = new Random();
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		int numPaths = 1;
 		double delta = 0;
-		for(int i = 1; i<= 11; i++) {
+		for(int i = 1; i<= 6; i++) {
 			
 			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
-			int robotType = rand.nextInt(2)+1;
-			Robot robot = new Robot(i,1);
+			int robotType = 1;
+			if (i==3) {
+				robotType = 2;
+			}
+			else if(i==4){
+				robotType = 2;
+			}
+			else if(i==6){
+				robotType = 2;
+			}
+			Robot robot = new Robot(i,robotType);
 			tec.addRobot(robot,startPoseRobot);
 			Pose startPoseGoal = new Pose(15.0,(6.0 + delta),0.0);
 			Pose goalPoseRobot = new Pose(30.0 ,(6.0 + delta) ,0.0);
-			int taskType = rand.nextInt(2)+1;
-			Task task = new Task(i,startPoseGoal,goalPoseRobot,1);
+	
+			//int taskType = rand.nextInt(2)+1;
+			int taskType = 1;
+			if(i==2) {
+				taskType = 2;
+			}
+			else if(i==4){
+				taskType = 2;
+			}
+			else if(i==6){
+				taskType = 2;
+			}
+			Task task = new Task(i,startPoseGoal,goalPoseRobot,taskType);
 			assignmentProblem.addTask(task);
-			delta += 6.0;
+			taskQueue.add(task);
+			delta += 3.0;
+			
 		}
 		
 		
+		PrintStream fileStream = null;
+
+		try {
+			fileStream = new PrintStream(new File("ProvaTask.txt"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+
 		for (int robotID : tec.getIdleRobots()) {
 			Coordinate[] footprint = tec.getFootprint(robotID);
+	
+			
 			//Instantiate a simple motion planner (no map given here, otherwise provide yaml file)
 			ReedsSheppCarPlanner rsp = new ReedsSheppCarPlanner();
 			rsp.setRadius(0.2);
@@ -133,22 +172,60 @@ public class TaskAssignmentRobotsGrid {
 			rsp.setTurningRadius(4.0);
 			rsp.setDistanceBetweenPathPoints(0.5);
 			rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-empty.yaml"));
+			//rsp.setMapFilename(yamlFile);
 			double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
 			rsp.setMapResolution(res);
 			rsp.setPlanningTimeInSecs(2);
 			tec.setMotionPlanner(robotID, rsp);
 		}
-	
+		//tec.setFakeCoordinator(true);
 		//Solve the problem to find some feasible solution
-		double alpha = 0.6;
+		double alpha = 0.5;
+		double timeOut = 15*1000;
+		
+		
+		double [][][]optimalAllocation = {{{1.0},{0.0},{0.0},{0.0},{0.0},{0.0}},
+				{{0.0},{1.0},{0.0},{0.0},{0.0},{0.0}},
+				{{0.0},{0.0},{1.0},{0.0},{0.0},{0.0}},
+				{{0.0},{0.0},{0.0},{1.0},{0.0},{0.0}},
+				{{0.0},{0.0},{0.0},{0.0},{1.0},{0.0}},
+				{{0.0},{0.0},{0.0},{0.0},{0.0},{1.0}}};
+		
+		//Solve the problem to find some feasible solution
+	
+		
+		//tec.setFakeCoordinator(true);
+		tec.setAvoidDeadlocksGlobally(true);
+		assignmentProblem.LoadScenario("ProvaScenario");
+		//assignmentProblem.LoadScenarioAllocation(optimalAllocation);
+		
+		
+		
 		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
 		assignmentProblem.setFleetVisualization(viz);
 		assignmentProblem.setCoordinator(tec);
 		assignmentProblem.setLinearWeight(alpha);
-		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);	
-		assignmentProblem.startTaskAssignment(tec);
+		//assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);	
+		//assignmentProblem.setTimeOutinMin(timeOut);
+		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
+		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
+		
+		for (int i = 0; i < assignmentMatrix.length; i++) {
+			for (int j = 0; j < assignmentMatrix[0].length; j++) {
+				for(int s = 0; s < numPaths; s++) {
+					System.out.println("x"+"["+(i+1)+","+(j+1)+","+(s+1)+"]"+" is "+ assignmentMatrix[i][j][s]);
+					if(assignmentMatrix[i][j][s] == 1) {
+						System.out.println("Robot " +(i+1) +" is assigned to Task "+ (j+1)+" throw Path " + (s+1));
+						
+					}
+				}
+			} 
+		}
+		assignmentProblem.TaskAllocation(assignmentMatrix,tec);	
+		
 		
 	}
 }

@@ -170,8 +170,23 @@ public abstract class AbstractTrajectoryEnvelopeCoordinator {
 		setFootprint(robot.getRobotID(),robot.getFootprint());
 	}
 
+	
+	
 	public Robot getRobot(int robotID) {
 		return this.robots.get(robotID);
+	}
+	
+	
+	public ArrayList<Integer>  getRobotType(int type) {
+		ArrayList<Integer> Robots = new ArrayList<Integer>();
+		Set<Integer> robotIDs = robots.keySet();
+		for(Iterator<Integer> it = robotIDs.iterator();it.hasNext();){
+			int robotID = it.next();
+			if(robots.get(robotID).getRobotType() == type) {
+				Robots.add(robotID);
+			}
+		}
+		return Robots;
 	}
 	
 	/**

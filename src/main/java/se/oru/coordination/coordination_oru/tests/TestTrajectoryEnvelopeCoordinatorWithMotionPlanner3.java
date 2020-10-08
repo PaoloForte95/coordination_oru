@@ -57,7 +57,11 @@ public class TestTrajectoryEnvelopeCoordinatorWithMotionPlanner3 {
 		//(the default assumes that robots can always stop)
 		tec.setForwardModel(1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
 		tec.setForwardModel(2, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
+        
+		
+		tec.setForwardModel(3, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod()));
 
+		
 		Coordinate footprint1 = new Coordinate(-1.0,0.5);
 		Coordinate footprint2 = new Coordinate(1.0,0.5);
 		Coordinate footprint3 = new Coordinate(1.0,-0.5);
@@ -71,9 +75,10 @@ public class TestTrajectoryEnvelopeCoordinatorWithMotionPlanner3 {
 		String yamlFile = "maps/map-empty.yaml";
 		JTSDrawingPanelVisualization viz = new JTSDrawingPanelVisualization(yamlFile);
 		tec.setVisualization(viz);
-
+		//viz.setSize(1800, 900);
+		
 		tec.setUseInternalCriticalPoints(false);
-
+		tec.setFakeCoordinator(true);
 		//MetaCSPLogging.setLevel(tec.getClass().getSuperclass(), Level.FINEST);
 
 		//Instantiate a simple motion planner
@@ -87,32 +92,37 @@ public class TestTrajectoryEnvelopeCoordinatorWithMotionPlanner3 {
 		rsp.setDistanceBetweenPathPoints(0.5);
 
 		ArrayList<Pose> posesRobot1 = new ArrayList<Pose>();
-		posesRobot1.add(new Pose(2.0,10.0,0.0));
-		posesRobot1.add(new Pose(10.0,13.0,0.0));
-		posesRobot1.add(new Pose(18.0,10.0,0.0));
-		posesRobot1.add(new Pose(26.0,13.0,0.0));
-		posesRobot1.add(new Pose(34.0,10.0,0.0));
-		posesRobot1.add(new Pose(42.0,13.0,0.0));
-		posesRobot1.add(new Pose(50.0,10.0,0.0));
+		posesRobot1.add(new Pose(2.0,8.0,0.0));
+		posesRobot1.add(new Pose(10.0,11.0,0.0));
+		posesRobot1.add(new Pose(18.0,8.0,0.0));
+		posesRobot1.add(new Pose(26.0,11.0,0.0));
+		//posesRobot1.add(new Pose(34.0,10.0,0.0));
+		//posesRobot1.add(new Pose(42.0,13.0,0.0));
+		//posesRobot1.add(new Pose(50.0,10.0,0.0));
 
 		ArrayList<Pose> posesRobot2 = new ArrayList<Pose>();
+		//Robot 1 and Robot 2 in opposite direction
 		//Robot 1 and robot 2 in opposing directions
-		posesRobot2.add(new Pose(50.0,13.0,Math.PI));
-		posesRobot2.add(new Pose(42.0,10.0,Math.PI));
-		posesRobot2.add(new Pose(34.0,13.0,Math.PI));
-		posesRobot2.add(new Pose(26.0,10.0,Math.PI));
-		posesRobot2.add(new Pose(18.0,13.0,Math.PI));
-		posesRobot2.add(new Pose(10.0,10.0,Math.PI));
-		posesRobot2.add(new Pose(2.0,13.0,Math.PI));
+		//posesRobot2.add(new Pose(50.0,13.0,Math.PI));
+		//posesRobot2.add(new Pose(42.0,10.0,Math.PI));
+		//posesRobot2.add(new Pose(34.0,13.0,Math.PI));
+		//posesRobot2.add(new Pose(26.0,10.0,Math.PI));
+		//posesRobot2.add(new Pose(18.0,13.0,Math.PI));
+		//posesRobot2.add(new Pose(10.0,10.0,Math.PI));
+		//posesRobot2.add(new Pose(2.0,13.0,Math.PI));
 		
 //		//Robot 1 and Robot 2 in same direction
-//		posesRobot2.add(new Pose(2.0,13.0,0.0));
-//		posesRobot2.add(new Pose(10.0,10.0,0.0));
-//		posesRobot2.add(new Pose(18.0,13.0,0.0));
-//		posesRobot2.add(new Pose(26.0,10.0,0.0));
-//		posesRobot2.add(new Pose(34.0,13.0,0.0));
-//		posesRobot2.add(new Pose(42.0,10.0,0.0));
-//		posesRobot2.add(new Pose(50.0,13.0,0.0));
+		posesRobot2.add(new Pose(2.0,11.0,0.0));
+		posesRobot2.add(new Pose(10.0,8.0,0.0));
+		posesRobot2.add(new Pose(18.0,11.0,0.0));
+		posesRobot2.add(new Pose(26.0,8.0,0.0));
+		//posesRobot2.add(new Pose(34.0,13.0,0.0));
+		//posesRobot2.add(new Pose(42.0,10.0,0.0));
+		//posesRobot2.add(new Pose(50.0,13.0,0.0));
+		
+		ArrayList<Pose> posesRobot3 = new ArrayList<Pose>();
+		posesRobot3.add(new Pose(2.0,15.0,0.0));
+		
 		
 		//Place robots in their initial locations (looked up in the data file that was loaded above)
 		// -- creates a trajectory envelope for each location, representing the fact that the robot is parked
@@ -120,6 +130,8 @@ public class TestTrajectoryEnvelopeCoordinatorWithMotionPlanner3 {
 		// -- each trajectory envelope is the footprint of the corresponding robot in that pose
 		tec.placeRobot(1, posesRobot1.get(0));
 		tec.placeRobot(2, posesRobot2.get(0));
+		
+		tec.placeRobot(3, posesRobot3.get(0));
 
 		rsp.setStart(posesRobot1.get(0));
 		rsp.setGoals(posesRobot1.subList(1, posesRobot1.size()).toArray(new Pose[posesRobot1.size()-1]));

@@ -54,12 +54,21 @@ public class Robot {
 	  * Create a new {@link Robot}; footprint is set to default footprint and default type is = 1
 	  * @param robotID ->  The ID of the Robot
 	  * @param RobotType -> The type of the Robot
-	  * @param startingPosition -> The Starting Position of the Robot.
 	  */
 	 public Robot(int robotID,int robotType) {
 		 this(robotID,robotType,DEFAULT_FOOTPRINT,DEFAULT_FORWARD_MODEL);
 	 }
 	 
+	 
+	 /**
+	  * Create a new {@link Robot}; footprint is set to default footprint and default type is = 1
+	  * @param robotID ->  The ID of the Robot
+	  * @param RobotType -> The type of the Robot
+	  * @param footprint -> The footprint of the robot
+	  */
+	 public Robot(int robotID,int robotType,Coordinate[] footprint) {
+		 this(robotID,robotType,footprint,DEFAULT_FORWARD_MODEL);
+	 }
 
 	 public int getRobotID() {
 		 return this.robotID;

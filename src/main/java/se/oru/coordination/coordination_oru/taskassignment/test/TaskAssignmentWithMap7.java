@@ -101,6 +101,8 @@ public class TaskAssignmentWithMap7 {
 		tec.setVisualization(viz);
 		tec.setUseInternalCriticalPoints(false);
 		viz.setMap("maps/map-partial-2.yaml");
+		
+		
 		Pose startPoseRobot1 = new Pose(20.0,15.0,0.0);
 		Pose startPoseRobot2 = new Pose(12.0,28.0,0.0);
 		Pose startPoseRobot3 = new Pose(8.0,20.0,0.0);
@@ -126,8 +128,8 @@ public class TaskAssignmentWithMap7 {
 		Pose startPoseGoal4 = new Pose(27.0,20.0,Math.PI/2);
 		Pose startPoseGoal5 = new Pose(26.0,5.0,0.0);
 		
-		Pose goalPoseRobot1 = new Pose(40.0,8.0,0.0);
-		Pose goalPoseRobot2 = new Pose(45.0,15.0,0.0);
+		Pose goalPoseRobot1 = new Pose(41.0,4.0,0.0);
+		Pose goalPoseRobot2 = new Pose(46.0,13.0,0.0);
 		Pose goalPoseRobot3 = new Pose(48.0,4.0,0.0);
 		Pose goalPoseRobot4 = new Pose(48.0,27.0,0.0);
 		Pose goalPoseRobot5 = new Pose(40.0,6.0,0.0);
@@ -138,13 +140,31 @@ public class TaskAssignmentWithMap7 {
 		Task task4 = new Task(4,startPoseGoal4,goalPoseRobot4,1);
 		Task task5 = new Task(5,startPoseGoal5,goalPoseRobot5,1);
 
+		
+		
+		
+		
+		
+		double [][][]optimalAllocation = {{{0.0},{0.0},{0.0},{1.0},{0.0}},
+				{{0.0},{0.0},{0.0},{0.0},{1.0}},
+				{{0.0},{1.0},{0.0},{0.0},{0.0}},
+				{{1.0},{0.0},{0.0},{0.0},{0.0}},
+				{{0.0},{0.0},{1.0},{0.0},{0.0}}}
+
+;
 	    ///////////////////////////////////////////////////////
 		//Solve the problem to find some feasible solution
-		tec.setFakeCoordinator(true);
-		//tec.setAvoidDeadlocksGlobally(true);
-		double alpha = 0.0;
-		int numPaths = 1;
 		TaskAssignment assignmentProblem = new TaskAssignment();
+
+		double alpha = 0.8;
+
+		//tec.setFakeCoordinator(true);
+		assignmentProblem.LoadScenarioAllocation(optimalAllocation);
+		
+		//tec.setAvoidDeadlocksGlobally(true);
+		assignmentProblem.LoadScenario("ProvaScenario");
+		int numPaths = 1;
+		
 		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
@@ -174,11 +194,12 @@ public class TaskAssignmentWithMap7 {
 		assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
 		assignmentProblem.instantiateFleetMaster(0.1, false);
-		//assignmentProblem.startTaskAssignment(tec);
+		assignmentProblem.startTaskAssignment(tec);
 		
 		
-		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
-				
+		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
+		
+		/*
 		for (int i = 0; i < assignmentMatrix.length; i++) {
 			for (int j = 0; j < assignmentMatrix[0].length; j++) {
 				for(int s = 0; s < numPaths; s++) {
@@ -190,6 +211,6 @@ public class TaskAssignmentWithMap7 {
 			} 
 		}
 		assignmentProblem.TaskAllocation(assignmentMatrix,tec);	
-		
+		*/
 	}
 }

@@ -21,6 +21,7 @@ public class Task {
 	protected double deadline = -1;
 	protected double operationTime = 0;
 	protected boolean priority = false;
+	protected int robotRequired = 1;
 	
 	
 	
@@ -134,6 +135,15 @@ public class Task {
 	public void setPriority(boolean priority) {
 		this.priority = priority;	
 	}
+	
+	public void setRobotRequired(int  robotRequired) {
+		this.robotRequired = robotRequired;	
+	}
+	
+	public int getRobotRequired() {
+		return this.robotRequired;	
+	}
+	
 
 	public boolean isCompatible(Robot robot) {
 		return this.robotTypes.contains(robot.getRobotType());
