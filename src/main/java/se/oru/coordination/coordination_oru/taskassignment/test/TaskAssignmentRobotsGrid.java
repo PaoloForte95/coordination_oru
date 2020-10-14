@@ -97,6 +97,7 @@ public class TaskAssignmentRobotsGrid {
 		tec.setDefaultFootprint(footprint1, footprint2, footprint3, footprint4);
 		//Need to setup infrastructure that maintains the representation
 		tec.setupSolver(0, 100000000);
+		tec.startInference();
 		//JTSDrawingPanelVisualization viz = new JTSDrawingPanelVisualization();
 		//viz.setSize(1024, 768);
 		BrowserVisualization viz = new BrowserVisualization();
@@ -111,20 +112,24 @@ public class TaskAssignmentRobotsGrid {
 		
 		Random rand = new Random();
 		TaskAssignment assignmentProblem = new TaskAssignment();
+		
+		//assignmentProblem.LoadScenario("ProvaScenario");
+		
+		
 		int numPaths = 1;
 		double delta = 0;
 		for(int i = 1; i<= 6; i++) {
-			
-			Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
+			Pose startPoseRobot = new Pose((4.0 + delta),30.0,-Math.PI/2);
+			//Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = 1;
 			if (i==3) {
-				robotType = 2;
+				robotType = 1;
 			}
 			else if(i==4){
-				robotType = 2;
+				robotType = 1;
 			}
 			else if(i==6){
-				robotType = 2;
+				robotType = 1;
 			}
 			Robot robot = new Robot(i,robotType);
 			tec.addRobot(robot,startPoseRobot);
@@ -134,13 +139,13 @@ public class TaskAssignmentRobotsGrid {
 			//int taskType = rand.nextInt(2)+1;
 			int taskType = 1;
 			if(i==2) {
-				taskType = 2;
+				taskType = 1;
 			}
 			else if(i==4){
-				taskType = 2;
+				taskType = 1;
 			}
 			else if(i==6){
-				taskType = 2;
+				taskType = 1;
 			}
 			Task task = new Task(i,startPoseGoal,goalPoseRobot,taskType);
 			assignmentProblem.addTask(task);
@@ -171,16 +176,13 @@ public class TaskAssignmentRobotsGrid {
 			rsp.setFootprint(footprint);
 			rsp.setTurningRadius(4.0);
 			rsp.setDistanceBetweenPathPoints(0.5);
-			rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-empty.yaml"));
-			//rsp.setMapFilename(yamlFile);
-			double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
-			rsp.setMapResolution(res);
+			//rsp.setMap("maps/map-empty.yaml");
 			rsp.setPlanningTimeInSecs(2);
 			tec.setMotionPlanner(robotID, rsp);
 		}
 		//tec.setFakeCoordinator(true);
 		//Solve the problem to find some feasible solution
-		double alpha = 0.5;
+		double alpha = 1.0;
 		double timeOut = 15*1000;
 		
 		
@@ -195,11 +197,10 @@ public class TaskAssignmentRobotsGrid {
 	
 		
 		//tec.setFakeCoordinator(true);
-		tec.setAvoidDeadlocksGlobally(true);
-		assignmentProblem.LoadScenario("ProvaScenario");
+		//tec.setBreakDeadlocks(true, true, true);
+		//tec.setAvoidDeadlocksGlobally(true);
+		
 		//assignmentProblem.LoadScenarioAllocation(optimalAllocation);
-		
-		
 		
 		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
@@ -210,8 +211,8 @@ public class TaskAssignmentRobotsGrid {
 		//assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);	
 		//assignmentProblem.setTimeOutinMin(timeOut);
 		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
-		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
-		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
+		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
 		
 		for (int i = 0; i < assignmentMatrix.length; i++) {
 			for (int j = 0; j < assignmentMatrix[0].length; j++) {
@@ -229,3 +230,4 @@ public class TaskAssignmentRobotsGrid {
 		
 	}
 }
+
