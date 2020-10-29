@@ -17,6 +17,7 @@ import com.vividsolutions.jts.geom.Polygon;
 import aima.core.agent.Model;
 import se.oru.coordination.coordination_oru.ConstantAccelerationForwardModel;
 import se.oru.coordination.coordination_oru.CriticalSection;
+import se.oru.coordination.coordination_oru.ForwardModel;
 import se.oru.coordination.coordination_oru.Mission;
 import se.oru.coordination.coordination_oru.RobotAtCriticalSection;
 import se.oru.coordination.coordination_oru.RobotReport;
@@ -92,11 +93,39 @@ public class TaskAssignmentRobotsInLineGreedy {
 		Coordinate footprint4 = new Coordinate(-1.0,-0.5);
 		tec.setDefaultFootprint(footprint1, footprint2, footprint3, footprint4);
 		//Need to setup infrastructure that maintains the representation
+		
+		
+		//You can set a footprint that is specific for each robot
+		Coordinate[] fp1 = new Coordinate[] {
+				new Coordinate(-1.0,0.5),
+				new Coordinate(1.0,0.5),
+				new Coordinate(1.0,-0.5),
+				new Coordinate(-1.0,-0.5)
+		};
+		Coordinate[] fp2 = new Coordinate[] {
+				new Coordinate(0.36, 0.0),
+				new Coordinate(0.18, 0.36),
+				new Coordinate(-0.18, 0.36),
+				new Coordinate(-0.36, 0.0),
+				new Coordinate(-0.18, -0.36),
+				new Coordinate(0.18, -0.36)
+		};
+		Coordinate[] fp3 = new Coordinate[] {
+				new Coordinate(-2.0,0.9),
+				new Coordinate(2.0,0.9),
+				new Coordinate(2.0,-0.9),
+				new Coordinate(-2.0,-0.9)
+		};
+		tec.setFootprint(1,fp1);
+		tec.setFootprint(2,fp2);
+		tec.setFootprint(3,fp3);
+		
 		tec.setupSolver(0, 100000000);
+		tec.startInference();
 		//JTSDrawingPanelVisualization viz = new JTSDrawingPanelVisualization();
 		//viz.setSize(1024, 768);
 		BrowserVisualization viz = new BrowserVisualization();
-		viz.setInitialTransform(30, 0, 0);
+		viz.setInitialTransform(20,1.53,10.51);
 		tec.setVisualization(viz);
 		tec.setUseInternalCriticalPoints(false);
 
@@ -112,23 +141,34 @@ public class TaskAssignmentRobotsInLineGreedy {
 		Pose startPoseRobot3 = new Pose(8.0,6.0,0.0);
 	
 
-		Robot robot1 = new Robot(1);
-		Robot robot2 = new Robot(2);
-		Robot robot3 = new Robot(3);
+		ForwardModel fm1 = new ConstantAccelerationForwardModel(0.5, 2, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod());
+		ForwardModel fm2 = new ConstantAccelerationForwardModel(2, 8, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod());
+		ForwardModel fm3 = new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getTrackingPeriod());
+		Robot robot1 = new Robot(1,1,fp3,fm1);
+		Robot robot2 = new Robot(2,1,fp2,fm2);
+		Robot robot3 = new Robot(3,1,fp1,fm3);
 		
 		
 		tec.addRobot(robot1, startPoseRobot1);
 		tec.addRobot(robot2, startPoseRobot2);
 		tec.addRobot(robot3, startPoseRobot3);
 	
-		
+
+	/*
 		Pose startPoseGoal1 = new Pose(20.0,6.0,0.0);
 		Pose startPoseGoal2 = new Pose(20.0,6.0,0.0);
 		Pose startPoseGoal3 = new Pose(20.0,6.0,0.0);
 		Pose goalPoseRobot1 = new Pose(30.0,6.0,0.0);
 		Pose goalPoseRobot2 = new Pose(26.0,6.0,0.0);
 		Pose goalPoseRobot3 = new Pose(22.0,6.0,0.0);
+	*/	
 		
+		Pose startPoseGoal1 = new Pose(30.0,6.0,0.0);
+		Pose startPoseGoal2 = new Pose(30.0,6.0,0.0);
+		Pose startPoseGoal3 = new Pose(30.0,6.0,0.0);
+		Pose goalPoseRobot1 = new Pose(50.0,6.0,0.0);
+		Pose goalPoseRobot2 = new Pose(44.0,6.0,0.0);
+		Pose goalPoseRobot3 = new Pose(38.0,6.0,0.0);
 		
 		Task task1 = new Task(1,startPoseGoal1,goalPoseRobot1,1);
 		Task task2 = new Task(2,startPoseGoal2,goalPoseRobot2,1);
@@ -153,9 +193,6 @@ public class TaskAssignmentRobotsInLineGreedy {
 			rsp.setFootprint(footprint);
 			rsp.setTurningRadius(4.0);
 			rsp.setDistanceBetweenPathPoints(0.5);
-			rsp.setMapFilename("maps"+File.separator+Missions.getProperty("image", "maps/map-empty.yaml"));
-			double res = 0.2;// Double.parseDouble(getProperty("resolution", yamlFile));
-			rsp.setMapResolution(res);
 			rsp.setPlanningTimeInSecs(2);
 			tec.setMotionPlanner(robotID, rsp);
 		}
@@ -167,3 +204,4 @@ public class TaskAssignmentRobotsInLineGreedy {
 		assignmentProblem.startTaskAssignmentGreedyAlgorithm(tec);
 	}
 }
+
