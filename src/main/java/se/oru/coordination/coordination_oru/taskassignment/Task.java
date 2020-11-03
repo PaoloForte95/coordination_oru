@@ -153,6 +153,11 @@ public class Task {
 		return this.decidedRobotID != -1;
 		//return this.taskIsAssigned;
 	}
+	
+	public int isTaskAssignedID() {
+		return this.decidedRobotID ;
+		//return this.taskIsAssigned;
+	}
 
 	public boolean isDeadlineSpecified() {
 		return this.deadline != -1;

@@ -350,3 +350,4 @@ public class TimedTrajectoryEnvelopeCoordinatorSimulation extends TimedTrajector
 	}
 
 }
+
