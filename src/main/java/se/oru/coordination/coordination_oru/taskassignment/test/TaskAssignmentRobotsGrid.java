@@ -38,6 +38,7 @@ import se.oru.coordination.coordination_oru.util.Missions;
 
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignment;
 import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimple;
+import se.oru.coordination.coordination_oru.taskassignment.TaskAssignmentSimulatedAnnealing;
 
 import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
@@ -101,7 +102,7 @@ public class TaskAssignmentRobotsGrid {
 		//JTSDrawingPanelVisualization viz = new JTSDrawingPanelVisualization();
 		//viz.setSize(1024, 768);
 		BrowserVisualization viz = new BrowserVisualization();
-		viz.setInitialTransform(20, 0, 0);
+		viz.setInitialTransform(20, 1.85, 2.80);
 		tec.setVisualization(viz);
 		tec.setUseInternalCriticalPoints(false);
 		
@@ -111,25 +112,46 @@ public class TaskAssignmentRobotsGrid {
 		ArrayList <Task> taskQueue = new ArrayList <Task>();
 		
 		Random rand = new Random();
+		
+		//TEST NUMBER
+		int a = 4;
+		//FOLDER NUMBER 
+		int b = 1;
+		tec.setTestNumber(a);
+		tec.setFolderNumber(b);
+		
 		TaskAssignment assignmentProblem = new TaskAssignment();
 		
-		//assignmentProblem.LoadScenario("ProvaScenario");
+		//TaskAssignmentSimulatedAnnealing assignmentProblem = new TaskAssignmentSimulatedAnnealing();
 		
 		
+		double [][][]optimalAllocation = {{{0.0},{0.0},{0.0},{1.0}},
+				{{0.0},{0.0},{1.0},{0.0}},
+				{{0.0},{1.0},{0.0},{0.0}},
+				{{1.0},{0.0},{0.0},{0.0}},
+		};
+		
+		//DO NOT USE THE COORDINATOR (in order to evaluate the nominal arrival time)
+		//tec.setFakeCoordinator(true);
+		//LOAD Optimal Assignment 
+		//assignmentProblem.LoadScenarioAllocation(optimalAllocation);
+		
+		//LOAD ROADMAP
+		assignmentProblem.LoadScenario("ProvaScenario1");
 		int numPaths = 1;
 		double delta = 0;
 		for(int i = 1; i<= 6; i++) {
 			Pose startPoseRobot = new Pose((4.0 + delta),30.0,-Math.PI/2);
 			//Pose startPoseRobot = new Pose(4.0,(6.0 + delta),0.0);
 			int robotType = 1;
-			if (i==3) {
-				robotType = 1;
+			if (i==2) {
+				robotType = 2;
 			}
 			else if(i==4){
-				robotType = 1;
+				robotType = 2;
 			}
 			else if(i==6){
-				robotType = 1;
+				robotType = 2;
 			}
 			Robot robot = new Robot(i,robotType);
 			tec.addRobot(robot,startPoseRobot);
@@ -138,14 +160,14 @@ public class TaskAssignmentRobotsGrid {
 	
 			//int taskType = rand.nextInt(2)+1;
 			int taskType = 1;
-			if(i==2) {
-				taskType = 1;
+			if(i==1) {
+				taskType = 2;
 			}
 			else if(i==4){
-				taskType = 1;
+				taskType = 2;
 			}
 			else if(i==6){
-				taskType = 1;
+				taskType = 2;
 			}
 			Task task = new Task(i,startPoseGoal,goalPoseRobot,taskType);
 			assignmentProblem.addTask(task);
@@ -186,21 +208,15 @@ public class TaskAssignmentRobotsGrid {
 		double timeOut = 15*1000;
 		
 		
-		double [][][]optimalAllocation = {{{1.0},{0.0},{0.0},{0.0},{0.0},{0.0}},
-				{{0.0},{1.0},{0.0},{0.0},{0.0},{0.0}},
-				{{0.0},{0.0},{1.0},{0.0},{0.0},{0.0}},
-				{{0.0},{0.0},{0.0},{1.0},{0.0},{0.0}},
-				{{0.0},{0.0},{0.0},{0.0},{1.0},{0.0}},
-				{{0.0},{0.0},{0.0},{0.0},{0.0},{1.0}}};
+		
 		
 		//Solve the problem to find some feasible solution
 	
 		
-		//tec.setFakeCoordinator(true);
-		//tec.setBreakDeadlocks(true, true, true);
-		//tec.setAvoidDeadlocksGlobally(true);
 		
-		//assignmentProblem.LoadScenarioAllocation(optimalAllocation);
+		tec.setBreakDeadlocks(true, false, true);
+		
+		
 		
 		assignmentProblem.setmaxNumPaths(numPaths);
 		assignmentProblem.setminMaxVelandAccel(MAX_VEL, MAX_ACCEL);
@@ -210,9 +226,15 @@ public class TaskAssignmentRobotsGrid {
 		assignmentProblem.setLinearWeight(alpha);
 		//assignmentProblem.setCostFunctionsWeight(0.8, 0.1, 0.1);	
 		//assignmentProblem.setTimeOutinMin(timeOut);
-		MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec);
-		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
+		
+		//FOR S AND GD
+		//MPSolver solver = assignmentProblem.buildOptimizationProblemWithBNormalized(tec); 
+		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblem(solver,tec);
 		//double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemLocalSearch(tec,-1);
+		double [][][] assignmentMatrix = assignmentProblem.solveOptimizationProblemGreedyAlgorithm(tec);
+		//FOR SA
+		//double [][][] assignmentMatrix = assignmentProblem.simulatedAnnealingAlgorithm(tec,-1);
+		
 		
 		for (int i = 0; i < assignmentMatrix.length; i++) {
 			for (int j = 0; j < assignmentMatrix[0].length; j++) {
