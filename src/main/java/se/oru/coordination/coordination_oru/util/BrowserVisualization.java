@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.imageio.ImageIO;
 
@@ -38,6 +39,14 @@ public class BrowserVisualization implements FleetVisualization {
 	private double robotFootprintArea = -1;
 	private double robotFootprintXDim = -1;
 	private String overlayText = null;
+	
+	
+	
+	
+
+	protected HashMap <Integer, Integer> materialLoaded =   new HashMap <Integer, Integer>();
+	protected boolean materialVisual = false;
+	
 
 	public BrowserVisualization() {
 		this("localhost", 30);
@@ -84,6 +93,9 @@ public class BrowserVisualization implements FleetVisualization {
 			sendMessage(jsonString);
 		}
 	}
+	
+
+
 	
 	public void setOverlayText(String text) {
 		this.overlayText = text;
@@ -225,6 +237,15 @@ public class BrowserVisualization implements FleetVisualization {
 		enqueueMessage(jsonStringArrow);
 	}
 	
+	
+	public void allowMaterialVisualization() {
+		materialVisual = true;
+	}
+	
+	
+	
+	
+	
 	@Override
 	public void displayRobotState(Polygon fp, RobotReport rr, String... extraStatusInfo) {
 		double x = rr.getPose().getX();
@@ -238,7 +259,15 @@ public class BrowserVisualization implements FleetVisualization {
 				extraData += (" | " + st);
 			}
 		}
-		
+
+		if(materialVisual) {
+			if(materialLoaded.containsKey(rr.getRobotID()))	{
+					if (materialLoaded.get(rr.getRobotID()) != -1) {
+						displayMaterial(rr.getPose(),materialLoaded.get(rr.getRobotID()),0.1,"Loaded");
+					}
+			}
+				
+		}		
 		Geometry geom = TrajectoryEnvelope.getFootprint(fp, x, y, theta);
 		this.updateRobotFootprintArea(geom);
 		double scale = Math.sqrt(robotFootprintArea)*0.2;
@@ -278,6 +307,67 @@ public class BrowserVisualization implements FleetVisualization {
 		String jsonString = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+te.getID(), geom, "#efe007", -1, false, null) + "}";
 		enqueueMessage(jsonString);
 	}
+	
+
+	
+	
+
+	
+	public void loadMaterial(int robotID, int materialID) {
+		materialLoaded.put(robotID, materialID);
+	}
+	
+	public void displayMaterial(Pose position,int materialID,double materialAmount,String... extraStatusInfo) {
+		
+		String name1 = "Material"+materialID;
+		String extraData = " : " + materialAmount;
+		
+		if (extraStatusInfo != null) {
+			for (String st : extraStatusInfo) {
+				extraData += (" | " + st);
+			}
+		}
+		Geometry circle0 = createCircleMat(position, materialAmount);
+		Geometry circle1 = createCircleMat(position, materialAmount);
+		
+		name1 += extraData;
+		
+		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, "red", -1, true, null) + "}";
+		//String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, "red", -1, true, null) + "}";
+		String jsonString1 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name1, circle1, "#ffffff", -1, true, null) + "}";
+		enqueueMessage(jsonString0);
+		enqueueMessage(jsonString1);
+
+	}
+
+public void updateMaterialAmount(int materialID, double materialAmount,String extraStatusInfo) {
+		
+
+		String jsonString = "{ \"operation\" : \"removeGeometry\","
+				+ "\"data\" : "
+				+ "{ \"name\" : \"" +"Material"+materialID+ " : " + materialAmount + " | " + extraStatusInfo +"\" }}";
+
+		enqueueMessage(jsonString);
+	}
+	
+	
+	public void displayWaypoint(Pose position, int id) {
+
+		
+		
+		String name1 = "W"+id;
+		Geometry circle0 = createCircle(position, 1);
+		Geometry circle1 = createCircle(position, 1);
+
+		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, "blue", -1, true, null) + "}";
+		String jsonString1 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name1, circle1, "#ffffff", -1, true, null) + "}";
+		enqueueMessage(jsonString0);
+		enqueueMessage(jsonString1);
+
+	}
+	
+	
+
 
 	@Override
 	public void removeEnvelope(TrajectoryEnvelope te) {
@@ -299,6 +389,46 @@ public class BrowserVisualization implements FleetVisualization {
 		sendMessage(callRefresh);
 	}
 	
+	
+	private Geometry createCircle(Pose pose, double radius) {		
+		GeometryFactory gf = new GeometryFactory();
+		Coordinate[] coords = new Coordinate[7];
+		for(int i =0; i <= 2*Math.PI;i += Math.PI/2) {
+			coords[i] = new Coordinate(radius*Math.cos(i),radius*Math.sin(i));
+			
+		}
+		coords[6]  = new Coordinate(radius,0);
+		Polygon circle = gf.createPolygon(coords);
+		AffineTransformation at = new AffineTransformation();
+		at.scale(1, 1);
+		at.rotate(pose.getTheta());
+		at.translate(pose.getX(), pose.getY());
+		Geometry ret = at.transform(circle);
+		return ret;
+	}
+	
+	private Geometry createCircleMat(Pose pose, double radius) {		
+		GeometryFactory gf = new GeometryFactory();
+		Coordinate[] coords = new Coordinate[7];
+		for(int i =0; i <= 2*Math.PI;i += Math.PI/2) {
+			coords[i] = new Coordinate(radius*Math.cos(i),radius*Math.sin(i));
+			
+		}
+		coords[6]  = new Coordinate(radius,0);
+		Polygon circle = gf.createPolygon(coords);
+		AffineTransformation at = new AffineTransformation();
+		at.scale(1, 1);
+		at.rotate(pose.getTheta());
+		at.translate(pose.getX(), pose.getY());
+		Geometry ret = at.transform(circle);
+		return ret;
+	}
+	
+	
+	private Geometry createArrow(Pose pose) {
+		return createArrow(pose, Math.sqrt(robotFootprintArea)*0.5, Math.sqrt(robotFootprintArea)*0.5);
+		
+	}
 	private Geometry createArrow(Pose pose, double length, double size) {		
 		GeometryFactory gf = new GeometryFactory();
 		double aux = 1.8;

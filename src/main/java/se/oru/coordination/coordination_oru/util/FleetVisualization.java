@@ -1,5 +1,6 @@
 package se.oru.coordination.coordination_oru.util;
 
+import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 import com.vividsolutions.jts.geom.Polygon;
 
@@ -23,5 +24,13 @@ public interface FleetVisualization {
 	public void setMap(String yamlFile);
 	
 	public int periodicEnvelopeRefreshInMillis();
+
+	public void displayMaterial(Pose poseMaterial,int materialID,double materialAmount,String... extraStatusInfo);
+
+	public void displayWaypoint(Pose pose, int i);
+
+	public void loadMaterial(int robotID, int materialID) ;
+
+	public void updateMaterialAmount(int getmaterialID, double amount, String toLocation);
 
 }

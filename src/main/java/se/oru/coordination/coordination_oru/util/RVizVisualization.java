@@ -43,6 +43,7 @@ import org.ros.node.topic.Publisher;
 import com.vividsolutions.jts.geom.Coordinate;
 
 import geometry_msgs.Transform;
+import geometry_msgs.Transform;
 import nav_msgs.OccupancyGrid;
 import se.oru.coordination.coordination_oru.RobotReport;
 import se.oru.coordination.coordination_oru.util.FleetVisualization;
@@ -50,6 +51,8 @@ import se.oru.coordination.coordination_oru.util.Missions;
 import com.vividsolutions.jts.geom.Polygon;
 //import org.ros.visualization_msgs.MarkerArray;
 import visualization_msgs.MarkerArray;
+import visualization_msgs.Marker;
+
 
 public class RVizVisualization implements FleetVisualization, NodeMain {
 
@@ -67,6 +70,25 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	private boolean ready = false;
 	private String mapFileName = null;
 	private boolean darkColors = true;
+
+	
+	////////////////////
+	protected HashMap <Integer, Integer> materialLoaded =   new HashMap <Integer, Integer>();
+	protected boolean materialVisual = false;
+	
+	private HashMap<Integer,Publisher<visualization_msgs.MarkerArray>> waypointPublishers = new HashMap<Integer,Publisher<visualization_msgs.MarkerArray>>();
+	private HashMap<Integer,ArrayList<visualization_msgs.Marker>> waypointMarkers = new HashMap<Integer,ArrayList<visualization_msgs.Marker>>();
+	
+	//private HashMap<Integer,Publisher<visualization_msgs.MarkerArray>> materialPublishers = new HashMap<Integer,Publisher<visualization_msgs.MarkerArray>>();
+	//private HashMap<Integer,ArrayList<visualization_msgs.Marker>> materialMarkers = new HashMap<Integer,ArrayList<visualization_msgs.Marker>>();
+	
+	
+	private HashMap<String,Publisher<visualization_msgs.MarkerArray>> materialPublishers = new HashMap<String,Publisher<visualization_msgs.MarkerArray>>();
+	private HashMap<String,ArrayList<visualization_msgs.Marker>> materialMarkers = new HashMap<String,ArrayList<visualization_msgs.Marker>>();
+
+	
+	private HashMap<Integer,visualization_msgs.Marker> materialLoadedMarkers = null;
+	////////////////////
 	
 	private static String rvizEntry = ""+
 			"    - Class: rviz/MarkerArray\n" + 
@@ -363,27 +385,72 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			visualization_msgs.Marker marker = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
 			marker.getHeader().setFrameId(mapFrameID);
 			marker.getScale().setX(0.2f);
+	
+			/////////////////////////////////////
+			marker.getScale().setY(0.2f); //P
+			marker.getScale().setZ(0.2f); //P
+			//////////////////////////////
 			marker.getColor().setR(100.0f);
 			marker.getColor().setG(0.0f);
 			marker.getColor().setB(0.0f);
 			marker.getColor().setA(0.8f);
 			marker.setAction(visualization_msgs.Marker.ADD);                                
 			marker.setNs("current_pose");
-			marker.setType(visualization_msgs.Marker.LINE_STRIP);
+			//marker.setType(visualization_msgs.Marker.LINE_STRIP);
+			marker.setType(visualization_msgs.Marker.LINE_STRIP); //P
 			marker.setId(rr.getRobotID());
 			marker.setLifetime(new Duration(10.0));
-
+			
 			ArrayList<geometry_msgs.Point> points = new ArrayList<geometry_msgs.Point>();
+			
+			//////////////////////////////////
+			//ArrayList<geometry_msgs.Pose> quats = new ArrayList<geometry_msgs.Pose>();
+			//geometry_msgs.Pose posePP = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+			//geometry_msgs.Quaternion quat = node.getTopicMessageFactory().newFromType(geometry_msgs.Quaternion._TYPE);
+			//geometry_msgs.Point pointPP = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+			
+
+
+			//Coordinate[] coords = TrajectoryEnvelope.getFootprint(fp, x, y, theta).getCentroid().getCoordinates();
+			
+
+			
+			/////////////////////////////77
 			Coordinate[] coords = TrajectoryEnvelope.getFootprint(fp, x, y, theta).getCoordinates();
+			
 			for (Coordinate coord : coords) {
 				geometry_msgs.Point point = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+				
 				point.setX(coord.x);
 				point.setY(coord.y);
 				point.setZ(0.0);
 				points.add(point);
+				
+				
+				//////////////////////////////////////////////
+				
+				
+				//quat.setZ(1.0);
+				//quat.setX(1.0);
+				//quat.setY(1.0);
+				//quat.setW(1.0);
+				//posePP.setOrientation(quat);
+				//quats.add(posePP);
+				
+				/////////////////////////////
 			}
+			//pointPP.setX(rr.getPose().getX());
+			//pointPP.setY(rr.getPose().getY());
+			//pointPP.setZ(0.0);
+			//posePP.setPosition(pointPP);
+			//marker.setPose(posePP);
+			
+
 			points.add(points.get(0));
 			marker.setPoints(points);
+			
+			
+
 			if (!this.robotStatusPublishers.containsKey(rr.getRobotID())) {
 				Publisher<visualization_msgs.MarkerArray> markerArrayPublisher = node.newPublisher("robot"+rr.getRobotID()+"/status", visualization_msgs.MarkerArray._TYPE);
 				this.robotStatusPublishers.put(rr.getRobotID(), markerArrayPublisher);
@@ -430,8 +497,142 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			pos.setZ(0);
 			pose.setPosition(pos);
 			markerName.setPose(pose);
+			
+			
 			synchronized(robotStatusMarkers) {
 				this.robotStatusMarkers.get(rr.getRobotID()).add(markerName);
+
+			}
+			
+			
+			
+			///////////////PAOLO
+			if(materialVisual) {
+				if(materialLoaded.containsKey(rr.getRobotID()))	{
+						if (materialLoaded.get(rr.getRobotID()) != -1) {
+							
+							markerName = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
+							markerName.getHeader().setFrameId(mapFrameID);
+							markerName.getScale().setX(0.1f);
+							markerName.getScale().setY(0.1f);
+							markerName.getScale().setZ(0.1f);
+							markerName.getColor().setR(100.0f);
+							markerName.getColor().setG(0.0f);
+							markerName.getColor().setB(0.0f);
+							markerName.getColor().setA(0.8f);
+							//markerName.getColor().setR(R);
+					        //markerName.getColor().setG(G);
+					        //markerName.getColor().setB(B);
+					       // markerName.getColor().setA(A);
+							markerName.setAction(visualization_msgs.Marker.ADD);                                
+							markerName.setNs("material_loaded_box");
+							markerName.setType(visualization_msgs.Marker.CUBE_LIST);
+							//markerName.setId(te.getRobotID());
+							markerName.setLifetime(new Duration(10000.0));
+							markerText  = "Mat" + materialLoaded.get(rr.getRobotID());
+							String text2 = "";
+							if (extraStatusInfo != null) for (String extra : extraStatusInfo) {
+								markerText += extra;
+								text2 += extra;
+							}
+							markerName.setText(markerText);
+			
+							points = new ArrayList<geometry_msgs.Point>();
+							
+							geometry_msgs.Point point = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+							point.setX(x);
+							point.setY(y);
+							point.setZ(0.0);
+							points.add(point);
+							
+							point.setX(x);
+							point.setY(y);
+							point.setZ(0.0);
+							points.add(point);
+							markerName.setPoints(points);
+							
+							geometry_msgs.Quaternion quat = node.getTopicMessageFactory().newFromType(geometry_msgs.Quaternion._TYPE);
+							quat.setW(1);
+							geometry_msgs.Pose pp = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+							pp.setOrientation(quat);
+							markerName.setPose(pp);	
+							
+							
+							/*
+							geometry_msgs.Pose pose3 = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+							geometry_msgs.Point pos3 = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+							pos3.setX(x);
+							pos3.setY(y);
+							pos3.setZ(0);
+							pose3.setPosition(pos3);
+							
+							
+							geometry_msgs.Quaternion quat = node.getTopicMessageFactory().newFromType(geometry_msgs.Quaternion._TYPE);
+							quat.setW(1);
+							geometry_msgs.Pose pp = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+							pp.setOrientation(quat);
+							markerName.setPose(pose3);
+							*/
+							
+							
+							//synchronized(robotStatusMarkers) {
+								//this.robotStatusMarkers.get(rr.getRobotID()).add(markerName);
+							//}
+							
+							if (this.materialLoadedMarkers == null) this.materialLoadedMarkers = new HashMap<Integer,visualization_msgs.Marker>();
+							synchronized(materialLoadedMarkers) {
+								this.materialLoadedMarkers.put(rr.getRobotID(),markerName);
+							}
+							
+							////////////////////Original start from below
+							visualization_msgs.Marker markerName2 = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
+							markerName2.getHeader().setFrameId(mapFrameID);
+							markerName2.getScale().setX(1.0f);
+							markerName2.getScale().setY(1.0f);
+							markerName2.getScale().setZ(1.0f);
+							 R = 0.0f;
+							 G = 0.0f;
+							 B = 0.0f;
+							 A = 1.0f;
+							if (darkColors) {
+								R = 1.0f;
+								G = 1.0f;
+								B = 1.0f;
+								A = 0.8f;
+							}
+							markerName2.getColor().setR(R);
+							markerName2.getColor().setG(G);
+							markerName2.getColor().setB(B);
+							markerName2.getColor().setA(A);
+							markerName2.setAction(visualization_msgs.Marker.ADD);                                
+							markerName2.setNs("material_loaded");
+							markerName2.setType(visualization_msgs.Marker.TEXT_VIEW_FACING);
+							//markerName.setId(te.getRobotID());
+							markerName2.setLifetime(new Duration(10000.0));
+							String markerText2  = "\n"+ "Mat" + materialLoaded.get(rr.getRobotID()) + ":0.1 " + "loaded";
+							if (extraStatusInfo != null) for (String extra : extraStatusInfo) markerText2 +=  extra;
+							markerName2.setText(markerText2);
+							geometry_msgs.Pose pose2 = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+							geometry_msgs.Point pos2 = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+							pos2.setX(x);
+							pos2.setY(y);
+							pos2.setZ(0);
+							pose2.setPosition(pos2);
+							markerName2.setPose(pose2);
+							
+							
+							//synchronized(robotStatusMarkers) {
+								//this.robotStatusMarkers.get(rr.getRobotID()).add(markerName2);
+							//}
+							
+							
+							
+							if (this.materialLoadedMarkers == null) this.materialLoadedMarkers = new HashMap<Integer,visualization_msgs.Marker>();
+							synchronized(materialLoadedMarkers) {
+								this.materialLoadedMarkers.put(rr.getRobotID(),markerName2);
+							}
+						}
+				}
 			}
 
 		}
@@ -448,7 +649,7 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			marker.getColor().setA(0.8f);
 			marker.setAction(visualization_msgs.Marker.ADD);                                
 			marker.setNs("box_marker");
-			marker.setType(visualization_msgs.Marker.LINE_STRIP);
+			marker.setType(visualization_msgs.Marker.LINE_STRIP);	
 			marker.setId(markerID);
 			marker.setLifetime(new Duration(durationInSeconds));
 
@@ -458,6 +659,7 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 				point.setX(coord.x);
 				point.setY(coord.y);
 				point.setZ(0.0);
+
 				points.add(point);
 			}
 			points.add(points.get(0));
@@ -570,6 +772,114 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 							if (envelopeMarkers != null && envelopeMarkers.containsKey(entry.getKey())) copy.add(envelopeMarkers.get(entry.getKey()));
 						}
 					}
+					/////////////////////
+					if (materialLoadedMarkers != null) {
+						synchronized(materialLoadedMarkers) {
+							if (materialLoadedMarkers != null && materialLoadedMarkers.containsKey(entry.getKey())) copy.add(materialLoadedMarkers.get(entry.getKey()));
+						}
+					}
+					/////////////////////////////////////77	
+					ma.setMarkers(copy);
+					entry.getValue().publish(ma);
+					robotStatusMarkers.get(entry.getKey()).clear();
+				}
+			}
+		}
+		
+		///////////////////PAOLO NEW 
+		for (Entry<Integer, Publisher<MarkerArray>> entry : robotStatusPublishers.entrySet()) {
+			synchronized(robotStatusMarkers) {
+				if (!robotStatusMarkers.get(entry.getKey()).isEmpty()) { 
+					visualization_msgs.MarkerArray ma = node.getTopicMessageFactory().newFromType(visualization_msgs.MarkerArray._TYPE);
+					ArrayList<visualization_msgs.Marker> copy = new ArrayList<visualization_msgs.Marker>();
+					for (visualization_msgs.Marker m : robotStatusMarkers.get(entry.getKey())) copy.add(m);
+					if (materialLoadedMarkers != null) {
+						synchronized(materialLoadedMarkers) {
+							if (materialLoadedMarkers != null && materialLoadedMarkers.containsKey(entry.getKey())) copy.add(materialLoadedMarkers.get(entry.getKey()));
+						}
+					}
+					ma.setMarkers(copy);
+					entry.getValue().publish(ma);
+					robotStatusMarkers.get(entry.getKey()).clear();
+				}
+			}
+		}
+		
+		
+		
+		
+		
+		
+		////////////////////////////////////////THIS part below is correct
+		for (Entry<Integer, Publisher<MarkerArray>> entry : waypointPublishers.entrySet()) {
+			synchronized(waypointMarkers) {
+				if (!waypointMarkers.get(entry.getKey()).isEmpty()) { 
+					visualization_msgs.MarkerArray ma = node.getTopicMessageFactory().newFromType(visualization_msgs.MarkerArray._TYPE);
+					ArrayList<visualization_msgs.Marker> copy = new ArrayList<visualization_msgs.Marker>();
+					for (visualization_msgs.Marker m : waypointMarkers.get(entry.getKey())) copy.add(m);
+					ma.setMarkers(copy);
+					entry.getValue().publish(ma);
+				}
+			}
+		}
+		
+		for (Entry<String, Publisher<MarkerArray>> entry : materialPublishers.entrySet()) {
+			synchronized(materialMarkers) {
+				if (!materialMarkers.get(entry.getKey()).isEmpty()) { 
+					visualization_msgs.MarkerArray ma = node.getTopicMessageFactory().newFromType(visualization_msgs.MarkerArray._TYPE);
+					ArrayList<visualization_msgs.Marker> copy = new ArrayList<visualization_msgs.Marker>();
+					for (visualization_msgs.Marker m : materialMarkers.get(entry.getKey())) copy.add(m);
+					ma.setMarkers(copy);
+					entry.getValue().publish(ma);
+				}
+			}
+		}
+		
+		/////////////////////////////////////////////
+
+				
+		for (Entry<Integer, Publisher<MarkerArray>> entry : dependencyPublishers.entrySet()) {
+			synchronized(dependencyMarkers) {
+				if (!dependencyMarkers.get(entry.getKey()).isEmpty()) { 				
+					visualization_msgs.MarkerArray ma = node.getTopicMessageFactory().newFromType(visualization_msgs.MarkerArray._TYPE);
+					ArrayList<visualization_msgs.Marker> copy = new ArrayList<visualization_msgs.Marker>();
+					for (visualization_msgs.Marker m : dependencyMarkers.get(entry.getKey())) copy.add(m);
+					ma.setMarkers(copy);
+					entry.getValue().publish(ma);
+					dependencyMarkers.get(entry.getKey()).clear();
+				}
+			}
+		}
+		
+		for (Entry<String, Publisher<MarkerArray>> entry : boxMarkerPublishers.entrySet()) {
+			synchronized(boxMarkerMarkers) {
+				if (!boxMarkerMarkers.get(entry.getKey()).isEmpty()) { 
+					visualization_msgs.MarkerArray ma = node.getTopicMessageFactory().newFromType(visualization_msgs.MarkerArray._TYPE);
+					ArrayList<visualization_msgs.Marker> copy = new ArrayList<visualization_msgs.Marker>();
+					for (visualization_msgs.Marker m : boxMarkerMarkers.get(entry.getKey())) copy.add(m);
+					ma.setMarkers(copy);
+					entry.getValue().publish(ma);
+					boxMarkerMarkers.get(entry.getKey()).clear();
+				}
+			}
+		}
+
+	}
+
+	/*
+	 * @Override
+	public void updateVisualization() {
+		for (Entry<Integer, Publisher<MarkerArray>> entry : robotStatusPublishers.entrySet()) {
+			synchronized(robotStatusMarkers) {
+				if (!robotStatusMarkers.get(entry.getKey()).isEmpty()) { 
+					visualization_msgs.MarkerArray ma = node.getTopicMessageFactory().newFromType(visualization_msgs.MarkerArray._TYPE);
+					ArrayList<visualization_msgs.Marker> copy = new ArrayList<visualization_msgs.Marker>();
+					for (visualization_msgs.Marker m : robotStatusMarkers.get(entry.getKey())) copy.add(m);
+					if (envelopeMarkers != null) {
+						synchronized(envelopeMarkers) {
+							if (envelopeMarkers != null && envelopeMarkers.containsKey(entry.getKey())) copy.add(envelopeMarkers.get(entry.getKey()));
+						}
+					}
 					ma.setMarkers(copy);
 					entry.getValue().publish(ma);
 					robotStatusMarkers.get(entry.getKey()).clear();
@@ -604,8 +914,8 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 		}
 
 	}
-
-
+	*/
+	
 	@Override
 	public void onError(Node arg0, Throwable arg1) {
 		// TODO Auto-generated method stub
@@ -645,9 +955,12 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	public GraphName getDefaultNodeName() {
 		return GraphName.of("coordinator_viz");
 	}
+	
 
 	@Override
 	public void addEnvelope(TrajectoryEnvelope te) {
+
+		
 		GeometricShapeDomain dom = (GeometricShapeDomain)te.getEnvelopeVariable().getDomain();
 		Coordinate[] verts = dom.getGeometry().getCoordinates();
 
@@ -676,7 +989,7 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 		marker.setType(visualization_msgs.Marker.LINE_STRIP);
 		marker.setId(te.getRobotID());
 		marker.setLifetime(new Duration(1.0));
-
+		
 		ArrayList<geometry_msgs.Point> points = new ArrayList<geometry_msgs.Point>();
 		for (Coordinate coord : verts) {
 			geometry_msgs.Point point = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
@@ -694,6 +1007,7 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 		}
 
 	}
+	
 
 	@Override
 	public void removeEnvelope(TrajectoryEnvelope te) {
@@ -706,11 +1020,284 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	public static void main(String[] args) {
 		System.out.println("test");
 	}
+	
 
 	@Override
 	public int periodicEnvelopeRefreshInMillis() {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+	
+	
+	public void allowMaterialVisualization() {
+		materialVisual = true;
+	}
+
+	@Override
+	public void displayMaterial(Pose poseMaterial, int materialID,double materialAmount,String... extraStatusInfo) {
+		// TODO Auto-generated method stub
+		visualization_msgs.Marker markerName = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
+		markerName.getHeader().setFrameId(mapFrameID);
+		markerName.getScale().setX(0.7f);
+		markerName.getScale().setY(0.7f);
+		markerName.getScale().setZ(0.7f);
+		markerName.getColor().setR(100.0f);
+		markerName.getColor().setG(0.0f);
+		markerName.getColor().setB(0.0f);
+		markerName.getColor().setA(0.8f);
+		//markerName.getColor().setR(R);
+        //markerName.getColor().setG(G);
+        //markerName.getColor().setB(B);
+       // markerName.getColor().setA(A);
+		markerName.setAction(visualization_msgs.Marker.ADD);                                
+		markerName.setNs("material_state");
+		markerName.setType(visualization_msgs.Marker.CUBE_LIST);
+		//markerName.setId(te.getRobotID());
+		markerName.setLifetime(new Duration(10000.0));
+		String markerText  = "Mat" + materialID;
+		String text2 = "";
+		if (extraStatusInfo != null) for (String extra : extraStatusInfo) {
+			markerText += extra;
+			text2 += extra;
+		}
+		markerName.setText(markerText);
+		
+		
+		
+		ArrayList<geometry_msgs.Point> points = new ArrayList<geometry_msgs.Point>();
+		
+		geometry_msgs.Point point = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+		point.setX(poseMaterial.getPosition().x);
+		point.setY(poseMaterial.getPosition().y);
+		point.setZ(0.0);
+		points.add(point);
+		
+		point.setX(poseMaterial.getPosition().x);
+		point.setY(poseMaterial.getPosition().y);
+		point.setZ(0.0);
+		points.add(point);
+		markerName.setPoints(points);
+		
+		geometry_msgs.Quaternion quat = node.getTopicMessageFactory().newFromType(geometry_msgs.Quaternion._TYPE);
+		quat.setW(1);
+		geometry_msgs.Pose pp = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+		pp.setOrientation(quat);
+		markerName.setPose(pp);
+		
+
+		//THis is the previous one that works with some bugs
+		/*
+		if (!this.materialPublishers.containsKey(materialID)) {
+			Publisher<visualization_msgs.MarkerArray> markerArrayPublisher = node.newPublisher("mat"+ materialID, visualization_msgs.MarkerArray._TYPE);
+			this.materialPublishers.put(materialID, markerArrayPublisher);
+			synchronized(materialMarkers) {
+				this.materialMarkers.put(materialID, new ArrayList<visualization_msgs.Marker>());
+			}
+		}
+		synchronized(materialMarkers) {
+			this.materialMarkers.get(materialID).add(markerName);
+		}
+		*/
+		if (!this.materialPublishers.containsKey(markerText)) {
+			
+			//Publisher<visualization_msgs.MarkerArray> markerArrayPublisher = node.newPublisher("mat"+ materialID, visualization_msgs.MarkerArray._TYPE);
+			Publisher<visualization_msgs.MarkerArray> markerArrayPublisher = node.newPublisher("mat"+ materialID + "/" + text2, visualization_msgs.MarkerArray._TYPE);
+			this.materialPublishers.put(markerText, markerArrayPublisher);
+			synchronized(materialMarkers) {
+				this.materialMarkers.put(markerText, new ArrayList<visualization_msgs.Marker>());
+			}
+		}
+		synchronized(materialMarkers) {
+			this.materialMarkers.get(markerText).add(markerName);
+		}
+		
+		
+		//////////////
+		visualization_msgs.Marker markerName2 = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
+		markerName2.getHeader().setFrameId(mapFrameID);
+		markerName2.getScale().setX(1.0f);
+		markerName2.getScale().setY(1.0f);
+		markerName2.getScale().setZ(1.0f);
+		float R = 0.0f;
+		float G = 0.0f;
+		float B = 0.0f;
+		float A = 1.0f;
+		if (darkColors) {
+			R = 1.0f;
+			G = 1.0f;
+			B = 1.0f;
+			A = 0.8f;
+		}
+		markerName2.getColor().setR(R);
+		markerName2.getColor().setG(G);
+		markerName2.getColor().setB(B);
+		markerName2.getColor().setA(A);
+		markerName2.setAction(visualization_msgs.Marker.ADD);                                
+		markerName2.setNs("mat_state");
+		markerName2.setType(visualization_msgs.Marker.TEXT_VIEW_FACING);
+		//markerName.setId(te.getRobotID());
+		markerName2.setLifetime(new Duration(100000.0));
+		String markerText2  = "Mat" + materialID + ":" + materialAmount;
+		String text = "";
+		
+		if (extraStatusInfo != null) for (String extra : extraStatusInfo) {
+			text = markerText2 + " "+ extra;
+			
+		}
+		markerName2.setText(text);
+		geometry_msgs.Pose pose = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+		geometry_msgs.Point pos = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+		pos.setX(poseMaterial.getPosition().x);
+		pos.setY(poseMaterial.getPosition().y);
+		pos.setZ(0);
+		pose.setPosition(pos);
+		markerName2.setPose(pose);
+		
+		
+		synchronized(materialMarkers) {
+			this.materialMarkers.get(markerText).add(markerName2);
+		}
+		
+		
+		
+		
+	}
+
+	@Override
+	public void displayWaypoint(Pose pose1, int id) {
+		// TODO Auto-generated method stub
+		//////////////
+		if (ready) {
+			visualization_msgs.Marker marker = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
+			marker.getHeader().setFrameId(mapFrameID);
+			//marker.getScale().setX(0.1f);
+			//marker.getScale().setY(0.1f);
+			//marker.getScale().setZ(0.1f);
+			marker.getScale().setX(0.7f);
+			marker.getScale().setY(0.7f);
+			marker.getScale().setZ(0.7f);
+			marker.getColor().setR(50f);
+			marker.getColor().setG(50.0f);
+			marker.getColor().setB(0.0f);
+			marker.getColor().setA(0.8f);
+			float R = 0.0f;
+			float G = 0.0f;
+			float B = 0.0f;
+			float A = 0.7f;
+			if (darkColors) {
+				R = 50.0f;
+				G = 50.0f;
+				A = 0.8f;
+			}
+			marker.getColor().setR(R);
+			marker.getColor().setG(G);
+			marker.getColor().setB(B);
+			marker.getColor().setA(A);
+			marker.setAction(visualization_msgs.Marker.ADD);
+			marker.setNs("current_waypoint");
+			marker.setType(visualization_msgs.Marker.CUBE_LIST);
+			marker.setId(id);
+			marker.setLifetime(new Duration(1000000.0));
+
+
+			ArrayList<geometry_msgs.Point> points = new ArrayList<geometry_msgs.Point>();
+			
+			geometry_msgs.Point point = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+			point.setX(pose1.getPosition().x);
+			point.setY(pose1.getPosition().y);
+			point.setZ(5.0);
+			points.add(point);
+			
+			point.setX(pose1.getPosition().x);
+			point.setY(pose1.getPosition().y);
+			point.setZ(5.0);
+			points.add(point);
+			marker.setPoints(points);
+			
+			geometry_msgs.Quaternion quat = node.getTopicMessageFactory().newFromType(geometry_msgs.Quaternion._TYPE);
+			quat.setW(1);
+			geometry_msgs.Pose pp = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+			pp.setOrientation(quat);
+			marker.setPose(pp);
+			
+			if (!this.waypointPublishers.containsKey(id)) {
+				Publisher<visualization_msgs.MarkerArray> markerArrayPublisher = node.newPublisher("wp"+id+"", visualization_msgs.MarkerArray._TYPE);
+				this.waypointPublishers.put(id, markerArrayPublisher);
+				synchronized(waypointMarkers) {
+					this.waypointMarkers.put(id, new ArrayList<visualization_msgs.Marker>());
+				}
+			}
+			synchronized(waypointMarkers) {
+				this.waypointMarkers.get(id).add(marker);
+			}	
+		}
+	}
+
+	
+	private void loadMaterial2(Pose poseRobot, int materialID,double materialAmount,String... extraStatusInfo) {
+		
+		
+		
+		/////////////////////////////////
+		
+		
+		visualization_msgs.Marker markerName2 = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
+		markerName2.getHeader().setFrameId(mapFrameID);
+		markerName2.getScale().setX(1.0f);
+		markerName2.getScale().setY(1.0f);
+		markerName2.getScale().setZ(1.0f);
+		float R = 0.0f;
+		float G = 0.0f;
+		float B = 0.0f;
+		float A = 1.0f;
+		if (darkColors) {
+			R = 1.0f;
+			G = 1.0f;
+			B = 1.0f;
+			A = 0.8f;
+		}
+		markerName2.getColor().setR(R);
+		markerName2.getColor().setG(G);
+		markerName2.getColor().setB(B);
+		markerName2.getColor().setA(A);
+		markerName2.setAction(visualization_msgs.Marker.ADD);                                
+		markerName2.setNs("mat_loaded");
+		markerName2.setType(visualization_msgs.Marker.TEXT_VIEW_FACING);
+		//markerName.setId(te.getRobotID());
+		markerName2.setLifetime(new Duration(100000.0));
+		String markerText2  = "Mat" + materialID + ":" + materialAmount;
+		String text = "";
+		if (extraStatusInfo != null) for (String extra : extraStatusInfo) {
+			text = markerText2 + " "+ extra;
+		}
+		markerName2.setText(text);
+		geometry_msgs.Pose pose = node.getTopicMessageFactory().newFromType(geometry_msgs.Pose._TYPE);
+		geometry_msgs.Point pos = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
+		pos.setX(poseRobot.getPosition().x);
+		pos.setY(poseRobot.getPosition().y);
+		pos.setZ(0);
+		pose.setPosition(pos);
+		markerName2.setPose(pose);
+		
+		
+		//if (this.materialLoadedMarkers == null) this.materialLoadedMarkers = new HashMap<Integer,visualization_msgs.Marker>();
+		//synchronized(materialLoadedMarkers) {
+			//this.materialLoadedMarkers.put(materialID,markerName2);
+		//}
+		
+	}
+	
+	@Override
+	public void loadMaterial(int robotID, int materialID) {
+		materialLoaded.put(robotID, materialID);
+	}
+
+	@Override
+	public void updateMaterialAmount(int getmaterialID, double amount, String toLocation) {
+//////////////
+		
+
+		
 	}
 
 }
