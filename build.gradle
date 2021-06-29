@@ -1,7 +1,7 @@
-1/*
+/*
  * coordination_oru_ros - Online coordination for multiple robots
  *
- * Copyright (C) 2017 Federico Pecora
+ * Copyright (C) 2021 Federico Pecora
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ dependencies {
 
   //For interface with OMPL
   implementation 'net.java.dev.jna:jna:4.4.0'
-  implementation 'org.jgrapht:jgrapht-core:1.0.1'
+  implementation 'org.jgrapht:jgrapht-core:1.5.1'
 
   //For demo infrastructure
   implementation 'org.reflections:reflections:0.9.11'

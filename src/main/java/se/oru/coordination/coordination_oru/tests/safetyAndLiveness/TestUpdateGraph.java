@@ -11,11 +11,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
-import org.jgrapht.alg.KosarajuStrongConnectivityInspector;
+import org.jgrapht.Graph;
+import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.alg.cycle.JohnsonSimpleCycles;
 import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.DirectedSubgraph;
+
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.metacsp.utility.Permutation;
 
@@ -175,7 +176,7 @@ public class TestUpdateGraph {
 		//compute strongly connected components
 		long startTime = Calendar.getInstance().getTimeInMillis();
 		KosarajuStrongConnectivityInspector<Integer,DefaultWeightedEdge> ksccFinder = new KosarajuStrongConnectivityInspector<Integer,DefaultWeightedEdge>(currentOrdersGraph);
-		List<DirectedSubgraph<Integer,DefaultWeightedEdge>> sccs = ksccFinder.stronglyConnectedSubgraphs();
+		List<Graph<Integer,DefaultWeightedEdge>> sccs = ksccFinder.getStronglyConnectedComponents();
 		stat1 = stat1 + Long.toString(Calendar.getInstance().getTimeInMillis()-startTime);
 		//System.out.println("Connected components: " + sccs.toString());
 
@@ -183,7 +184,7 @@ public class TestUpdateGraph {
 		for (Pair<Integer,Integer> pair : toAdd) {
 			System.out.println("Adding edge " + pair.toString());
 			//search the strongly connected components containing the two vertices
-			for (DirectedSubgraph<Integer,DefaultWeightedEdge> scc : sccs) {
+			for (Graph<Integer,DefaultWeightedEdge> scc : sccs) {
 				boolean got = false;
 				if (scc.containsVertex(pair.getFirst()) ||	scc.containsVertex(pair.getSecond())) {
 					if (scc.containsVertex(pair.getFirst()) && scc.containsVertex(pair.getSecond())) {

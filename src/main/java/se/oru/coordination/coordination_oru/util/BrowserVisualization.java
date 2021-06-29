@@ -94,9 +94,6 @@ public class BrowserVisualization implements FleetVisualization {
 		}
 	}
 	
-
-
-	
 	public void setOverlayText(String text) {
 		this.overlayText = text;
 	}
@@ -350,17 +347,16 @@ public void updateMaterialAmount(int materialID, double materialAmount,String ex
 		enqueueMessage(jsonString);
 	}
 	
-	
-	public void displayWaypoint(Pose position, int id) {
+	@Override
+	public void displayWaypoint(Pose position, String name) {
 
 		
 		
-		String name1 = "W"+id;
 		Geometry circle0 = createCircle(position, 1);
 		Geometry circle1 = createCircle(position, 1);
 
-		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name1, circle0, "blue", -1, true, null) + "}";
-		String jsonString1 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name1, circle1, "#ffffff", -1, true, null) + "}";
+		String jsonString0 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString(name, circle0, "blue", -1, true, null) + "}";
+		String jsonString1 = "{ \"operation\" : \"addGeometry\", \"data\" : " + this.geometryToJSONString("_"+name, circle1, "#ffffff", -1, true, null) + "}";
 		enqueueMessage(jsonString0);
 		enqueueMessage(jsonString1);
 

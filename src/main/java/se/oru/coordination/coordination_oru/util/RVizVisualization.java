@@ -70,8 +70,8 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	private boolean ready = false;
 	private String mapFileName = null;
 	private boolean darkColors = true;
-
-	
+	private boolean publishPartialEnvelope = false;
+		
 	////////////////////
 	protected HashMap <Integer, Integer> materialLoaded =   new HashMap <Integer, Integer>();
 	protected boolean materialVisual = false;
@@ -166,6 +166,13 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 		this.node = node;
 		this.ready = true;
 	}
+	
+	public RVizVisualization(ConnectedNode node, String mapFrameID, boolean publishPartialEnvelope) {
+		this(false, mapFrameID);
+		this.node = node;
+		this.ready = true;
+		this.publishPartialEnvelope = publishPartialEnvelope;
+	}
 
 	public RVizVisualization(boolean startROSCore) {
 		this(startROSCore,"/map");
@@ -195,6 +202,10 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			catch (InterruptedException e) { e.printStackTrace(); }
 			System.out.println("ROS-core started");
 		}
+	}
+	
+	public void setPublishPartialEnvelope(boolean publishPartialEnvelope) {
+		this.publishPartialEnvelope = publishPartialEnvelope;
 	}
 	
 	public void setDarkColors(boolean dark) {
@@ -371,7 +382,10 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			synchronized(robotStatusMarkers) {
 				this.robotStatusMarkers.get(rr.getRobotID()).add(markerName);
 			}
-
+			//if (this.publishPartialEnvelope) createPartialEnvelopeGeometryMarker(te, rr.getPathIndex() >= 0 ? rr.getPathIndex() : te.getPathLength()-1, te.getPathLength()-1);
+			if (this.publishPartialEnvelope && rr.getPathIndex() > 0) { 
+				createPartialEnvelopeGeometryMarker(te, rr.getPathIndex(), te.getPathLength()-1);
+			}
 		}
 	}
 	
@@ -396,11 +410,10 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			marker.getColor().setA(0.8f);
 			marker.setAction(visualization_msgs.Marker.ADD);                                
 			marker.setNs("current_pose");
-			//marker.setType(visualization_msgs.Marker.LINE_STRIP);
-			marker.setType(visualization_msgs.Marker.LINE_STRIP); //P
+			marker.setType(visualization_msgs.Marker.LINE_STRIP);
 			marker.setId(rr.getRobotID());
 			marker.setLifetime(new Duration(10.0));
-			
+
 			ArrayList<geometry_msgs.Point> points = new ArrayList<geometry_msgs.Point>();
 			
 			//////////////////////////////////
@@ -649,7 +662,7 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			marker.getColor().setA(0.8f);
 			marker.setAction(visualization_msgs.Marker.ADD);                                
 			marker.setNs("box_marker");
-			marker.setType(visualization_msgs.Marker.LINE_STRIP);	
+			marker.setType(visualization_msgs.Marker.LINE_STRIP);
 			marker.setId(markerID);
 			marker.setLifetime(new Duration(durationInSeconds));
 
@@ -659,7 +672,6 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 				point.setX(coord.x);
 				point.setY(coord.y);
 				point.setZ(0.0);
-
 				points.add(point);
 			}
 			points.add(points.get(0));
@@ -955,14 +967,15 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	public GraphName getDefaultNodeName() {
 		return GraphName.of("coordinator_viz");
 	}
-	
 
 	@Override
 	public void addEnvelope(TrajectoryEnvelope te) {
-
+		createPartialEnvelopeGeometryMarker(te, 0, te.getPathLength()-1);
+	}
+	
+	private void createPartialEnvelopeGeometryMarker(TrajectoryEnvelope te, int indexFrom, int indexTo) {
 		
-		GeometricShapeDomain dom = (GeometricShapeDomain)te.getEnvelopeVariable().getDomain();
-		Coordinate[] verts = dom.getGeometry().getCoordinates();
+		Coordinate[] verts = te.getPartialEnvelopeGeometry(indexFrom, indexTo).getCoordinates();
 
 		visualization_msgs.Marker marker = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
 		marker.getHeader().setFrameId(mapFrameID);
@@ -989,7 +1002,7 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 		marker.setType(visualization_msgs.Marker.LINE_STRIP);
 		marker.setId(te.getRobotID());
 		marker.setLifetime(new Duration(1.0));
-		
+
 		ArrayList<geometry_msgs.Point> points = new ArrayList<geometry_msgs.Point>();
 		for (Coordinate coord : verts) {
 			geometry_msgs.Point point = node.getTopicMessageFactory().newFromType(geometry_msgs.Point._TYPE);
@@ -1003,11 +1016,10 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 
 		if (this.envelopeMarkers == null) this.envelopeMarkers = new HashMap<Integer,visualization_msgs.Marker>();
 		synchronized(envelopeMarkers) {
-			this.envelopeMarkers.put(te.getRobotID(),marker);
+			this.envelopeMarkers.put(te.getRobotID(), marker);
 		}
 
 	}
-	
 
 	@Override
 	public void removeEnvelope(TrajectoryEnvelope te) {
@@ -1020,7 +1032,6 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	public static void main(String[] args) {
 		System.out.println("test");
 	}
-	
 
 	@Override
 	public int periodicEnvelopeRefreshInMillis() {
@@ -1164,12 +1175,18 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	}
 
 	@Override
-	public void displayWaypoint(Pose pose1, int id) {
+	public void displayWaypoint(Pose pose1, String name) {
 		// TODO Auto-generated method stub
 		//////////////
 		if (ready) {
 			visualization_msgs.Marker marker = node.getTopicMessageFactory().newFromType(visualization_msgs.Marker._TYPE);
 			marker.getHeader().setFrameId(mapFrameID);
+			String copy = name.replaceAll("[()]", "");
+			copy = copy.replaceAll("[^0-9]", "");
+			int waypointID = Integer.parseInt(name);
+			if(name.contains("parking")) {
+				waypointID = waypointID*(-1);
+			}
 			//marker.getScale().setX(0.1f);
 			//marker.getScale().setY(0.1f);
 			//marker.getScale().setZ(0.1f);
@@ -1196,7 +1213,7 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			marker.setAction(visualization_msgs.Marker.ADD);
 			marker.setNs("current_waypoint");
 			marker.setType(visualization_msgs.Marker.CUBE_LIST);
-			marker.setId(id);
+			marker.setId(waypointID);
 			marker.setLifetime(new Duration(1000000.0));
 
 
@@ -1220,15 +1237,15 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			pp.setOrientation(quat);
 			marker.setPose(pp);
 			
-			if (!this.waypointPublishers.containsKey(id)) {
-				Publisher<visualization_msgs.MarkerArray> markerArrayPublisher = node.newPublisher("wp"+id+"", visualization_msgs.MarkerArray._TYPE);
-				this.waypointPublishers.put(id, markerArrayPublisher);
+			if (!this.waypointPublishers.containsKey(waypointID)) {
+				Publisher<visualization_msgs.MarkerArray> markerArrayPublisher = node.newPublisher(name, visualization_msgs.MarkerArray._TYPE);
+				this.waypointPublishers.put(waypointID, markerArrayPublisher);
 				synchronized(waypointMarkers) {
-					this.waypointMarkers.put(id, new ArrayList<visualization_msgs.Marker>());
+					this.waypointMarkers.put(waypointID, new ArrayList<visualization_msgs.Marker>());
 				}
 			}
 			synchronized(waypointMarkers) {
-				this.waypointMarkers.get(id).add(marker);
+				this.waypointMarkers.get(waypointID).add(marker);
 			}	
 		}
 	}

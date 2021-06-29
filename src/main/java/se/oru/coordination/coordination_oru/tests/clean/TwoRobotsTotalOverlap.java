@@ -22,7 +22,7 @@ import se.oru.coordination.coordination_oru.util.Missions;
 import se.oru.coordination.coordination_oru.util.RVizVisualization;
 
 @DemoDescription(desc = "Example showing coordination in opposing directions (following should happen here).")
-public class TwoRobotsFollowing {
+public class TwoRobotsTotalOverlap {
 
 	public static void main(String[] args) throws InterruptedException {
 
@@ -70,6 +70,21 @@ public class TwoRobotsFollowing {
 		tec.setupSolver(0, 100000000);
 		//Start the thread that checks and enforces dependencies at every clock tick
 		tec.startInference();
+		
+		//Robot should follow but does not
+		tec.setBreakDeadlocks(false, false, false);
+		
+//		//Robot should follow but does not
+//		tec.setBreakDeadlocks(false, true, false);
+
+//		//Robot should follow but does not
+//		tec.setBreakDeadlocks(false, true, true);
+
+//		//Robot should follow but does not
+//		tec.setBreakDeadlocks(false, false, true);
+		
+//		//Collision!
+//		tec.setBreakDeadlocks(true, false, false);
 
 		BrowserVisualization viz = new BrowserVisualization();
 		viz.setInitialTransform(40.6, -1.26, 4.5);
@@ -78,12 +93,12 @@ public class TwoRobotsFollowing {
 		Pose startRobot1 = new Pose(45.0,5.0,0.0);
 		Pose goalRobot11 = new Pose(40.0,7.0,0.0);
 		Pose goalRobot12 = new Pose(10.0,7.0,0.0);
-		Pose goalRobot13 = new Pose(5.0,5.0,0.0);
+//		Pose goalRobot13 = new Pose(5.0,5.0,0.0);
 		
 		Pose startRobot2 = new Pose(45.0,9.0,Math.PI);
 		Pose goalRobot21 = new Pose(40.0,7.0,Math.PI);
 		Pose goalRobot22 = new Pose(10.0,7.0,Math.PI);
-		Pose goalRobot23 = new Pose(5.0,9.0,Math.PI);
+//		Pose goalRobot23 = new Pose(5.0,9.0,Math.PI);
 
 		//Place robots in their initial locations (looked up in the data file that was loaded above)
 		// -- creates a trajectory envelope for each location, representing the fact that the robot is parked
@@ -100,14 +115,30 @@ public class TwoRobotsFollowing {
 		rsp.setDistanceBetweenPathPoints(0.1);
 
 		rsp.setStart(startRobot1);
-		rsp.setGoals(goalRobot11,goalRobot12,goalRobot13);
+		rsp.setGoals(goalRobot11);
 		rsp.plan();
-		Missions.enqueueMission(new Mission(1,rsp.getPath()));
+		Mission m11 = new Mission(1,rsp.getPath());
+		Missions.enqueueMission(m11);
+		
+		rsp.setStart(goalRobot11);
+		rsp.setGoals(goalRobot12);
+		rsp.plan();
+		Mission m12 = new Mission(1,rsp.getPath());
+		m12.setStoppingPoint(rsp.getPath()[rsp.getPath().length-10].getPose(), 40000);
+		Missions.enqueueMission(m12);
 
 		rsp.setStart(startRobot2);
-		rsp.setGoals(goalRobot21,goalRobot22,goalRobot23);
+		rsp.setGoals(goalRobot21);
 		rsp.plan();
-		Missions.enqueueMission(new Mission(2,rsp.getPath()));
+		Mission m21 = new Mission(2,rsp.getPath());
+		Missions.enqueueMission(m21);
+		
+		rsp.setStart(goalRobot21);
+		rsp.setGoals(goalRobot22);
+		rsp.plan();
+		Mission m22 = new Mission(2,rsp.getPath());
+		m22.setStoppingPoint(rsp.getPath()[rsp.getPath().length-10].getPose(), 40000);
+		Missions.enqueueMission(m22);
 		
 		System.out.println("Added missions " + Missions.getMissions());
 

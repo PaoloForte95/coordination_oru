@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -77,8 +76,6 @@ public class Missions {
 	protected static Thread missionDispatchThread = null;
 	protected static HashSet<Integer> dispatchableRobots = new HashSet<Integer>();
 	protected static HashMap<Integer,Boolean> loopMissions = new HashMap<Integer,Boolean>();
-	
-	protected static TreeMap<Integer, Mission> missionTree = new TreeMap<>();
 	
 	/**
 	 * Set the minimum acceptable distance between path poses. This is used to re-sample paths
@@ -469,6 +466,16 @@ public class Missions {
 	}
 	
 	/**
+	 * Get the path between two locations if such a path exists in the roadmap.
+	 * @param from The name of the source location.
+	 * @param to The name of the target location.
+	 * @return The path between the given locations, <code>null</code> if the roadmap does not contain this edge.
+	 */
+	public static PoseSteering[] getPath(String from, String to) {
+		return paths.get(from+"->"+to);
+	}
+	
+	/**
 	 * Get all the {@link Mission}s currently known for one robot
 	 * @param robotID A robot identifier
 	 * @return All the {@link Mission}s currently known for one robot
@@ -531,26 +538,6 @@ public class Missions {
 		missions.get(m.getRobotID()).add(m);
 	}
 
-	
-	/**
-	 * Enqueue a new {@link Mission} for a robot.
-	 * @param m The mission to enqueue.
-	 */
-	public static void enqueueMissionTree(Mission m,int key) {
-		
-		missionTree.put(key,m);
-	}
-	
-	
-	/**
-	 * Get all the {@link Mission}s currently known
-	 * @return All the {@link Mission}s currently known for one robot
-	 */
-	public static TreeMap<Integer, Mission> getMissionsTree() {
-		return missionTree;
-	}
-	
-	
 	/**
 	 * Push a new {@link Mission} for a robot on the mission queue.
 	 * @param m The mission to push

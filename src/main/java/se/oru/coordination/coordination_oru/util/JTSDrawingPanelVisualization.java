@@ -216,7 +216,7 @@ public class JTSDrawingPanelVisualization implements FleetVisualization {
 	}
 
 	@Override
-	public void displayWaypoint(Pose pose, int i) {
+	public void displayWaypoint(Pose pose, String name) {
 		// TODO Auto-generated method stub
 		
 	}
