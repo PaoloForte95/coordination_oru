@@ -3,18 +3,21 @@ package se.oru.coordination.coordination_oru.util;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.metacsp.multi.spatial.DE9IM.GeometricShapeDomain;
+import org.metacsp.multi.spatioTemporal.paths.Pose;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 import org.metacsp.utility.UI.JTSDrawingPanel;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
 import se.oru.coordination.coordination_oru.RobotReport;
@@ -204,6 +207,30 @@ public class JTSDrawingPanelVisualization implements FleetVisualization {
 	public int periodicEnvelopeRefreshInMillis() {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	@Override
+	public void displayMaterial(Pose poseMaterial, int materialID,double materialAmount,String... extraStatusInfo) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void displayWaypoint(Pose pose, String name) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void loadMaterial(int robotID, int materialID) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void updateMaterialAmount(int getmaterialID, double amount, String toLocation) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
