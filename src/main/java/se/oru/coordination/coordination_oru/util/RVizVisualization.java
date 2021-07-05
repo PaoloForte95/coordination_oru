@@ -71,7 +71,6 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	private String mapFileName = null;
 	private boolean darkColors = true;
 	private boolean publishPartialEnvelope = false;
-<<<<<<< HEAD
 
 	
 	////////////////////
@@ -91,8 +90,6 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 	
 	private HashMap<Integer,visualization_msgs.Marker> materialLoadedMarkers = null;
 	////////////////////
-=======
->>>>>>> upstream/master
 	
 	private static String rvizEntry = ""+
 			"    - Class: rviz/MarkerArray\n" + 
