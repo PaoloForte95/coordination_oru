@@ -1,4 +1,4 @@
-/*
+1/*
  * coordination_oru_ros - Online coordination for multiple robots
  *
  * Copyright (C) 2021 Federico Pecora
@@ -22,19 +22,20 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 
 // The Maven publish plugin is only required if your package is used as a library.
-apply plugin: 'maven-publish'
+apply plugin: 'maven'
 
 // The Application plugin and mainClassName attribute are only required if
 // your package is used as a binary.
 apply plugin: 'application'
 // The main class that will be executed when you do 'gradle run'
 mainClassName = 'se.oru.coordination.coordination_oru.demo.DemoLauncher'
-
-repositories {
-  mavenLocal()
-  jcenter()
-  maven { url 'https://jitpack.io' }
-  maven { url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master/' }
+allprojects {
+	repositories {
+	  mavenLocal()
+	  jcenter()
+	  maven { url 'https://jitpack.io' }
+	  maven { url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master/' }
+	}
 }
 
 configurations.all {
@@ -55,6 +56,8 @@ dependencies {
   //For interface with OMPL
   implementation 'net.java.dev.jna:jna:4.4.0'
   implementation 'org.jgrapht:jgrapht-core:1.5.1'
+  //implementation 'org.jgrapht.jgrapht:master-SNAPSHOT'
+  //implementation 'org.jgrapht:jgrapht-core:jgrapht-SNAPSHOT'
 
   //For demo infrastructure
   implementation 'org.reflections:reflections:0.9.11'
@@ -78,7 +81,7 @@ dependencies {
   // Add the following if you need to include jars that are not
   // in Maven Central and that you have places in the directory "lib"
   // (NOTE: you have to create this directory if you need it)
-  //compile fileTree(dir: 'lib', include: '**/*.jar')
+  //compile fileTree(dir: 'lib', include: '*.jar')
 
 }
 
