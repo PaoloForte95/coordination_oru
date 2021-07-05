@@ -14,9 +14,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.ArrayUtils;
+<<<<<<< HEAD
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
+=======
+import org.jgrapht.alg.ConnectivityInspector;
+import org.jgrapht.alg.KosarajuStrongConnectivityInspector;
+>>>>>>> upstream/master
 import org.jgrapht.alg.cycle.JohnsonSimpleCycles;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.DirectedMultigraph;
@@ -1571,13 +1576,13 @@ public abstract class TrajectoryEnvelopeCoordinator extends AbstractTrajectoryEn
 				}
 			}
 			if (toAdd.isEmpty()) return;
-	
+
 			//compute strongly connected components
 			KosarajuStrongConnectivityInspector<Integer,DefaultWeightedEdge> ksccFinder = new KosarajuStrongConnectivityInspector<Integer,DefaultWeightedEdge>(currentOrdersGraph);
 			//List<DirectedSubgraph<Integer,DefaultWeightedEdge>> sccs = ksccFinder.stronglyConnectedSubgraphs();
 			List<Graph<Integer,DefaultWeightedEdge>> sccs = ksccFinder.getStronglyConnectedComponents();
 			metaCSPLogger.finest("Connected components: " + sccs.toString());
-	
+
 			//update the cycle list. Use a map to avoid recomputing cycles of each connected component.
 			for (Pair<Integer,Integer> pair : toAdd) {
 				//search the strongly connected components containing the two vertices
