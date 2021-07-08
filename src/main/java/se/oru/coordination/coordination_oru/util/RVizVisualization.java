@@ -1182,7 +1182,7 @@ public class RVizVisualization implements FleetVisualization, NodeMain {
 			marker.getHeader().setFrameId(mapFrameID);
 			String copy = name.replaceAll("[()]", "");
 			copy = copy.replaceAll("[^0-9]", "");
-			int waypointID = Integer.parseInt(name);
+			int waypointID = Integer.parseInt(copy);
 			if(name.contains("parking")) {
 				waypointID = waypointID*(-1);
 			}
