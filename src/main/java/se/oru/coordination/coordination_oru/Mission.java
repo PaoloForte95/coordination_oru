@@ -8,6 +8,7 @@ import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
+import se.oru.coordination.coordination_oru.operationsTypes.OPERATION_TYPE;
 import se.oru.coordination.coordination_oru.util.Missions;
 
 /**
@@ -28,7 +29,18 @@ public class Mission implements Comparable<Mission> {
 	protected Pose toPose = null;
 	protected ArrayList<Pose> stoppingPoints = new ArrayList<Pose>();
 	protected ArrayList<Integer> stoppingPointDurations = new ArrayList<Integer>();
+	protected OPERATION_TYPE mission_type = OPERATION_TYPE.NAVIGATION;
+
 	//protected HashMap<Pose,Integer> stoppingPoints = new HashMap<Pose, Integer>();
+	
+	/*
+	public void setMissionType(OPERATION_TYPE mission_type) {
+		this.mission_type = mission_type;
+	}
+	*/
+	public OPERATION_TYPE getMissionType() {
+		return this.mission_type;
+	}
 	
 	/**
 	 * Instantiates a {@link Mission} for a given robot to navigate between two locations, but where the path
@@ -57,6 +69,8 @@ public class Mission implements Comparable<Mission> {
 	public Mission(int robotID, PoseSteering[] path) {
 		this(robotID, path, path[0].getPose().toString(), path[path.length-1].getPose().toString(), path[0].getPose(), path[path.length-1].getPose());
 	}
+	
+
 	
 	/**
 	 * Instantiates a {@link Mission} for a given robot to navigate between two locations via a given path.
