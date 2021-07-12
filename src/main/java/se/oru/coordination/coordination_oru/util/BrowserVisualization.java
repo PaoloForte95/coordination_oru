@@ -227,6 +227,16 @@ public class BrowserVisualization implements FleetVisualization {
 			}
 		}
 		
+		if(materialVisual) {
+			if(materialLoaded.containsKey(rr.getRobotID()))	{
+					if (materialLoaded.get(rr.getRobotID()) != -1) {
+						displayMaterial(rr.getPose(),materialLoaded.get(rr.getRobotID()),0.1,"Loaded");
+					}
+			}
+			
+				
+		}
+		
 		Geometry geom = TrajectoryEnvelope.getFootprint(te.getFootprint(), x, y, theta);
 		this.updateRobotFootprintArea(geom);
 		double scale = Math.sqrt(robotFootprintArea)*0.2;
@@ -266,6 +276,7 @@ public class BrowserVisualization implements FleetVisualization {
 						displayMaterial(rr.getPose(),materialLoaded.get(rr.getRobotID()),0.1,"Loaded");
 					}
 			}
+			
 				
 		}		
 		Geometry geom = TrajectoryEnvelope.getFootprint(fp, x, y, theta);
