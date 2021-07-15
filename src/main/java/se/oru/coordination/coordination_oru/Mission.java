@@ -29,7 +29,7 @@ public class Mission implements Comparable<Mission> {
 	protected Pose toPose = null;
 	protected ArrayList<Pose> stoppingPoints = new ArrayList<Pose>();
 	protected ArrayList<Integer> stoppingPointDurations = new ArrayList<Integer>();
-	protected OPERATION_TYPE mission_type = OPERATION_TYPE.NAVIGATION;
+	protected OPERATION_TYPE mission_type = OPERATION_TYPE.NO_OPERATION;
 
 	//protected HashMap<Pose,Integer> stoppingPoints = new HashMap<Pose, Integer>();
 	
